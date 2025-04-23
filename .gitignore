@@ -1,0 +1,12 @@
+bin/
+target/
+/null/
+.bloop/
+.bsp/
+.cache*
+.idea
+.idea_modules
+.project
+.classpath
+.settings
+.scalafmt.conf
