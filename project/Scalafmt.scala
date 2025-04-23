@@ -17,8 +17,8 @@ object Scalafmt extends AutoPlugin {
     scalafmtGenerateConfig := {
       IO.write(
         file( ".scalafmt.conf" ),
-        """version = "3.7.17"
-          |runner.dialect = scala213
+        """version = "3.9.3"
+          |runner.dialect = scala3
           |
           |preset = defaultWithAlign
           |maxColumn = 120
