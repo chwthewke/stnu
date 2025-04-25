@@ -38,6 +38,22 @@ val `stnu-core`: CrossProject =
 lazy val `stnu-core-jvm`: Project = `stnu-core`.jvm
 lazy val `stnu-core-js`: Project  = `stnu-core`.js
 
+val `stnu-tools`: Project = project
+  .in( file( "tools" ) )
+  .enablePlugins( Scalac )
+  .settings( sharedSettings )
+  .dependsOn( `stnu-core-jvm` )
+  .settings(
+    catsParse,
+    catsEffect,
+    fs2Core,
+    fs2IO,
+    fs2DataCirce,
+    pureconfig,
+    pureconfigCatsEffect,
+    pureconfigFs2
+  )
+
 val `stnu-laws`: Project =
   project
     .in( file( "laws" ) )
@@ -51,14 +67,15 @@ val `stnu-tests`: Project =
     .in( file( "tests" ) )
     .enablePlugins( Scalac )
     .settings( sharedSettings )
-    .dependsOn( `stnu-core-jvm` )
+    .settings( munitScalacheck )
+    .dependsOn( `stnu-core-jvm`, `stnu-tools` )
 
 val `stnu-jvm`: Project =
   project
     .in( file( "target/stnuJVM" ) )
-    .aggregate( `stnu-core-jvm`, `stnu-laws`, `stnu-tests` )
+    .aggregate( `stnu-core-jvm`, `stnu-tools`, `stnu-laws`, `stnu-tests` )
 
 val stnu: Project =
   project
     .in( file( "." ) )
-    .aggregate( `stnu-core-jvm`, `stnu-core-js`, `stnu-laws`, `stnu-tests` )
+    .aggregate( `stnu-core-jvm`, `stnu-core-js`, `stnu-tools`, `stnu-laws`, `stnu-tests` )

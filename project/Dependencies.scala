@@ -34,6 +34,31 @@ object Dependencies extends AutoPlugin {
     )
     val enumeratumCirce: Deps = libraryDependencies += "com.beachape" %%% "enumeratum-circe" % "1.7.5"
 
+    val fs2Core: Deps      = libraryDependencies += "co.fs2"    %%% "fs2-core"            % "3.12.0"
+    val fs2IO: Deps        = libraryDependencies += "co.fs2"    %%% "fs2-io"              % "3.12.0"
+    val fs2DataCirce: Deps = libraryDependencies += "org.gnieh" %%% "fs2-data-json-circe" % "1.11.2"
+
+    val pureconfigVersion = "0.17.9"
+    val pureconfig: Deps = libraryDependencies ++= Seq(
+      "com.github.pureconfig" %%% "pureconfig-core"           % pureconfigVersion,
+      "com.github.pureconfig" %%% "pureconfig-cats"           % pureconfigVersion,
+      "com.github.pureconfig" %%% "pureconfig-generic-scala3" % pureconfigVersion
+    )
+
+    val pureconfigEnumeratum: Deps =
+      libraryDependencies += "com.github.pureconfig" %%% "pureconfig-enumeratum" % pureconfigVersion
+    val pureconfigCatsEffect: Deps =
+      libraryDependencies += "com.github.pureconfig" %%% "pureconfig-cats-effect" % pureconfigVersion
+    val pureconfigFs2: Deps = libraryDependencies += "com.github.pureconfig" %%% "pureconfig-fs2" % pureconfigVersion
+
+    val munitScalacheck: Deps = libraryDependencies ++= Seq(
+      "org.scalameta"     %%% "munit"             % "1.1.0",
+      "org.scalameta"     %%% "munit-scalacheck"  % "1.1.0",
+      "org.typelevel"     %%% "munit-cats-effect" % "2.1.0",
+      "org.scalacheck"    %%% "scalacheck"        % "1.18.1",
+      "io.chrisdavenport" %%% "cats-scalacheck"   % "0.3.2"
+    )
+
     // munit-discipline has not been rebuilt against (binary-incompatible) munit 1.1.0 yet
     val munitLaws: Deps = libraryDependencies ++= Seq(
       "org.scalameta"     %%% "munit"            % "1.0.0",
