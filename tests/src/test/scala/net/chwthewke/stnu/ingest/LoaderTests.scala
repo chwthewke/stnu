@@ -23,3 +23,13 @@ class LoaderTests extends CatsEffectSuite:
               data.conveyorBelts.map( _.className ).forall( _.name.length <= 256 ) &&
               data.pipelines.map( _.className ).forall( _.name.length <= 256 ) &&
               data.buildingDescriptors.keys.forall( _.name.length <= 256 )
+
+    test( s"loading ${version.docsKey} map config succeeds" ):
+      Loader[IO]( version ).use:
+        _.mapConfig
+          .assert( _ => true )
+
+    test( s"loading ${version.docsKey} model succeeds" ):
+      Loader[IO]( version ).use:
+        _.model
+          .assert( _ => true )
