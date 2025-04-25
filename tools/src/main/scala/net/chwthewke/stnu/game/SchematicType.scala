@@ -12,7 +12,7 @@ enum SchematicType( val entryName: String ):
   case Tutorial      extends SchematicType( "EST_Tutorial" )
 
 object SchematicType
-    extends Enum[SchematicType]
+    extends CustomEnum[SchematicType]
     with CatsEnum[SchematicType]
     with OrderEnum[SchematicType]
     with CirceEnum[SchematicType]:

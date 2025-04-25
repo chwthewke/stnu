@@ -7,5 +7,5 @@ enum GameForm( val entryName: String, val simpleAmountFactor: Int ):
   case Gas     extends GameForm( "RF_GAS", 1000 )
   case Invalid extends GameForm( "RF_INVALID", 1 )
 
-object GameForm extends Enum[GameForm] with CatsEnum[GameForm] with CirceEnum[GameForm]:
+object GameForm extends CustomEnum[GameForm] with CatsEnum[GameForm] with CirceEnum[GameForm]:
   override def keyOf( form: GameForm ): String = form.entryName

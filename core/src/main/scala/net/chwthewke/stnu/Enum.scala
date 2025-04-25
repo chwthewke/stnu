@@ -11,13 +11,17 @@ import io.circe.KeyEncoder
 
 // TODO not really a fan... a lot of this is rehashing enumeratum stuff.
 //  use an enum with matching names for source stuff and another one for ourselves?
-trait Enum[A]:
-  def keyOf( a: A ): String = a.toString
+trait CustomEnum[A]:
+  def keyOf( a: A ): String
 
   def values: Array[A]
   lazy val cases: Vector[A] = values.toVector
 
-  private lazy val casesMap: Map[String, A] = cases.fproductLeft( keyOf ).toMap
+  private def makeKey( a: A ): String =
+    keyOf( a )
+
+  private def makeCasesMap: Map[String, A]  = cases.fproductLeft( makeKey ).toMap
+  private lazy val casesMap: Map[String, A] = makeCasesMap
   private lazy val casesList: String        = cases.map( keyOf ).mkString( ", " )
 
   def indexOf( a: A ): Int = cases.indexOf( a )
@@ -26,7 +30,10 @@ trait Enum[A]:
   def withNameEither( name: String ): Either[String, A] =
     withNameOption( name ).toRight( s"$name not in $casesList" )
 
-trait CatsEnum[A] extends Enum[A]:
+trait Enum[A] extends CustomEnum[A]:
+  final override def keyOf( a: A ): String = a.toString
+
+trait CatsEnum[A] extends CustomEnum[A]:
   given Eq[A]   = Eq.by( keyOf )
   given Show[A] = Show.show( keyOf )
 
@@ -34,7 +41,7 @@ trait OrderEnum[A] extends CatsEnum[A]:
   given Order[A]    = Order.by( indexOf )
   given Ordering[A] = Order.catsKernelOrderingForOrder
 
-trait CirceEnum[A] extends Enum[A]:
+trait CirceEnum[A] extends CustomEnum[A]:
   given Decoder[A]    = Decoder[String].emap( withNameEither )
   given Encoder[A]    = Encoder[String].contramap( keyOf )
   given KeyDecoder[A] = KeyDecoder.instance[A]( withNameOption )

@@ -72,7 +72,7 @@ object Parsers:
   val booleanString: Parser[Boolean] =
     Parser.string( "False" ).as( false ) | Parser.string( "True" ).as( true )
 
-  extension [A]( e: Enum[A] )
+  extension [A]( e: CustomEnum[A] )
     def parser: Parser[A] =
       Parser.oneOf( e.cases.map( v => Parser.string( e.keyOf( v ) ).as( v ) ).toList )
 

@@ -17,7 +17,7 @@ enum DataVersionStorage(
   val docsFile: String = "en-US.json"
 
 object DataVersionStorage
-    extends Enum[DataVersionStorage]
+    extends CustomEnum[DataVersionStorage]
     with CatsEnum[DataVersionStorage]
     with OrderEnum[DataVersionStorage]:
   override def keyOf( version: DataVersionStorage ): String = version.docsKey

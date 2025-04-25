@@ -24,7 +24,7 @@
 
 ### data-tools
 - ~~load GameData~~
-- load Model & write **to JSON**
+- ~~load Model &~~ write model **to JSON**
 
 ### backend
 - import (copy) resources
