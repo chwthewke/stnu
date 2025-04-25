@@ -26,7 +26,8 @@ object Dependencies extends AutoPlugin {
     val catsEffect: Deps          = libraryDependencies += "org.typelevel" %%% "cats-effect"        % catsEffectVersion
 
     val circeVersion: String = "0.14.13"
-    val circe: Deps          = libraryDependencies += "io.circe" %%% "circe-core" % circeVersion
+    val circe: Deps          = libraryDependencies += "io.circe" %%% "circe-core"   % circeVersion
+    val circeParser: Deps    = libraryDependencies += "io.circe" %%% "circe-parser" % circeVersion
 
     val enumeratum: Deps = libraryDependencies ++= Seq(
       "com.beachape" %%% "enumeratum"      % "1.7.6",

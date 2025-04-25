@@ -46,6 +46,7 @@ val `stnu-tools`: Project = project
   .settings(
     catsParse,
     catsEffect,
+    circeParser,
     fs2Core,
     fs2IO,
     fs2DataCirce,
