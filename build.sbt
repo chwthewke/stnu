@@ -38,6 +38,14 @@ val `stnu-core`: CrossProject =
 lazy val `stnu-core-jvm`: Project = `stnu-core`.jvm
 lazy val `stnu-core-js`: Project  = `stnu-core`.js
 
+val `stnu-laws`: Project =
+  project
+    .in( file( "laws" ) )
+    .enablePlugins( Scalac )
+    .settings( sharedSettings )
+    .settings( munitLaws )
+    .dependsOn( `stnu-core-jvm` )
+
 val `stnu-tests`: Project =
   project
     .in( file( "tests" ) )
@@ -48,9 +56,9 @@ val `stnu-tests`: Project =
 val `stnu-jvm`: Project =
   project
     .in( file( "target/stnuJVM" ) )
-    .aggregate( `stnu-core-jvm`, `stnu-tests` )
+    .aggregate( `stnu-core-jvm`, `stnu-laws`, `stnu-tests` )
 
 val stnu: Project =
   project
     .in( file( "." ) )
-    .aggregate( `stnu-core-jvm`, `stnu-core-js`,  `stnu-tests` )
+    .aggregate( `stnu-core-jvm`, `stnu-core-js`, `stnu-laws`, `stnu-tests` )

@@ -4,7 +4,7 @@
 
 ### plugins
 - ~~scalac args~~
-- dependencies (smth fancy for named deps usable from sjs & scala-only? - or just always using %%% works?)
+- ~~dependencies (smth fancy for named deps usable from sjs & scala-only? - or just always using %%% works?)~~
 - buildinfo
 
 ### core
@@ -21,6 +21,10 @@
 ### data-tools
 
 ## features
+
+### data-tools
+- load GameData
+- load Model & write **to JSON**
 
 ### backend
 - import (copy) resources

@@ -34,5 +34,13 @@ object Dependencies extends AutoPlugin {
     )
     val enumeratumCirce: Deps = libraryDependencies += "com.beachape" %%% "enumeratum-circe" % "1.7.5"
 
+    // munit-discipline has not been rebuilt against (binary-incompatible) munit 1.1.0 yet
+    val munitLaws: Deps = libraryDependencies ++= Seq(
+      "org.scalameta"     %%% "munit"            % "1.0.0",
+      "org.typelevel"     %%% "discipline-core"  % "1.7.0",
+      "org.typelevel"     %%% "discipline-munit" % "2.0.0",
+      "org.typelevel"     %%% "cats-laws"        % catsVersion,
+      "io.chrisdavenport" %%% "cats-scalacheck"  % "0.3.2"
+    )
   }
 }
