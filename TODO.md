@@ -27,7 +27,7 @@
 - ~~load Model & write model **to JSON**~~
 
 ### backend
-- import (copy) resources
+- ~~import resources~~
 - provide model(s) - from JSON rather than db?
 
 ## refactorings vs. legacy
