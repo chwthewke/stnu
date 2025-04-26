@@ -13,6 +13,12 @@ enum DataVersionStorage(
         "Satisfactory1.0",
         ModelVersion( 6, "Satisfactory 1.0", "r1.0" )
       )
+  case Release1_1
+      extends DataVersionStorage(
+        DataVersionStorage.steamPath,
+        "Satisfactory1.1",
+        ModelVersion( 7, "Satisfactory 1.1", "r1.1" )
+      )
 
   val docsFile: String = "en-US.json"
 

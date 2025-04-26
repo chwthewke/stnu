@@ -3,5 +3,10 @@
     "key" : "r1.0",
     "name" : "Satisfactory 1.0",
     "version" : 6
+  },
+  {
+    "key" : "r1.1",
+    "name" : "Satisfactory 1.1",
+    "version" : 7
   }
 ]
