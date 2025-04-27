@@ -55,6 +55,13 @@ val `stnu-tools`: Project = project
     pureconfigFs2
   )
 
+val `stnu-assets`: Project = project
+  .in( file( "assets" ) )
+  .enablePlugins( Scalac )
+  .settings( sharedSettings )
+  .dependsOn( `stnu-core-jvm` )
+  .settings( catsEffect, fs2Core, fs2IO, fs2DataCirce )
+
 val `stnu-laws`: Project =
   project
     .in( file( "laws" ) )
@@ -69,14 +76,31 @@ val `stnu-tests`: Project =
     .enablePlugins( Scalac )
     .settings( sharedSettings )
     .settings( munitScalacheck )
-    .dependsOn( `stnu-core-jvm`, `stnu-tools` )
+    .dependsOn(
+      `stnu-core-jvm`,
+      `stnu-tools`,
+      `stnu-assets`
+    )
 
 val `stnu-jvm`: Project =
   project
     .in( file( "target/stnuJVM" ) )
-    .aggregate( `stnu-core-jvm`, `stnu-tools`, `stnu-laws`, `stnu-tests` )
+    .aggregate(
+      `stnu-core-jvm`,
+      `stnu-tools`,
+      `stnu-assets`,
+      `stnu-laws`,
+      `stnu-tests`
+    )
 
 val stnu: Project =
   project
     .in( file( "." ) )
-    .aggregate( `stnu-core-jvm`, `stnu-core-js`, `stnu-tools`, `stnu-laws`, `stnu-tests` )
+    .aggregate(
+      `stnu-core-jvm`,
+      `stnu-core-js`,
+      `stnu-tools`,
+      `stnu-assets`,
+      `stnu-laws`,
+      `stnu-tests`
+    )
