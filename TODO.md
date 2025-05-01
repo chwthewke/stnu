@@ -5,7 +5,7 @@
 ### plugins
 - ~~scalac args~~
 - ~~dependencies (smth fancy for named deps usable from sjs & scala-only? - or just always using %%% works?)~~
-- buildinfo
+- ~~buildinfo~~
 
 ### core
 - ~~with sjs crossbuild~~
@@ -28,7 +28,9 @@
 
 ### backend
 - ~~import resources~~
-- provide model(s) - from JSON rather than db?
+- ~~provide model(s) - from JSON rather than db?~~
+- ~~serve static assets~~
+- ~~serve index.html for prod~~
 
 ## refactorings vs. legacy
 - ~~check circe codecs in tools for actual use~~
