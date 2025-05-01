@@ -1,3 +1,5 @@
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import sbtcrossproject.CrossProject
 
 ThisBuild / organization := "net.chwthewke"
@@ -14,20 +16,21 @@ ThisBuild / Compile / packageDoc / publishArtifact := false
 enablePlugins( Scalafmt )
 enablePlugins( Dependencies )
 
-val sharedSettings = scalaVersion := "3.6.4"
+val sharedSettings = Seq(
+  scalaVersion := "3.6.4"
+)
 
 val `stnu-core`: CrossProject =
   crossProject( JSPlatform, JVMPlatform )
     .crossType( CrossType.Pure )
     .settings( sharedSettings )
     .settings( name := "stnu-core" )
-    .jsSettings( name := "stnu-core-js" )
-    .jvmSettings( name := "stnu-core-jvm" )
     .settings(
       cats,
       alleycats,
       kittens,
       mouse,
+      catsTime,
       catsParse,
       algebra,
       circe
@@ -62,6 +65,51 @@ val `stnu-assets`: Project = project
   .dependsOn( `stnu-core-jvm` )
   .settings( catsEffect, fs2Core, fs2IO, fs2DataCirce )
 
+val `stnu-backend`: Project = project
+  .in( file( "backend" ) )
+  .enablePlugins( Scalac )
+  .enablePlugins( BuildInfoPlugin )
+  .settings(
+    buildInfoObject  := "StnuBuildInfo",
+    buildInfoPackage := "net.chwthewke.stnu.server",
+    buildInfoKeys := Seq[BuildInfoKey](
+      name,
+      version,
+      scalaVersion,
+      BuildInfoKey.action( "builtAt" )( Instant.now().truncatedTo( ChronoUnit.SECONDS ) )
+    )
+  )
+  .settings( sharedSettings )
+  .dependsOn( `stnu-assets` )
+  .settings(
+    http4s,
+    http4sEmberServer,
+    http4sCirce,
+    scalatags,
+    http4sScalatags,
+    pureconfig,
+    pureconfigCatsEffect,
+    pureconfigFs2,
+    pureconfigIp4s,
+    pureconfigHttp4s,
+    logging
+  )
+
+val backendRunnerSettings: Seq[Def.Setting[_]] = Seq(
+  Compile / mainClass  := Some( "net.chwthewke.stnu.server.Main" ),
+  Compile / run / fork := true
+)
+
+// NOTE this module is intended for running the backend from sbt or IntelliJ
+//  it could have specific application.conf/logback.xml/assets etc.,
+//  matching the requirements for stnu-frontend-run
+val `stnu-backend-run`: Project = project
+  .in( file( "backend-run" ) )
+  .enablePlugins( Scalac )
+  .settings( sharedSettings )
+  .settings( backendRunnerSettings )
+  .dependsOn( `stnu-backend` )
+
 val `stnu-laws`: Project =
   project
     .in( file( "laws" ) )
@@ -79,16 +127,18 @@ val `stnu-tests`: Project =
     .dependsOn(
       `stnu-core-jvm`,
       `stnu-tools`,
-      `stnu-assets`
+      `stnu-assets`,
+      `stnu-backend`
     )
 
 val `stnu-jvm`: Project =
   project
-    .in( file( "target/stnuJVM" ) )
+    .in( file( "target/stnu-jvm" ) )
     .aggregate(
       `stnu-core-jvm`,
       `stnu-tools`,
       `stnu-assets`,
+      `stnu-backend`,
       `stnu-laws`,
       `stnu-tests`
     )
@@ -101,6 +151,7 @@ val stnu: Project =
       `stnu-core-js`,
       `stnu-tools`,
       `stnu-assets`,
+      `stnu-backend`,
       `stnu-laws`,
       `stnu-tests`
     )

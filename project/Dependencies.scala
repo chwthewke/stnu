@@ -51,6 +51,30 @@ object Dependencies extends AutoPlugin {
     val pureconfigCatsEffect: Deps =
       libraryDependencies += "com.github.pureconfig" %%% "pureconfig-cats-effect" % pureconfigVersion
     val pureconfigFs2: Deps = libraryDependencies += "com.github.pureconfig" %%% "pureconfig-fs2" % pureconfigVersion
+    val pureconfigIp4s: Deps =
+      libraryDependencies += "com.github.pureconfig" %%% "pureconfig-ip4s" % pureconfigVersion
+    val pureconfigHttp4s: Deps =
+      libraryDependencies += "com.github.pureconfig" %%% "pureconfig-http4s" % pureconfigVersion
+
+    val http4sVersion = "0.23.30"
+    val http4s: Deps = libraryDependencies ++= Seq(
+      "org.http4s" %%% "http4s-dsl"  % http4sVersion,
+      "org.http4s" %%% "http4s-core" % http4sVersion
+    )
+    val http4sCirce: Deps       = libraryDependencies += "org.http4s" %%% "http4s-circe"        % http4sVersion
+    val http4sClientCore: Deps  = libraryDependencies += "org.http4s" %%% "http4s-client"       % http4sVersion
+    val http4sServerCore: Deps  = libraryDependencies += "org.http4s" %%% "http4s-server"       % http4sVersion
+    val http4sEmberServer: Deps = libraryDependencies += "org.http4s" %%% "http4s-ember-server" % http4sVersion
+    val http4sEmberClient: Deps = libraryDependencies += "org.http4s" %%% "http4s-ember-client" % http4sVersion
+
+    val scalatags: Deps       = libraryDependencies += "com.lihaoyi" %%% "scalatags"        % "0.13.1"
+    val http4sScalatags: Deps = libraryDependencies += "org.http4s"  %%% "http4s-scalatags" % "0.25.2"
+
+    val logging: Deps = libraryDependencies ++= Seq(
+      "org.slf4j"      % "slf4j-api"       % "2.0.17",
+      "ch.qos.logback" % "logback-classic" % "1.5.18",
+      "org.typelevel" %% "log4cats-slf4j"  % "2.7.0"
+    )
 
     val munitScalacheck: Deps = libraryDependencies ++= Seq(
       "org.scalameta"     %%% "munit"             % "1.1.0",
