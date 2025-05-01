@@ -1,0 +1,13 @@
+{
+  "type": "module",
+  "scripts": {
+    "start": "dotenv -v NODE_ENV=development -- parcel index.html --no-cache --dist-dir dist --log-level info --port 7870",
+    "build": "dotenv -v NODE_ENV=development -- parcel build index.html --dist-dir dist --log-level info"
+  },
+  "devDependencies": {
+    "dotenv": "^16.5.0",
+    "dotenv-cli": "^8.0.0",
+    "parcel": "^2.1.0",
+    "process": "^0.11.10"
+  }
+}
