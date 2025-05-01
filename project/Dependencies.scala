@@ -56,11 +56,9 @@ object Dependencies extends AutoPlugin {
     val pureconfigHttp4s: Deps =
       libraryDependencies += "com.github.pureconfig" %%% "pureconfig-http4s" % pureconfigVersion
 
-    val http4sVersion = "0.23.30"
-    val http4s: Deps = libraryDependencies ++= Seq(
-      "org.http4s" %%% "http4s-dsl"  % http4sVersion,
-      "org.http4s" %%% "http4s-core" % http4sVersion
-    )
+    val http4sVersion           = "0.23.30"
+    val http4sCore: Deps        = libraryDependencies += "org.http4s" %%% "http4s-core"         % http4sVersion
+    val http4sDsl: Deps         = libraryDependencies += "org.http4s" %%% "http4s-dsl"          % http4sVersion
     val http4sCirce: Deps       = libraryDependencies += "org.http4s" %%% "http4s-circe"        % http4sVersion
     val http4sClientCore: Deps  = libraryDependencies += "org.http4s" %%% "http4s-client"       % http4sVersion
     val http4sServerCore: Deps  = libraryDependencies += "org.http4s" %%% "http4s-server"       % http4sVersion
@@ -75,6 +73,9 @@ object Dependencies extends AutoPlugin {
       "ch.qos.logback" % "logback-classic" % "1.5.18",
       "org.typelevel" %% "log4cats-slf4j"  % "2.7.0"
     )
+
+    val tyrian: Deps    = libraryDependencies += "io.indigoengine" %%% "tyrian-io"  % "0.13.0"
+    val http4sDom: Deps = libraryDependencies += "org.http4s"      %%% "http4s-dom" % "0.2.8"
 
     val munitScalacheck: Deps = libraryDependencies ++= Seq(
       "org.scalameta"     %%% "munit"             % "1.1.0",

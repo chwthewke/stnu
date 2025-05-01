@@ -11,12 +11,18 @@
 - ~~with sjs crossbuild~~
 
 ### frontend
-- sjs bundler?
-- Tyrian
-- run it soon™
-- figure out flags for backend url?
+- ~~sjs bundler?~~ not for now
+- ~~Tyrian~~
+- ~~run it soon™~~
+- ~~figure out flags for backend url? -> JS dict in launch call (from index.html?)~~
+  - ~~prod? (oob from native package, possibly overridable but v.low prio)~~
+- ~~copy frontend output to backend (-app module?)~~
+- ~~dev-server~~
+  - ~~scaffolding (index.html, launcher, flags)~~
+  - ~~sbt tasks~~
 
 ### backend
+- ~~native-packager~~
 
 ### data-tools
 
