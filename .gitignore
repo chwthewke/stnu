@@ -10,3 +10,7 @@ target/
 .classpath
 .settings
 .scalafmt.conf
+
+/frontend-run/dist
+/frontend-run/node_modules
+/frontend-run/.parcel-cache

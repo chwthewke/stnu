@@ -68,21 +68,13 @@ val `stnu-assets`: Project = project
 val `stnu-backend`: Project = project
   .in( file( "backend" ) )
   .enablePlugins( Scalac )
-  .enablePlugins( BuildInfoPlugin )
-  .settings(
-    buildInfoObject  := "StnuBuildInfo",
-    buildInfoPackage := "net.chwthewke.stnu.server",
-    buildInfoKeys := Seq[BuildInfoKey](
-      name,
-      version,
-      scalaVersion,
-      BuildInfoKey.action( "builtAt" )( Instant.now().truncatedTo( ChronoUnit.SECONDS ) )
-    )
-  )
+  .enablePlugins( BuildInfo )
+  .settings( buildInfoPackage := "net.chwthewke.stnu.server" )
   .settings( sharedSettings )
   .dependsOn( `stnu-assets` )
   .settings(
-    http4s,
+    http4sCore,
+    http4sDsl,
     http4sEmberServer,
     http4sCirce,
     scalatags,
@@ -109,6 +101,39 @@ val `stnu-backend-run`: Project = project
   .settings( sharedSettings )
   .settings( backendRunnerSettings )
   .dependsOn( `stnu-backend` )
+
+val `stnu-frontend`: Project = project
+  .in( file( "frontend" ) )
+  .enablePlugins( Scalac )
+  .enablePlugins( ScalaJSPlugin )
+  .enablePlugins( BuildInfo )
+  .settings( buildInfoPackage := "net.chwthewke.stnu.spa" )
+  .settings( sharedSettings )
+  .settings( scalaJSLinkerConfig ~= { _.withModuleKind( ModuleKind.ESModule ) } )
+  .settings( tyrian, http4sCore, http4sDom, http4sCirce )
+  .dependsOn( `stnu-core-js` )
+
+// NOTE this module is intended for running the frontend from sbt or a terminal
+//  with a hot-reload capable dev webserver (via npm scripts using parcel)
+val `stnu-frontend-run`: Project = project
+  .in( file( "frontend-run" ) )
+  .enablePlugins( Scalac )
+  .enablePlugins( ScalaJSPlugin )
+  .settings( sharedSettings )
+  .settings( scalaJSLinkerConfig ~= { _.withModuleKind( ModuleKind.ESModule ) } )
+  .enablePlugins( FrontendDev )
+  .dependsOn( `stnu-frontend` )
+
+val `stnu-backend-app`: Project =
+  project
+    .in( file( "backend-app" ) )
+    .enablePlugins( Scalac )
+    .enablePlugins( JavaServerAppPackaging )
+    .enablePlugins( LauncherJarPlugin )
+    .settings( sharedSettings )
+    .settings( backendRunnerSettings )
+    .settings( Packaging.settings( frontendProject = `stnu-frontend` ) )
+    .dependsOn( `stnu-backend` )
 
 val `stnu-laws`: Project =
   project
@@ -152,6 +177,7 @@ val stnu: Project =
       `stnu-tools`,
       `stnu-assets`,
       `stnu-backend`,
+      `stnu-frontend`,
       `stnu-laws`,
       `stnu-tests`
     )
