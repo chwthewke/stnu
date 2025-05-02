@@ -20,7 +20,12 @@ val sharedSettings = Seq(
   scalaVersion := "3.6.4"
 )
 
-val `stnu-core`: CrossProject =
+val aggregateSettings = Seq(
+  publish      := {},
+  publishLocal := {}
+)
+
+val `stnu-core-cross`: CrossProject =
   crossProject( JSPlatform, JVMPlatform )
     .crossType( CrossType.Pure )
     .settings( sharedSettings )
@@ -38,8 +43,15 @@ val `stnu-core`: CrossProject =
     .in( file( "core" ) )
     .enablePlugins( Scalac )
 
-lazy val `stnu-core-jvm`: Project = `stnu-core`.jvm
-lazy val `stnu-core-js`: Project  = `stnu-core`.js
+val `stnu-core-jvm`: Project = `stnu-core-cross`.jvm
+val `stnu-core-js`: Project  = `stnu-core-cross`.js
+
+val `stnu-core`: Project =
+  project
+    .in( file( "core/target" ) )
+    .settings( sharedSettings )
+    .settings( aggregateSettings )
+    .aggregate( `stnu-core-jvm`, `stnu-core-js` )
 
 val `stnu-tools`: Project = project
   .in( file( "tools" ) )
@@ -65,13 +77,32 @@ val `stnu-assets`: Project = project
   .dependsOn( `stnu-core-jvm` )
   .settings( catsEffect, fs2Core, fs2IO, fs2DataCirce )
 
+val `stnu-protocol-cross`: CrossProject =
+  crossProject( JSPlatform, JVMPlatform )
+    .crossType( CrossType.Pure )
+    .in( file( "protocol" ) )
+    .enablePlugins( Scalac )
+    .settings( sharedSettings )
+    .settings( name := "stnu-protocol" )
+    .dependsOn( `stnu-core-cross` )
+
+val `stnu-protocol-jvm`: Project = `stnu-protocol-cross`.jvm
+val `stnu-protocol-js`: Project  = `stnu-protocol-cross`.js
+
+val `stnu-protocol`: Project =
+  project
+    .in( file( "protocol/target" ) )
+    .settings( sharedSettings )
+    .settings( aggregateSettings )
+    .aggregate( `stnu-protocol-jvm`, `stnu-protocol-js` )
+
 val `stnu-backend`: Project = project
   .in( file( "backend" ) )
   .enablePlugins( Scalac )
   .enablePlugins( BuildInfo )
   .settings( buildInfoPackage := "net.chwthewke.stnu.server" )
   .settings( sharedSettings )
-  .dependsOn( `stnu-assets` )
+  .dependsOn( `stnu-assets`, `stnu-protocol-jvm` )
   .settings(
     http4sCore,
     http4sDsl,
@@ -111,7 +142,7 @@ val `stnu-frontend`: Project = project
   .settings( sharedSettings )
   .settings( scalaJSLinkerConfig ~= { _.withModuleKind( ModuleKind.ESModule ) } )
   .settings( tyrian, http4sCore, http4sDom, http4sCirce )
-  .dependsOn( `stnu-core-js` )
+  .dependsOn( `stnu-protocol-js` )
 
 // NOTE this module is intended for running the frontend from sbt or a terminal
 //  with a hot-reload capable dev webserver (via npm scripts using parcel)
@@ -159,8 +190,11 @@ val `stnu-tests`: Project =
 val `stnu-jvm`: Project =
   project
     .in( file( "target/stnu-jvm" ) )
+    .settings( sharedSettings )
+    .settings( aggregateSettings )
     .aggregate(
       `stnu-core-jvm`,
+      `stnu-protocol-jvm`,
       `stnu-tools`,
       `stnu-assets`,
       `stnu-backend`,
@@ -171,11 +205,13 @@ val `stnu-jvm`: Project =
 val stnu: Project =
   project
     .in( file( "." ) )
+    .settings( sharedSettings )
+    .settings( aggregateSettings )
     .aggregate(
-      `stnu-core-jvm`,
-      `stnu-core-js`,
+      `stnu-core`,
       `stnu-tools`,
       `stnu-assets`,
+      `stnu-protocol`,
       `stnu-backend`,
       `stnu-frontend`,
       `stnu-laws`,

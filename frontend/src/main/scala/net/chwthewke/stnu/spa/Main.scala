@@ -13,6 +13,7 @@ import tyrian.Sub
 import tyrian.TyrianIOApp
 import tyrian.syntax.*
 
+import css.Bulma
 import model.Model as GameModel
 
 // shims
@@ -24,6 +25,8 @@ object Msg:
 
 @JSExportTopLevel( "TyrianApp" )
 object Main extends TyrianIOApp[Msg, Model]:
+  val bp: Bulma = Bulma
+
   override def router: Location => Msg = _ => Msg.Noop
 
   override def init( flags: Map[String, String] ): ( Model, Cmd[IO, Msg] ) =
@@ -36,17 +39,23 @@ object Main extends TyrianIOApp[Msg, Model]:
 
   override def view( model: Model ): Html[Msg] =
     Html.div(
-      Html.p( Html.text( "Tyrian app started" ) ),
-      Html.p( Html.text( s"Backend @ ${model.backend.renderString}" ) ),
-      model.game
-        .map( gm =>
-          Html.p(
-            Html.text(
-              s"Model loaded with ${gm.items.size} items and ${gm.manufacturingRecipes.size} manufacturing recipes!"
+      Html.article( bc( bp.message, bp.isInfo ) )(
+        Html.div( bc( bp.messageHeader ) )(
+          Html.p( Html.text( "Tyrian app started" ) )
+        ),
+        Html.div( bc( bp.messageBody ) )(
+          Html.p( Html.text( s"Backend @ ${model.backend.renderString}" ) ),
+          model.game
+            .map( gm =>
+              Html.p(
+                Html.text(
+                  s"Model loaded with ${gm.items.size} items and ${gm.manufacturingRecipes.size} manufacturing recipes!"
+                )
+              )
             )
-          )
+            .orEmpty
         )
-        .orEmpty
+      )
     )
 
   override def subscriptions( model: Model ): Sub[IO, Msg] = Sub.None
