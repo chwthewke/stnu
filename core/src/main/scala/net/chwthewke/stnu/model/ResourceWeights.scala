@@ -7,11 +7,11 @@ import cats.syntax.all.*
 import io.circe.Decoder
 import io.circe.Encoder
 
-opaque type ResourceWeights = Map[ClassName, Int] /* int coded btw `0` and `2 * range` inclusive */
+opaque type ResourceWeights = Map[ClassName[Item], Int] /* int coded btw `0` and `2 * range` inclusive */
 
 object ResourceWeights:
 
-  inline def apply( weights: Map[ClassName, Int] ): ResourceWeights = weights
+  inline def apply( weights: Map[ClassName[Item], Int] ): ResourceWeights = weights
 
   val default: ResourceWeights = Map.empty
 
@@ -19,7 +19,7 @@ object ResourceWeights:
   val range: Int            = 4 // weight between -range and range inclusive
 
   extension ( resourceWeights: ResourceWeights )
-    def weights: Map[ClassName, Int] = resourceWeights
+    def weights: Map[ClassName[Item], Int] = resourceWeights
 
     def costs( resourceCaps: Map[Item, Double] ): Map[Item, Double] =
       val raw = resourceCaps.map:
@@ -35,12 +35,12 @@ object ResourceWeights:
       raw.map:
         case ( item, rawCap ) => ( item, total * rawCap / sum )
 
-  given Eq[ResourceWeights] = Eq[Map[ClassName, Int]]
+  given Eq[ResourceWeights] = Eq[Map[ClassName[Item], Int]]
   given Show[ResourceWeights] = Show.show: weights =>
     weights
       .map:
         case ( item, weight ) => show"$item: $weight"
       .mkString( "\n" )
 
-  given Decoder[ResourceWeights] = Decoder[Map[ClassName, Int]]
-  given Encoder[ResourceWeights] = Encoder[Map[ClassName, Int]]
+  given Decoder[ResourceWeights] = Decoder[Map[ClassName[Item], Int]]
+  given Encoder[ResourceWeights] = Encoder[Map[ClassName[Item], Int]]

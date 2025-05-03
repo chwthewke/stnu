@@ -25,18 +25,20 @@ import model.ResourcePurity
 import model.ResourceWeights
 import model.Transport
 
-opaque type ModelItems = Map[ClassName, Item]
+opaque type ModelItems = Map[ClassName[Item], Item]
 object ModelItems:
-  inline def apply( items: Map[ClassName, Item] ): ModelItems = items
+  inline def apply( items: Map[ClassName[Item], Item] ): ModelItems = items
   extension ( modelItems: ModelItems )
-    def items: Map[ClassName, Item] = modelItems
-    def get( className: ClassName ): ValidatedNel[String, Item] =
+    def items: Map[ClassName[Item], Item] = modelItems
+    def get( className: ClassName[Item] ): ValidatedNel[String, Item] =
       modelItems.get( className ).toValidNel( "No such item: " + className )
 
 object ModelInit:
 
+  extension [A]( className: ClassName[A] ) inline def translate[B]: ClassName[B] = ClassName( className.name )
+
   extension ( data: GameData )
-    def getItem( className: ClassName ): ValidatedNel[String, GameItem] =
+    def getItem( className: ClassName[GameItem] ): ValidatedNel[String, GameItem] =
       data.items
         .get( className )
         .toValidNel( show"No such item class: $className" )
@@ -46,13 +48,14 @@ object ModelInit:
 
       val ( rawSelfExtraction, rawManufacturing ) = data.recipes.partition( _.isSelfExtraction )
 
-      val extractorMachines: ValidatedNel[String, Map[ClassName, ( Extractor, Machine )]] =
+      val extractorMachines: ValidatedNel[String, Map[ClassName[Extractor], ( Extractor, Machine )]] =
         data.extractors.traverse( ex => extractorMachine( ex ).toValidatedNel.tupleLeft( ex ) )
 
       val extractionRecipes: ValidatedNel[String, Vector[( Item, ResourcePurity, Recipe.Prod )]] =
         extractorMachines.andThen( getExtractionRecipes( data, modelItems, _, rawSelfExtraction ) )
 
-      val manufacturingRecipeClassification: Map[ClassName, RecipeCategory] = RecipeClassifier( data ).classifyRecipes
+      val manufacturingRecipeClassification: Map[ClassName[GameRecipe], RecipeCategory] =
+        RecipeClassifier( data ).classifyRecipes
 
       val manufacturing: ValidatedNel[String, Vector[Recipe.Prod]] =
         rawManufacturing
@@ -74,45 +77,36 @@ object ModelInit:
       )
         .mapN: ( ex, mf, pw, cb, pp, ro ) =>
 
-          val usefulItemClasses: Set[ClassName] =
+          val usefulItemClasses: Set[ClassName[Item]] =
             ex.foldMap( t => itemClassesOf( t._3 ) ) ++
               mf.foldMap( itemClassesOf( _ ) ) ++
               pw.foldMap( itemClassesOf( _ ) )
 
-          val usefulItems: SortedMap[ClassName, Item] =
+          val usefulItems: SortedMap[ClassName[Item], Item] =
             modelItems.items
               .filter:
                 case ( cn, _ ) => usefulItemClasses.contains( cn )
               .to( SortedMap )
 
-          val machines: SortedMap[ClassName, Machine] =
+          val machines: SortedMap[ClassName[Machine], Machine] =
             ( ex.map( _._3.producedIn ) ++ mf.map( _.producedIn ) ++ pw.map( _.producedIn ) )
               .fproductLeft( _.className )
               .to( SortedMap )
 
-//          println:
-//            val h = s"Items pruned: ${modelItems.items.size - usefulItemClasses.size} out of ${modelItems.items.size}"
-//            modelItems.items
-//              .flatMap:
-//                case ( cn, it ) => Option.when( !usefulItemClasses.contains( cn ) )( it )
-//              .map: it =>
-//                show"${it.displayName} # ${it.className}"
-//              .mkString( h + "\n  ", "\n  ", "" )
-
           Model( version, usefulItems, ex.map( _._1 ).distinct, mf, pw, ex, machines, cb, pp, ro )
 
-  private def itemClassesOf[P[_]: Traverse]( recipe: Recipe[P] ): Set[ClassName] =
+  private def itemClassesOf[P[_]: Traverse]( recipe: Recipe ): Set[ClassName[Item]] =
     recipe.itemsPerMinuteMap.keySet.map( _.className )
 
   private def validateTransports( gameTransports: Vector[LogisticsData] ): ValidatedNel[String, Vector[Transport]] =
     gameTransports
       .map:
         case LogisticsData( className, displayName, amountPerMinute ) =>
-          Transport( className, displayName, amountPerMinute )
+          Transport( className.translate, displayName, amountPerMinute )
       .validNel
 
   def initResourceOptions(
-      modelItems: Map[ClassName, GameItem],
+      modelItems: Map[ClassName[GameItem], GameItem],
       config: MapConfig
   ): Either[String, ResourceOptions] =
     config.resourceNodes
@@ -120,7 +114,7 @@ object ModelInit:
         _.toVector
           .traverse:
             case ( itemClass, distrib ) =>
-              modelItems.get( itemClass ).toValidNel( itemClass ).as( itemClass ).tupleRight( distrib )
+              modelItems.get( itemClass.translate ).toValidNel( itemClass ).as( itemClass ).tupleRight( distrib )
           .map( _.toMap )
       .map( ResourceOptions( _, ResourceWeights.default ) )
       .leftMap( _.mkString_( "Unknown items in resource nodes config: ", ", ", "" ) )
@@ -140,7 +134,7 @@ object ModelInit:
       case GameForm.Invalid => s"Invalid form for ${item.displayName} # ${item.className}".invalidNel
     ).map: form =>
       Item(
-        item.className,
+        item.className.translate,
         item.displayName,
         form,
         item.fuelValue,
@@ -150,11 +144,11 @@ object ModelInit:
   def validateRecipeItem(
       data: GameData,
       modelItems: ModelItems,
-      ccn: Countable[Double, ClassName]
+      ccn: Countable[Double, ClassName[GameItem]]
   ): ValidatedNel[String, Countable[Double, Item]] =
     (
       data.getItem( ccn.item ),
-      modelItems.get( ccn.item )
+      modelItems.get( ccn.item.translate )
     )
       .mapN: ( gameItem, item ) =>
         Countable( item, ccn.amount / gameItem.form.simpleAmountFactor )
@@ -162,14 +156,14 @@ object ModelInit:
   def validateRecipeItems[F[_]: Traverse](
       data: GameData,
       modelItems: ModelItems,
-      items: F[Countable[Double, ClassName]]
+      items: F[Countable[Double, ClassName[GameItem]]]
   ): ValidatedNel[String, F[Countable[Double, Item]]] =
     items.traverse( validateRecipeItem( data, modelItems, _ ) )
 
   def getExtractionRecipes(
       data: GameData,
       modelItems: ModelItems,
-      machines: Map[ClassName, ( Extractor, Machine )],
+      machines: Map[ClassName[Extractor], ( Extractor, Machine )],
       selfExtraction: Vector[GameRecipe]
   ): ValidatedNel[String, Vector[( Item, ResourcePurity, Recipe.Prod )]] =
     val ( miners, otherExtractors ) =
@@ -210,7 +204,7 @@ object ModelInit:
       .map( _.distinctBy( _.className ) )
       .andThen:
         _.traverse: item =>
-          modelItems.get( item.className ).tupleLeft( item )
+          modelItems.get( item.className.translate ).tupleLeft( item )
       .map: ores =>
         for
           ( extractor, machine ) <- converterExtractors
@@ -229,7 +223,7 @@ object ModelInit:
     yield ( resource, extractor, machine ) )
       .traverse:
         case ( resource, extractor, machine ) =>
-          ( data.getItem( resource ), modelItems.get( resource ) ).mapN( ( _, _, extractor, machine ) )
+          ( data.getItem( resource ), modelItems.get( resource.translate ) ).mapN( ( _, _, extractor, machine ) )
 
   def extractorMachine( extractor: Extractor ): Either[String, Machine] =
     ExtractorType.cases
@@ -237,7 +231,7 @@ object ModelInit:
       .toRight( s"No known extractor type for class ${extractor.className}, type ${extractor.extractorTypeName}" )
       .map( exType =>
         Machine(
-          extractor.className,
+          extractor.className.translate,
           extractor.displayName,
           MachineType( exType ),
           extractor.powerConsumption,
@@ -267,7 +261,7 @@ object ModelInit:
 
   def manufacturerMachine( manufacturer: Manufacturer ): Machine =
     Machine(
-      manufacturer.className,
+      manufacturer.className.translate,
       manufacturer.displayName,
       MachineType(
         if ( manufacturer.isCollider ) ManufacturerType.VariableManufacturer
@@ -277,7 +271,7 @@ object ModelInit:
       manufacturer.powerConsumptionExponent
     )
 
-  def validateManufacturer( data: GameData, className: ClassName ): ValidatedNel[String, Machine] =
+  def validateManufacturer( data: GameData, className: ClassName[Manufacturer] ): ValidatedNel[String, Machine] =
     data.manufacturers
       .get( className )
       .map( manufacturerMachine )
@@ -292,7 +286,7 @@ object ModelInit:
   def validateManufacturingRecipe(
       data: GameData,
       modelItems: ModelItems,
-      classification: Map[ClassName, RecipeCategory],
+      classification: Map[ClassName[GameRecipe], RecipeCategory],
       recipe: GameRecipe
   ): ValidatedNel[String, Option[Recipe.Prod]] =
     NonEmptyList
@@ -311,8 +305,8 @@ object ModelInit:
           validateRecipeItems( data, modelItems, recipe.ingredients ),
           validateRecipeItems( data, modelItems, recipe.products )
         ).mapN( ( cat, producer, ingredients, products ) =>
-          Recipe(
-            recipe.className,
+          Recipe.Prod(
+            recipe.className.translate,
             recipe.displayName,
             cat,
             ingredients,
@@ -328,9 +322,9 @@ object ModelInit:
     gameData.powerGenerators.values.toVector.foldMapA: generator =>
       generator.fuels.traverse: fuel =>
         (
-          modelItems.get( fuel.fuel ),
-          fuel.byproduct.traverse( _.traverse( modelItems.get ) ),
-          fuel.supplementalResource.traverse( modelItems.get )
+          modelItems.get( fuel.fuel.translate ),
+          fuel.byproduct.traverse( _.traverse( cn => modelItems.get( cn.translate ) ) ),
+          fuel.supplementalResource.traverse( cn => modelItems.get( cn.translate ) )
         ).mapN: ( f, bp, so ) =>
           val powerGenMW: Frac  = Frac.decimal( generator.powerProduction )
           val fuelValueMJ: Frac = Frac.decimal( f.fuelValue )
@@ -346,7 +340,7 @@ object ModelInit:
             bp.map( _.mapAmount( fAm.toDouble * _ ) ).toList,
             durMs.milliseconds,
             Machine(
-              generator.className,
+              generator.className.translate,
               generator.displayName,
               MachineType( ManufacturerType.Manufacturer ),
               0d,
