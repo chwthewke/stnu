@@ -11,13 +11,13 @@ import data.ImageName
 /**
  * Given a texture name and a version, get the path to the icon
  */
-opaque type IconIndex = Map[ClassName, ImageName]
+opaque type IconIndex = Map[ClassName[Any], ImageName]
 
 object IconIndex:
-  inline def apply( icons: Map[ClassName, ImageName] ): IconIndex = icons
+  inline def apply( icons: Map[ClassName[Any], ImageName] ): IconIndex = icons
   extension ( iconIndex: IconIndex )
-    def getIconPath( className: ClassName ): Option[ImageName] = iconIndex.get( className )
-    def icons: Map[ClassName, ImageName]                       = iconIndex
+    def getIconPath[A]( className: ClassName[A] ): Option[ImageName] = iconIndex.get( className )
+    def icons: Map[ClassName[Any], ImageName]                        = iconIndex
 
   given iconIndexShow: Show[IconIndex] = Show.show: index =>
     val contents: String =
@@ -31,5 +31,5 @@ object IconIndex:
        |  $contents
        |""".stripMargin
 
-  given Decoder[IconIndex] = Decoder[Map[ClassName, ImageName]]
-  given Encoder[IconIndex] = Encoder[Map[ClassName, ImageName]]
+  given Decoder[IconIndex] = Decoder[Map[ClassName[Any], ImageName]]
+  given Encoder[IconIndex] = Encoder[Map[ClassName[Any], ImageName]]

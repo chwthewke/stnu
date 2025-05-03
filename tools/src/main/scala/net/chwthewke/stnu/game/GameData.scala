@@ -8,32 +8,40 @@ import cats.syntax.all.*
 import io.circe.Decoder
 
 final case class GameData(
-    items: Map[ClassName, GameItem],
-    extractors: Map[ClassName, Extractor],
-    manufacturers: Map[ClassName, Manufacturer],
-    powerGenerators: Map[ClassName, PowerGenerator],
+    items: Map[ClassName[GameItem], GameItem],
+    extractors: Map[ClassName[Extractor], Extractor],
+    manufacturers: Map[ClassName[Manufacturer], Manufacturer],
+    powerGenerators: Map[ClassName[PowerGenerator], PowerGenerator],
     recipes: Vector[GameRecipe],
     schematics: Vector[Schematic],
     conveyorBelts: Vector[LogisticsData],
     pipelines: Vector[LogisticsData],
-    buildingDescriptors: Map[ClassName, BuildingDescriptor]
+    buildingDescriptors: Map[ClassName[BuildingDescriptor], BuildingDescriptor]
 ):
-  def getBuildingIcon( className: ClassName ): Option[IconData] =
-    className.buildingDescriptor
+  private def buildingDescriptor[A]( className: ClassName[A] ): Option[ClassName[BuildingDescriptor]] =
+    Option.when( className.name.startsWith( GameData.buildingPrefix ) )(
+      ClassName( GameData.descriptorPrefix + className.name.stripPrefix( GameData.buildingPrefix ) )
+    )
+
+  def getBuildingIcon[A]( className: ClassName[A] ): Option[IconData] =
+    buildingDescriptor( className )
       .flatMap( buildingDescriptors.get )
       .flatMap( _.smallIcon )
 
 object GameData:
+  private val buildingPrefix: String   = "Build_"
+  private val descriptorPrefix: String = "Desc_"
+
   private def init(
-      items: Map[ClassName, GameItem] = Map.empty,
-      extractors: Map[ClassName, Extractor] = Map.empty,
-      manufacturers: Map[ClassName, Manufacturer] = Map.empty,
+      items: Map[ClassName[GameItem], GameItem] = Map.empty,
+      extractors: Map[ClassName[Extractor], Extractor] = Map.empty,
+      manufacturers: Map[ClassName[Manufacturer], Manufacturer] = Map.empty,
       recipes: Vector[GameRecipe] = Vector.empty,
-      powerGenerators: Map[ClassName, PowerGenerator] = Map.empty,
+      powerGenerators: Map[ClassName[PowerGenerator], PowerGenerator] = Map.empty,
       schematics: Vector[Schematic] = Vector.empty,
       conveyorBelts: Vector[LogisticsData] = Vector.empty,
       pipelines: Vector[LogisticsData] = Vector.empty,
-      buildingDescriptors: Map[ClassName, BuildingDescriptor] = Map.empty
+      buildingDescriptors: Map[ClassName[BuildingDescriptor], BuildingDescriptor] = Map.empty
   ): GameData =
     GameData(
       items,
@@ -49,14 +57,15 @@ object GameData:
 
   val empty: GameData = init()
 
-  def items( items: Map[ClassName, GameItem] ): GameData                     = init( items = items )
-  def extractors( extractors: Map[ClassName, Extractor] ): GameData          = init( extractors = extractors )
-  def manufacturers( manufacturers: Map[ClassName, Manufacturer] ): GameData = init( manufacturers = manufacturers )
-  def recipes( recipes: Vector[GameRecipe] ): GameData                       = init( recipes = recipes )
-  def nuclearGenerators( generators: Map[ClassName, PowerGenerator] ): GameData =
+  def items( items: Map[ClassName[GameItem], GameItem] ): GameData             = init( items = items )
+  def extractors( extractors: Map[ClassName[Extractor], Extractor] ): GameData = init( extractors = extractors )
+  def manufacturers( manufacturers: Map[ClassName[Manufacturer], Manufacturer] ): GameData =
+    init( manufacturers = manufacturers )
+  def recipes( recipes: Vector[GameRecipe] ): GameData = init( recipes = recipes )
+  def nuclearGenerators( generators: Map[ClassName[PowerGenerator], PowerGenerator] ): GameData =
     init( powerGenerators = generators )
   def schematics( schematics: Vector[Schematic] ): GameData = init( schematics = schematics )
-  def buildingDescriptors( descriptors: Map[ClassName, BuildingDescriptor] ): GameData =
+  def buildingDescriptors( descriptors: Map[ClassName[BuildingDescriptor], BuildingDescriptor] ): GameData =
     init( buildingDescriptors = descriptors )
   def conveyorBelts( logisticsData: Vector[LogisticsData] ): GameData = init( conveyorBelts = logisticsData )
   def pipelines( logisticsData: Vector[LogisticsData] ): GameData     = init( pipelines = logisticsData )
@@ -79,7 +88,7 @@ object GameData:
 
   import Parsers.*
 
-  private def decodeMap[A]( dec: Decoder[A] )( f: A => ClassName ): Decoder[Map[ClassName, A]] =
+  private def decodeMap[K, A]( dec: Decoder[A] )( f: A => ClassName[K] ): Decoder[Map[ClassName[K], A]] =
     Decoder.decodeVector( dec ).map( _.fproductLeft( f ).to( Map ) )
 
   private def itemDecoder( nativeClass: NativeClass ): Decoder[GameItem] =
@@ -90,10 +99,10 @@ object GameData:
       "mEnergyValue",
       "mResourceSinkPoints",
       "mSmallIcon"
-    )( ( cn: ClassName, dn: String, fm: GameForm, ev: Double, pts: Option[Int], ico: IconData ) =>
+    )( ( cn: ClassName[GameItem], dn: String, fm: GameForm, ev: Double, pts: Option[Int], ico: IconData ) =>
       GameItem( cn, dn, fm, ev, pts.getOrElse( 0 ), ico, nativeClass )
     )(
-      Decoder[ClassName],
+      Decoder[ClassName[GameItem]],
       Decoder[String],
       Decoder[GameForm],
       Decoders.doubleStringDecoder,

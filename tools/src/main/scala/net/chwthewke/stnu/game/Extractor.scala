@@ -10,11 +10,11 @@ import mouse.option.*
 import scala.concurrent.duration.*
 
 final case class Extractor(
-    className: ClassName,
+    className: ClassName[Extractor],
     displayName: String,
     extractorTypeName: String,
     allowedResourceForms: List[GameForm],
-    allowedResources: Option[NonEmptyList[ClassName]],
+    allowedResources: Option[NonEmptyList[ClassName[GameItem]]],
     powerConsumption: Double,
     powerConsumptionExponent: Double,
     cycleTime: FiniteDuration,
@@ -23,19 +23,13 @@ final case class Extractor(
 
 object Extractor:
 
-  val converterClass: ClassName = ClassName( "Build_Converter_C" )
-
-  val waterExtractorClass: ClassName    = ClassName( "Build_WaterPump_C" )
-  val oilExtractorClass: ClassName      = ClassName( "Build_OilPump_C" )
-  val frackingExtractorClass: ClassName = ClassName( "Build_FrackingExtractor_C" )
-
   private def of(
-      cn: ClassName,
+      cn: ClassName[Extractor],
       dn: String,
       etn: String,
       arf: List[GameForm],
       fr: Boolean,
-      rf: List[ClassName],
+      rf: List[ClassName[GameItem]],
       pc: Double,
       pe: Double,
       ct: Double,
@@ -50,8 +44,10 @@ object Extractor:
     given Decoder[Double]              = Decoders.doubleStringDecoder
     given Decoder[Int]                 = Decoders.intStringDecoder
     given dlf: Decoder[List[GameForm]] = listOf( GameForm.parser ).decoder
-    given dlc: Decoder[List[ClassName]] = listOf( bpGeneratedClass ).decoder
-      .or( Decoder[String].ensure( _.isEmpty, "Cannot decode allowed resources" ).as( List.empty[ClassName] ) )
+    given dlc: Decoder[List[ClassName[GameItem]]] = listOf( bpGeneratedClass ).decoder
+      .or(
+        Decoder[String].ensure( _.isEmpty, "Cannot decode allowed resources" ).as( List.empty[ClassName[GameItem]] )
+      )
 
     Decoder.forProduct10(
       "ClassName",

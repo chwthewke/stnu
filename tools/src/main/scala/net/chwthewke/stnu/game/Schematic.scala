@@ -11,14 +11,14 @@ import io.circe.Decoder
 import data.Countable
 
 case class Schematic(
-    className: ClassName,
+    className: ClassName[Schematic],
     displayName: String,
     `type`: SchematicType,
-    cost: Vector[Countable[Double, ClassName]],
+    cost: Vector[Countable[Double, ClassName[GameItem]]],
     techTier: Int,
     requireAllDependencies: Boolean,
-    schematicDependencies: Vector[ClassName /*Schematic*/ ],
-    unlocks: Vector[ClassName /*Recipe*/ ]
+    schematicDependencies: Vector[ClassName[Schematic]],
+    unlocks: Vector[ClassName[GameRecipe]]
 )
 
 object Schematic:
@@ -36,33 +36,36 @@ object Schematic:
 
   import Parsers.*
 
-  private val schematicDependencyClass: ClassName = ClassName( "BP_SchematicPurchasedDependency_C" )
+  private val schematicDependencyClass: ClassName[Any] = ClassName( "BP_SchematicPurchasedDependency_C" )
 
-  private val recipeUnlockClass: ClassName = ClassName( "BP_UnlockRecipe_C" )
+  private val recipeUnlockClass: ClassName[Any] = ClassName( "BP_UnlockRecipe_C" )
 
-  private val itemCostParser: Parser0[Vector[Countable[Double, ClassName]]] =
+  private val itemCostParser: Parser0[Vector[Countable[Double, ClassName[GameItem]]]] =
     Parsers.countableList.map( _.toList.toVector )
 
-  private val itemCostDecoder: Decoder[Vector[Countable[Double, ClassName]]] =
+  private val itemCostDecoder: Decoder[Vector[Countable[Double, ClassName[GameItem]]]] =
     itemCostParser.decoder.orElse( Decoder.const( Vector.empty ) )
 
-  private val classListParser: Parser0[Vector[ClassName]] =
+  private def classListParser[A]: Parser0[Vector[ClassName[A]]] =
     Parsers.bpGeneratedClassList | Parser.pure( Vector.empty )
 
-  private def classListDecoder( matchingClass: ClassName, classListField: String ): Decoder[Option[Vector[ClassName]]] =
+  private def classListDecoder[A](
+      matchingClass: ClassName[Any],
+      classListField: String
+  ): Decoder[Option[Vector[ClassName[A]]]] =
     Decoder.instance: hc =>
       OptionT
-        .liftF( hc.get[ClassName]( "Class" ) )
+        .liftF( hc.get[ClassName[Any]]( "Class" ) )
         .filter( _ == matchingClass )
         .flatMapF( _ =>
-          hc.get[Option[Vector[ClassName]]]( classListField )( Decoder.decodeOption( classListParser.decoder ) )
+          hc.get[Option[Vector[ClassName[A]]]]( classListField )( Decoder.decodeOption( classListParser.decoder ) )
         )
         .value
 
-  private val dependenciesDecoder: Decoder[( Vector[ClassName], Boolean )] =
+  private val dependenciesDecoder: Decoder[( Vector[ClassName[Schematic]], Boolean )] =
     Decoder
       .decodeVector(
-        OptionT( classListDecoder( schematicDependencyClass, "mSchematics" ) )
+        OptionT( classListDecoder[Schematic]( schematicDependencyClass, "mSchematics" ) )
           .semiflatMap( d =>
             Parsers.booleanString.decoder
               .prepare( _.downField( "mRequireAllSchematicsToBePurchased" ) )
@@ -78,14 +81,14 @@ object Schematic:
           Right( depBlocks.headOption.getOrElse( ( Vector.empty, false ) ) )
       )
 
-  private val unlocksDecoder: Decoder[Vector[ClassName]] =
+  private val unlocksDecoder: Decoder[Vector[ClassName[GameRecipe]]] =
     Decoder
-      .decodeVector( classListDecoder( recipeUnlockClass, "mRecipes" ) )
+      .decodeVector( classListDecoder[GameRecipe]( recipeUnlockClass, "mRecipes" ) )
       .map( v => v.mapFilter( identity ).combineAll )
 
   given Decoder[Schematic] = Decoder.instance: hc =>
     (
-      hc.get[ClassName]( "ClassName" ),
+      hc.get[ClassName[Schematic]]( "ClassName" ),
       hc.get[String]( "mDisplayName" ),
       hc.get[SchematicType]( "mType" ),
       hc.get( "mCost" )( itemCostDecoder ),

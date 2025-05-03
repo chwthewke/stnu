@@ -8,7 +8,7 @@ import io.circe.derivation.ConfiguredDecoder
 import io.circe.derivation.ConfiguredEncoder
 
 case class Item(
-    className: ClassName,
+    className: ClassName[Item],
     displayName: String,
     form: Form,
     fuelValue: Double,

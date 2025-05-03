@@ -20,12 +20,12 @@ import data.Countable
 
 case class Model(
     version: ModelVersion,
-    items: SortedMap[ClassName, Item],
+    items: SortedMap[ClassName[Item], Item],
     extractedItems: Vector[Item],
     manufacturingRecipes: Vector[Recipe.Prod],
     powerRecipes: Vector[Recipe.PowerGen],
     extractionRecipes: Vector[( Item, ResourcePurity, Recipe.Prod )],
-    machines: SortedMap[ClassName, Machine],
+    machines: SortedMap[ClassName[Machine], Machine],
     conveyorBelts: Vector[Transport],
     pipelines: Vector[Transport],
     defaultResourceOptions: ResourceOptions
@@ -53,28 +53,29 @@ object Model:
   private given Encoder[FiniteDuration] = Encoder[Long].contramap( _.toMillis )
 
   private object Types:
-    opaque type Index = ( Map[ClassName, Item], Map[ClassName, Machine] )
+    opaque type Index = ( Map[ClassName[Item], Item], Map[ClassName[Machine], Machine] )
     object Index:
-      def apply( items: Map[ClassName, Item], machines: Map[ClassName, Machine] ): Index = ( items, machines )
+      def apply( items: Map[ClassName[Item], Item], machines: Map[ClassName[Machine], Machine] ): Index =
+        ( items, machines )
       extension ( index: Index )
-        def item( className: ClassName ): ValidatedNel[String, Item] =
+        def item( className: ClassName[Item] ): ValidatedNel[String, Item] =
           index._1.get( className ).toValidNel( show"No such item class $className" )
-        def machine( className: ClassName ): ValidatedNel[String, Machine] =
+        def machine( className: ClassName[Machine] ): ValidatedNel[String, Machine] =
           index._2.get( className ).toValidNel( show"No such machine class $className" )
 
-      def item( className: ClassName ): ReaderT[ValidatedNel[String, *], Types.Index, Item] =
+      def item( className: ClassName[Item] ): ReaderT[ValidatedNel[String, *], Types.Index, Item] =
         ReaderT( index => index.item( className ) )
-      def machine( className: ClassName ): ReaderT[ValidatedNel[String, *], Types.Index, Machine] =
+      def machine( className: ClassName[Machine] ): ReaderT[ValidatedNel[String, *], Types.Index, Machine] =
         ReaderT( index => index.machine( className ) )
 
   private case class CompactRecipe(
-      className: ClassName,
+      className: ClassName[Recipe],
       displayName: String,
       category: RecipeCategory,
-      ingredients: List[Countable[Double, ClassName]],
-      products: List[Countable[Double, ClassName]],
+      ingredients: List[Countable[Double, ClassName[Item]]],
+      products: List[Countable[Double, ClassName[Item]]],
       duration: FiniteDuration,
-      producedIn: ClassName,
+      producedIn: ClassName[Machine],
       power: Power
   ) derives Show,
         ConfiguredDecoder,
@@ -88,7 +89,7 @@ object Model:
             _.traverse( _.traverse( index.item ) )
         ,
         index.machine( producedIn )
-      ).mapN( Recipe( className, displayName, category, _, _, duration, _, power ) )
+      ).mapN( Recipe.Prod( className.narrow[Recipe.Prod], displayName, category, _, _, duration, _, power ) )
 
     def powerGen: ReaderT[ValidatedNel[String, *], Types.Index, Recipe.PowerGen] =
       ReaderT: index =>
@@ -96,10 +97,10 @@ object Model:
           ingredients.traverse( _.traverse( index.item ) ),
           products.traverse( _.traverse( index.item ) ),
           index.machine( producedIn )
-        ).mapN( Recipe( className, displayName, category, _, _, duration, _, power ) )
+        ).mapN( Recipe.PowerGen( className.narrow[Recipe.PowerGen], displayName, category, _, _, duration, _, power ) )
 
   private object CompactRecipe:
-    def of[P[_]: Traverse]( recipe: Recipe[P] ): CompactRecipe =
+    def of( recipe: Recipe )( using Traverse[recipe.P] ): CompactRecipe =
       CompactRecipe(
         recipe.className,
         recipe.displayName,
@@ -114,10 +115,10 @@ object Model:
   private case class Compact(
       version: ModelVersion,
       items: Vector[Item],
-      extractedItems: Vector[ClassName],
+      extractedItems: Vector[ClassName[Item]],
       manufacturingRecipes: Vector[CompactRecipe],
       powerRecipes: Vector[CompactRecipe],
-      extractionRecipes: Vector[( ClassName, ResourcePurity, CompactRecipe )],
+      extractionRecipes: Vector[( ClassName[Item], ResourcePurity, CompactRecipe )],
       machines: Vector[Machine],
       conveyorBelts: Vector[Transport],
       pipelines: Vector[Transport],
@@ -126,8 +127,8 @@ object Model:
         ConfiguredDecoder,
         ConfiguredEncoder:
     def model: Either[String, Model] =
-      val itemsMap: SortedMap[ClassName, Item]       = items.fproductLeft( _.className ).to( SortedMap )
-      val machinesMap: SortedMap[ClassName, Machine] = machines.fproductLeft( _.className ).to( SortedMap )
+      val itemsMap: SortedMap[ClassName[Item], Item]          = items.fproductLeft( _.className ).to( SortedMap )
+      val machinesMap: SortedMap[ClassName[Machine], Machine] = machines.fproductLeft( _.className ).to( SortedMap )
       (
         ReaderT( ( index: Types.Index ) => extractedItems.traverse( index.item ) ),
         manufacturingRecipes.traverse( _.prod ),
