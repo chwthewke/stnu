@@ -1,9 +1,12 @@
 package net.chwthewke.stnu
 package spa
 
+import cats.effect.Async
 import cats.effect.IO
 import org.http4s.Uri
 import org.http4s.circe.CirceEntityDecoder.*
+import org.http4s.client.Client
+import org.http4s.client.Middleware
 import org.http4s.dom.FetchClientBuilder
 import scala.scalajs.js.annotation.JSExportTopLevel
 import tyrian.Cmd
@@ -15,9 +18,19 @@ import tyrian.syntax.*
 
 import css.Bulma
 import model.Model as GameModel
+import protocol.game.ModelApi
 
 // shims
-case class Model( backend: Uri, game: Option[GameModel] )
+case class Model( http: Http, game: Option[GameModel] )
+
+case class Http( backend: Uri ):
+  def middleware[F[_]: Async]: Middleware[F] = client =>
+    val slashed: Uri = backend.withPath( backend.path.addEndsWithSlash )
+    Client[F]( req => client.run( req.withUri( slashed.resolve( req.uri ) ) ) )
+
+  def client[F[_]: Async]: Client[F] =
+    middleware[F]( FetchClientBuilder[F].create )
+
 sealed trait Msg
 object Msg:
   case object Noop                             extends Msg
@@ -30,7 +43,7 @@ object Main extends TyrianIOApp[Msg, Model]:
   override def router: Location => Msg = _ => Msg.Noop
 
   override def init( flags: Map[String, String] ): ( Model, Cmd[IO, Msg] ) =
-    val model = Model( Uri.unsafeFromString( flags( "backend" ) ), None )
+    val model = Model( Http( Uri.unsafeFromString( flags( "backend" ) ) ), None )
     ( model, fetchGameModel( model ) )
 
   override def update( model: Model ): Msg => ( Model, Cmd[IO, Msg] ) =
@@ -44,7 +57,7 @@ object Main extends TyrianIOApp[Msg, Model]:
           Html.p( Html.text( "Tyrian app started" ) )
         ),
         Html.div( bc( bp.messageBody ) )(
-          Html.p( Html.text( s"Backend @ ${model.backend.renderString}" ) ),
+          Html.p( Html.text( s"Backend @ ${model.http.backend.renderString}" ) ),
           model.game
             .map( gm =>
               Html.p(
@@ -62,7 +75,8 @@ object Main extends TyrianIOApp[Msg, Model]:
 
   private def fetchGameModel( model: Model ): Cmd[IO, Msg] =
     Cmd.Run(
-      FetchClientBuilder[IO].create
-        .expect[GameModel]( ( model.backend / "api" / "model" / "latest" ).renderString ),
+      model.http
+        .client[IO]
+        .expect[GameModel]( ModelApi.getLatestModel() ),
       Msg.RecvGameModel( _ )
     )
