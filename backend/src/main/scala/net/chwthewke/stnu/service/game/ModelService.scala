@@ -10,6 +10,7 @@ import cats.syntax.all.*
 import org.http4s.HttpRoutes
 import org.http4s.Method.GET
 import org.http4s.circe.CirceEntityEncoder.*
+import scala.collection.immutable.SortedSet
 
 import model.Model
 import model.ModelIndex
@@ -25,20 +26,25 @@ class ModelService[F[_]: Monad](
   def getModelIndex: F[ModelIndex] = index.pure[F]
 
   def getModel( version: ModelVersionId ): OptionT[F, Model] =
-    OptionT.fromOption[F]( models( version ) )
+    OptionT.fromOption[F]( models( version ).map( _.masked ) )
 
-  def getLatestModel: F[Model] = models.last._2.pure[F]
+  def getLatestModel: F[Model] = models.last._2.masked.pure[F]
 
   val routes: HttpRoutes[F] =
     import ModelService.*
-    HttpRoutes.of {
+    HttpRoutes.of:
       case GET -> MA.getModelIndex()  => Ok( getModelIndex )
       case GET -> MA.getModel( id )   => getModel( id ).cataF( NotFound(), Ok( _ ) )
       case GET -> MA.getLatestModel() => Ok( getLatestModel )
-    }
 
 object ModelService:
   val MA: ModelApi.type = ModelApi
+
+  def apply[F[_]: Monad]( models: NonEmptyMap[ModelVersionId, Model] ): ModelService[F] =
+    new ModelService[F](
+      ModelIndex( models.toList.map( _.version ).to( SortedSet ) ),
+      models
+    )
 
   def load[F[_]: Sync]: F[ModelService[F]] =
     for

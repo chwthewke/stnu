@@ -115,7 +115,8 @@ val `stnu-backend`: Project = project
     pureconfigFs2,
     pureconfigIp4s,
     pureconfigHttp4s,
-    logging
+    logging,
+    ojAlgo
   )
 
 val backendRunnerSettings: Seq[Def.Setting[_]] = Seq(

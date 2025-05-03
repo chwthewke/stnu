@@ -19,6 +19,7 @@ sealed trait Recipe:
   def category: RecipeCategory
   def ingredients: List[Countable[Double, Item]]
   def products: P[Countable[Double, Item]]
+  def productsList: List[Countable[Double, Item]]
   def duration: FiniteDuration
   def producedIn: Machine
   def power: Power
@@ -69,6 +70,8 @@ object Recipe:
   ) extends Recipe:
     type P[a] = NonEmptyList[a]
 
+    override def productsList: List[Countable[Double, Item]] = products.toList
+
   object Prod:
     given Show[Recipe.Prod] = Show.show( showRecipe )
 
@@ -83,6 +86,8 @@ object Recipe:
       power: Power
   ) extends Recipe:
     type P[a] = List[a]
+
+    override def productsList: List[Countable[Double, Item]] = products
 
   object PowerGen:
     given Show[Recipe.PowerGen] = Show.show( showRecipe )

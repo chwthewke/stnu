@@ -27,6 +27,8 @@
 ### data-tools
 
 ## features
+- ~~linear programming solver~~
+- fix ficsmas (find the gift extractor)
 
 ### data-tools
 - ~~load GameData~~
