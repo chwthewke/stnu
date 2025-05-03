@@ -2,29 +2,44 @@ package net.chwthewke.stnu
 package service
 package game
 
-import cats.Applicative
+import cats.Monad
 import cats.data.NonEmptyMap
 import cats.data.OptionT
 import cats.effect.Sync
 import cats.syntax.all.*
+import org.http4s.HttpRoutes
+import org.http4s.Method.GET
+import org.http4s.circe.CirceEntityEncoder.*
 
 import model.Model
 import model.ModelIndex
-import server.api.ModelApi
+import protocol.game.ModelApi
+import protocol.codec.UriCodec
 
-class ModelService[F[_]: Applicative](
+class ModelService[F[_]: Monad](
     private val index: ModelIndex,
-    private val models: NonEmptyMap[Int, Model]
-) extends ModelApi[F]:
-  def getModelIndex: F[ModelIndex] =
-    index.pure[F]
+    private val models: NonEmptyMap[ModelVersionId, Model]
+) extends ModelApi[F]
+    with UriCodec.Dsl[F]:
 
-  def getModel( version: Int ): OptionT[F, Model] =
-    OptionT.fromOption[F]( models.get( version ) )
+  def getModelIndex: F[ModelIndex] = index.pure[F]
+
+  def getModel( version: ModelVersionId ): OptionT[F, Model] =
+    OptionT.fromOption[F]( models( version ) )
 
   def getLatestModel: F[Model] = models.last._2.pure[F]
 
+  val routes: HttpRoutes[F] =
+    import ModelService.*
+    HttpRoutes.of {
+      case GET -> MA.getModelIndex()  => Ok( getModelIndex )
+      case GET -> MA.getModel( id )   => getModel( id ).cataF( NotFound(), Ok( _ ) )
+      case GET -> MA.getLatestModel() => Ok( getLatestModel )
+    }
+
 object ModelService:
+  val MA: ModelApi.type = ModelApi
+
   def load[F[_]: Sync]: F[ModelService[F]] =
     for
       modelIndex <- assets.loadModelIndex[F]
