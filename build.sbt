@@ -84,6 +84,7 @@ val `stnu-protocol-cross`: CrossProject =
     .enablePlugins( Scalac )
     .settings( sharedSettings )
     .settings( name := "stnu-protocol" )
+    .settings( http4sCore, http4sDsl )
     .dependsOn( `stnu-core-cross` )
 
 val `stnu-protocol-jvm`: Project = `stnu-protocol-cross`.jvm
