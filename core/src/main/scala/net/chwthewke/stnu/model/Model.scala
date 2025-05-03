@@ -14,6 +14,7 @@ import io.circe.Encoder
 import io.circe.derivation.ConfiguredDecoder
 import io.circe.derivation.ConfiguredEncoder
 import scala.collection.immutable.SortedMap
+import scala.collection.immutable.SortedSet
 import scala.concurrent.duration.*
 
 import data.Countable
@@ -29,9 +30,53 @@ case class Model(
     conveyorBelts: Vector[Transport],
     pipelines: Vector[Transport],
     defaultResourceOptions: ResourceOptions
-)
+):
+  lazy val recipes: Map[ClassName[Recipe], Recipe] =
+    ( manufacturingRecipes ++ powerRecipes ++ extractionRecipes.map( _._3 ) ).fproductLeft( _.className ).toMap
+
+  lazy val masked: Model = Model.maskExcluded( this )
 
 object Model:
+  private val excludedProducts: Vector[String] =
+    Vector(
+      "biofuel",
+      "gas nobelisk",
+      "biomass",
+      "ficsmas",
+      "snow",
+      "fireworks",
+      "candy",
+      "alien protein",
+      "alien dna"
+    )
+
+  private def maskExcluded( model: Model ): Model =
+    val excludedItems: SortedSet[ClassName[Item]] =
+      model.items
+        .filter:
+          case ( cn, item ) =>
+            excludedProducts.exists( item.displayName.toLowerCase.contains ) &&
+            !model.extractedItems.exists( _.className == cn )
+        .keySet
+    def exludeRecipe( recipe: Recipe ): Boolean =
+      recipe.itemsPerMinute.exists( ci => excludedItems.contains( ci.item.className ) )
+    val allowedManufacturingRecipes: Vector[Recipe.Prod] =
+      model.manufacturingRecipes.filterNot( exludeRecipe )
+    val allowedPowerRecipes: Vector[Recipe.PowerGen] =
+      model.powerRecipes.filterNot( exludeRecipe )
+
+    Model(
+      model.version,
+      model.items.removedAll( excludedItems ),
+      model.extractedItems,
+      allowedManufacturingRecipes,
+      allowedPowerRecipes,
+      model.extractionRecipes,
+      model.machines,
+      model.conveyorBelts,
+      model.pipelines,
+      model.defaultResourceOptions
+    )
 
   given Show[Model] = Show.show: model =>
     show"""Manufacturing Recipes

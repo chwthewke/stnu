@@ -74,6 +74,8 @@ object Dependencies extends AutoPlugin {
       "org.typelevel" %% "log4cats-slf4j"  % "2.7.0"
     )
 
+    val ojAlgo: Deps = libraryDependencies += "org.ojalgo" % "ojalgo" % "55.2.0"
+
     val tyrian: Deps    = libraryDependencies += "io.indigoengine" %%% "tyrian-io"  % "0.13.0"
     val http4sDom: Deps = libraryDependencies += "org.http4s"      %%% "http4s-dom" % "0.2.8"
 
