@@ -6,7 +6,7 @@ import cats.derived.strict.*
 import io.circe.Decoder
 
 case class LogisticsData(
-    className: ClassName,
+    className: ClassName[LogisticsData],
     displayName: String,
     amountPerMinute: Int
 ) derives Show
@@ -16,7 +16,7 @@ object LogisticsData:
 
   opaque type ConveyorBelt = LogisticsData
   object ConveyorBelt:
-    inline def apply( className: ClassName, displayName: String, speed: Double ): ConveyorBelt =
+    inline def apply( className: ClassName[LogisticsData], displayName: String, speed: Double ): ConveyorBelt =
       LogisticsData( className, displayName, ( speed / 2 ).toInt )
     extension ( self: ConveyorBelt ) def data: LogisticsData = self
 
@@ -25,7 +25,7 @@ object LogisticsData:
 
   opaque type Pipeline = LogisticsData
   object Pipeline:
-    inline def apply( className: ClassName, displayName: String, flowLimit: Double ): Pipeline =
+    inline def apply( className: ClassName[LogisticsData], displayName: String, flowLimit: Double ): Pipeline =
       LogisticsData( className, displayName, flowLimit.toInt * 60 )
     extension ( self: Pipeline ) def data: LogisticsData = self
 

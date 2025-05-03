@@ -9,9 +9,10 @@ import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto.deriveReader
 
 import model.ExtractorType
+import model.Item
 import model.ResourceDistrib
 
-case class MapConfig( resourceNodes: Map[ExtractorType, Map[ClassName, ResourceDistrib]] ) derives Show
+case class MapConfig( resourceNodes: Map[ExtractorType, Map[ClassName[Item], ResourceDistrib]] ) derives Show
 
 object MapConfig:
   private given ConfigReader[ResourceDistrib] =
@@ -36,7 +37,7 @@ object MapConfig:
         .map( _.toMap )
     )
 
-  private given crmca[A: ConfigReader]: ConfigReader[Map[ClassName, A]] =
+  private given crmca[A: ConfigReader]: ConfigReader[Map[ClassName[Item], A]] =
     ConfigReader[Map[String, A]].map( _.map:
       case ( k, v ) => ( ClassName( k ), v ) )
 

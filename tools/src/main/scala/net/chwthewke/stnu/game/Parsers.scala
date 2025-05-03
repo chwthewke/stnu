@@ -21,45 +21,45 @@ object Parsers:
 
   private val bpNoSep: Parser[Char] = Parser.charWhere( c => !bpSep.contains( c ) ).withContext( "bpNoSep" )
 
-  private val classCore: Parser[ClassName] =
+  private def classCore[A]: Parser[ClassName[A]] =
     bpNoSep.rep.string.repSep( Parser.char( '/' ) ).void *> Parser.char( '.' ) *>
       bpNoSep.rep.string.map( ClassName( _ ) )
 
-  val oldBpGeneratedClass: Parser[ClassName] =
+  def oldBpGeneratedClass[A]: Parser[ClassName[A]] =
     Parser.string( "/Script/Engine." ).?.void.with1 *>
       Parser.string( """BlueprintGeneratedClass'"/Game/FactoryGame/""" ).void *>
       classCore <*
       Parser.string( """"'""" )
 
-  val newBpGeneratedClass: Parser[ClassName] =
+  def newBpGeneratedClass[A]: Parser[ClassName[A]] =
     Parser.string( """"/Script/Engine.BlueprintGeneratedClass'/Game/FactoryGame/""" ).void *>
       classCore <* Parser.string( """'"""" )
 
-  val bpGeneratedClass: Parser[ClassName] =
+  def bpGeneratedClass[A]: Parser[ClassName[A]] =
     ( newBpGeneratedClass.backtrack | oldBpGeneratedClass ).withContext( "bpGeneratedClass" )
 
-  val bpGeneratedClassList: Parser[Vector[ClassName]] =
+  def bpGeneratedClassList[A]: Parser[Vector[ClassName[A]]] =
     listOf1( bpGeneratedClass ).map( _.toList.toVector )
 
-  val manufacturerClass: Parser[ClassName] =
-    val classNameParser: Parser[ClassName] = Parser.char( '/' ) *> classCore
+  val manufacturerClass: Parser[ClassName[Manufacturer]] =
+    val classNameParser: Parser[ClassName[Manufacturer]] = Parser.char( '/' ) *> classCore
     classNameParser.surroundedBy( Parser.char( '"' ) ) | classNameParser
 
-  val manufacturerClassList: Parser0[List[ClassName]] =
+  val manufacturerClassList: Parser0[List[ClassName[Manufacturer]]] =
     ( Parser.char( '(' ) *> manufacturerClass.repSep( Parser.char( ',' ) ) <* Parser.char( ')' ) ).map( _.toList ) |
       Parser.pure( Nil )
 
-  val countable: Parser[Countable[Double, ClassName]] =
+  val countable: Parser[Countable[Double, ClassName[GameItem]]] =
     ( ( Parser.string( "(ItemClass=" ) *> bpGeneratedClass <* Parser.string( ",Amount=" ) ) ~
       Numbers.jsonNumber.mapFilter( _.toDoubleOption ) <*
       Parser.char( ')' ) )
-      .map( Countable.apply[Double, ClassName].tupled )
+      .map( Countable.apply[Double, ClassName[GameItem]].tupled )
 
-  val countableList: Parser[NonEmptyList[Countable[Double, ClassName]]] =
+  val countableList: Parser[NonEmptyList[Countable[Double, ClassName[GameItem]]]] =
     Parser.char( '(' ) *> countable.repSep( Parser.char( ',' ) ) <* Parser.char( ')' )
 
-  val countableListOrEmpty: Parser0[List[Countable[Double, ClassName]]] =
-    countableList.map( _.toList ) | Parser.pure( Nil )
+  val countableListOrEmpty: Parser0[List[Countable[Double, ClassName[GameItem]]]] =
+    countableList.map( _.toList ) | Parser.pure( List.empty[Countable[Double, ClassName[GameItem]]] )
 
   val texture2d: Parser[IconData] =
     ( Parser.string( "Texture2D " ) *>

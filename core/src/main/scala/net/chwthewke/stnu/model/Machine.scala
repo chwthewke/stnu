@@ -7,7 +7,7 @@ import io.circe.derivation.ConfiguredDecoder
 import io.circe.derivation.ConfiguredEncoder
 
 case class Machine(
-    className: ClassName,
+    className: ClassName[Machine],
     displayName: String,
     machineType: MachineType,
     powerConsumption: Double,

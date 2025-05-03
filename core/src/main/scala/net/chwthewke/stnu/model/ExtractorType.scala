@@ -3,7 +3,7 @@ package model
 
 enum ExtractorType(
     val description: String,
-    val dataKey: Either[String, ClassName]
+    val dataKey: Either[String, ClassName[Machine]]
 ):
 
   case Miner     extends ExtractorType( "miner", Left( "Miner" ) )
@@ -16,6 +16,6 @@ object ExtractorType
     with CatsEnum[ExtractorType]
     with OrderEnum[ExtractorType]
     with CirceEnum[ExtractorType]:
-  private def waterExtractorClass: ClassName    = ClassName( "Build_WaterPump_C" )
-  private def oilExtractorClass: ClassName      = ClassName( "Build_OilPump_C" )
-  private def frackingExtractorClass: ClassName = ClassName( "Build_FrackingExtractor_C" )
+  private def waterExtractorClass: ClassName[Machine]    = ClassName( "Build_WaterPump_C" )
+  private def oilExtractorClass: ClassName[Machine]      = ClassName( "Build_OilPump_C" )
+  private def frackingExtractorClass: ClassName[Machine] = ClassName( "Build_FrackingExtractor_C" )

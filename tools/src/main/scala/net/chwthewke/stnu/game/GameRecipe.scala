@@ -10,12 +10,12 @@ import scala.concurrent.duration.*
 import data.Countable
 
 case class GameRecipe(
-    className: ClassName,
+    className: ClassName[GameRecipe],
     displayName: String,
-    ingredients: List[Countable[Double, ClassName]],
-    products: NonEmptyList[Countable[Double, ClassName]],
+    ingredients: List[Countable[Double, ClassName[GameItem]]],
+    products: NonEmptyList[Countable[Double, ClassName[GameItem]]],
     duration: FiniteDuration,
-    producedIn: List[ClassName],
+    producedIn: List[ClassName[Manufacturer]],
     variablePowerMin: Double,
     variablePowerRange: Double
 ):
@@ -38,17 +38,17 @@ object GameRecipe:
       "mVariablePowerConsumptionFactor"
     )(
       (
-          cn: ClassName,
+          cn: ClassName[GameRecipe],
           dn: String,
-          in: List[Countable[Double, ClassName]],
-          out: NonEmptyList[Countable[Double, ClassName]],
+          in: List[Countable[Double, ClassName[GameItem]]],
+          out: NonEmptyList[Countable[Double, ClassName[GameItem]]],
           dur: FiniteDuration,
-          mch: List[ClassName],
+          mch: List[ClassName[Manufacturer]],
           pmin: Double,
           prg: Double
       ) => GameRecipe( cn, dn, in, out, dur, mch, pmin, prg )
     )(
-      Decoder[ClassName],
+      Decoder[ClassName[GameRecipe]],
       Decoder[String],
       countableListOrEmpty.decoder,
       countableList.decoder,

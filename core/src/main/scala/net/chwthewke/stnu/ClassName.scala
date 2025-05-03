@@ -7,22 +7,19 @@ import io.circe.Encoder
 import io.circe.KeyDecoder
 import io.circe.KeyEncoder
 
-opaque type ClassName = String
+opaque type ClassName[+A] = String
 
 object ClassName:
-  inline def apply( name: String ): ClassName = name
-  extension ( className: ClassName )
-    def name: String = className
-    def buildingDescriptor: Option[ClassName] =
-      Option.when( name.startsWith( buildingPrefix ) )( descriptorPrefix + name.stripPrefix( buildingPrefix ) )
+  inline def apply[A]( name: String ): ClassName[A] = name
+  extension [A]( className: ClassName[A] )
+    def name: String            = className
+    def narrow[B]: ClassName[B] = className
 
-  private val buildingPrefix: String   = "Build_"
-  private val descriptorPrefix: String = "Desc_"
 
-  given Show[ClassName]       = Show[String]
-  given Order[ClassName]      = Order[String]
-  given Ordering[ClassName]   = Order.catsKernelOrderingForOrder
-  given Decoder[ClassName]    = Decoder[String]
-  given Encoder[ClassName]    = Encoder[String]
-  given KeyDecoder[ClassName] = KeyDecoder[String]
-  given KeyEncoder[ClassName] = KeyEncoder[String]
+  given [A] => Show[ClassName[A]]       = Show[String]
+  given [A] => Order[ClassName[A]]      = Order[String]
+  given [A] => Ordering[ClassName[A]]   = Order.catsKernelOrderingForOrder
+  given [A] => Decoder[ClassName[A]]    = Decoder[String]
+  given [A] => Encoder[ClassName[A]]    = Encoder[String]
+  given [A] => KeyDecoder[ClassName[A]] = KeyDecoder[String]
+  given [A] => KeyEncoder[ClassName[A]] = KeyEncoder[String]

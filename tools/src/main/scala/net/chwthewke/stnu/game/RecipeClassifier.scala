@@ -8,9 +8,11 @@ import cats.Show
 import cats.Traverse
 import cats.data.Nested
 import cats.data.NonEmptyVector
+import cats.derived.strict.*
 import cats.syntax.all.*
 import mouse.option.*
 import scala.annotation.tailrec
+import scala.collection.immutable.SortedMap
 
 import model.RecipeCategory
 import model.ResearchCategory
@@ -18,17 +20,17 @@ import model.Tier
 
 case class RecipeClassifier( data: GameData ):
 
-  def classifyRecipes: Map[ClassName, RecipeCategory] = MilestoneAnalyzer.init.run
+  def classifyRecipes: Map[ClassName[GameRecipe], RecipeCategory] = MilestoneAnalyzer.init.run
 
   import RecipeClassifier.*
 
   class MilestoneAnalyzer(
       val manufacturingRecipes: Vector[GameRecipe],
-      val recipeSchematics: Map[ClassName /*GameRecipe*/, Schematic],
-      val schematicDependencies: Map[ClassName /*Schematic*/, AllOf[Schematic]],
-      val alternateUnlocks: Map[ClassName /*Schematic*/, GameRecipe],
-      val baseRecipes: Map[ClassName /*Item*/, GameRecipe],
-      val manufacturerSchematics: Map[ClassName /*Manufacturer*/, Schematic]
+      val recipeSchematics: Map[ClassName[GameRecipe], Schematic],
+      val schematicDependencies: Map[ClassName[Schematic], AllOf[Schematic]],
+      val alternateUnlocks: Map[ClassName[Schematic], GameRecipe],
+      val baseRecipes: Map[ClassName[GameItem], GameRecipe],
+      val manufacturerSchematics: Map[ClassName[Manufacturer], Schematic]
   ):
 
     private def findBaseRecipe( altRecipeSchematic: Schematic ): AllOf[AnalysisItem] =
@@ -36,7 +38,7 @@ case class RecipeClassifier( data: GameData ):
         .get( altRecipeSchematic.className )
         .foldMap( altRecipe => findItemBaseRecipe( altRecipe.products.head.item ) )
 
-    def findItemBaseRecipe( itemClass: ClassName ): AllOf[AnalysisItem] =
+    def findItemBaseRecipe( itemClass: ClassName[GameItem] ): AllOf[AnalysisItem] =
       baseRecipes
         .get( itemClass )
         .map( r => AllOf( Vector( OneOf( Vector( AnalysisItem.OfRecipe( r ) ) ) ) ) )
@@ -82,51 +84,53 @@ case class RecipeClassifier( data: GameData ):
       override def combine( x: Boolean, y: Boolean ): Boolean = x || y
 
     @tailrec
-    private def loop(
-        currentAnalyses: Map[ClassName, Either[Milestone, AllOf[AnalysisItem]]]
-    ): Map[ClassName, Milestone] =
+    private def loop1(
+        currentAnalyses: Analyses[Either[Milestone, AllOf[AnalysisItem]]]
+    ): Map[ClassName[GameRecipe], Milestone] =
 
       given Monoid[Boolean] = boolOrMonoid
 
       val ( progressed, newAnalyses ) =
-        currentAnalyses.toVector.foldMap:
-          case ( cn, toAnalyze ) =>
-            toAnalyze
-              .flatTraverse: reqs =>
-                reqs
-                  .traverse( item => currentAnalyses.get( item.className ).flatMap( _.left.toOption ) )
-                  .map( _.items.mapFilter( _.items.minimumOption ).maximumOption.getOrElse( Milestone.Zero ) )
-                  .cata(
-                    milestone => ( true, Left( milestone ) ),
-                    ( false, Right( reqs ) )
-                  )
-              .fmap( analyzed => Map( ( cn, analyzed ) ) )
+        currentAnalyses.traverse: toAnalyze =>
+          toAnalyze
+            .flatTraverse: reqs =>
+              reqs
+                .traverse( item => currentAnalyses.get( item ).flatMap( _.left.toOption ) )
+                .map( _.items.mapFilter( _.items.minimumOption ).maximumOption.getOrElse( Milestone.Zero ) )
+                .cata(
+                  milestone => ( true, Left( milestone ) ),
+                  ( false, Right( reqs ) )
+                )
 
-      if ( progressed ) loop( newAnalyses )
+      if ( progressed ) loop1( newAnalyses )
       else
         val ( notAnalyzed, result ) =
-          newAnalyses.toVector
+          newAnalyses.recipes.toVector
             .traverse:
               case ( cn, e ) =>
                 (
                   e.toOption.foldMap( _ => Set( cn ) ),
                   Map( ( cn, e.swap.getOrElse( Milestone.Zero ) ) )
                 )
-            .fmap( _.foldLeft( Map.empty[ClassName, Milestone] )( _ ++ _ ) )
+            .fmap( _.foldLeft( Map.empty[ClassName[GameRecipe], Milestone] )( _ ++ _ ) )
 
         // good enough
         notAnalyzed.foreach( na => println( show"INFO [NOT ANALYZED] $na" ) )
 
         result
 
-    def analyze: Map[ClassName, Milestone] = loop( initAnalyses.toMap )
+    def analyze: Map[ClassName[GameRecipe], Milestone] = loop1( initAnalyses )
 
-    def initAnalyses: Vector[( ClassName, Either[Milestone, AllOf[AnalysisItem]] )] =
-      data.schematics.mapFilter( schematic => analyzeSchematic( schematic ).tupleLeft( schematic.className ) ) ++
-        data.recipes.map( recipe => ( recipe.className, analyzeRecipe( recipe ) ) )
+    def initAnalyses: Analyses[Either[Milestone, AllOf[AnalysisItem]]] =
+      Analyses(
+        data.schematics
+          .mapFilter( schematic => analyzeSchematic( schematic ).tupleLeft( schematic.className ) )
+          .to( SortedMap ),
+        data.recipes.map( recipe => ( recipe.className, analyzeRecipe( recipe ) ) ).to( SortedMap )
+      )
 
-    def run: Map[ClassName, RecipeCategory] =
-      val analysis: Map[ClassName, Milestone] = analyze
+    def run: Map[ClassName[GameRecipe], RecipeCategory] =
+      val analysis: Map[ClassName[GameRecipe], Milestone] = analyze
 
       manufacturingRecipes
         .mapFilter: recipe =>
@@ -149,7 +153,7 @@ case class RecipeClassifier( data: GameData ):
         .toMap
 
   object MilestoneAnalyzer:
-    private def alterClassName( manufacturerClass: ClassName ): ClassName =
+    private def alterClassName( manufacturerClass: ClassName[Manufacturer] ): ClassName[GameItem] =
       ClassName( "Desc_" + manufacturerClass.name.stripPrefix( "Build_" ) )
 
     def researchCategoryOf( schematic: Schematic ): Option[ResearchCategory] =
@@ -157,8 +161,8 @@ case class RecipeClassifier( data: GameData ):
         .find( rc => rc.keys.exists( k => schematic.className.name.startsWith( s"Research_${k}_" ) ) )
         .filter( _ => !schematic.displayName.toLowerCase.startsWith( "discontinued" ) )
 
-    private def canonicalUnlocks( data: GameData ): Map[ClassName /*GameRecipe*/, Schematic] =
-      val allRecipeUnlocks: Map[ClassName, NonEmptyVector[Schematic]] =
+    private def canonicalUnlocks( data: GameData ): Map[ClassName[GameRecipe], Schematic] =
+      val allRecipeUnlocks: Map[ClassName[GameRecipe], NonEmptyVector[Schematic]] =
         data.schematics.foldMap( s => s.unlocks.tupleRight( NonEmptyVector.one( s ) ).toMap )
 
       def schematicPriority( schematic: Schematic ) =
@@ -176,18 +180,18 @@ case class RecipeClassifier( data: GameData ):
 
     def init: MilestoneAnalyzer =
       val manufacturingRecipes: Vector[GameRecipe] = data.recipes.filter( recipe =>
-        recipe.producedIn.intersect[ClassName]( data.manufacturers.keys.toSeq ).size == 1
+        recipe.producedIn.intersect[ClassName[Manufacturer]]( data.manufacturers.keys.toSeq ).size == 1
       )
 
-      val manufacturingRecipeClasses: Set[ClassName] = manufacturingRecipes.map( _.className ).toSet
+      val manufacturingRecipeClasses: Set[ClassName[GameRecipe]] = manufacturingRecipes.map( _.className ).toSet
 
-      val recipeSchematics: Map[ClassName /*GameRecipe*/, Schematic] =
+      val recipeSchematics: Map[ClassName[GameRecipe], Schematic] =
         canonicalUnlocks( data )
           .filter:
             case ( c, _ ) => manufacturingRecipeClasses.contains( c )
 
-      val schematicDependencies: Map[ClassName /*Schematic*/, AllOf[Schematic]] =
-        val schematicsByClassName: Map[ClassName, Schematic] =
+      val schematicDependencies: Map[ClassName[Schematic], AllOf[Schematic]] =
+        val schematicsByClassName: Map[ClassName[Schematic], Schematic] =
           data.schematics.map( s => ( s.className, s ) ).toMap
 
         def dependenciesOf( schematic: Schematic ): Vector[Schematic] =
@@ -207,7 +211,7 @@ case class RecipeClassifier( data: GameData ):
           )
           .toMap
 
-      val alternateUnlocks: Map[ClassName /*Schematic*/, GameRecipe] =
+      val alternateUnlocks: Map[ClassName[Schematic], GameRecipe] =
         val recipesByClassName = data.recipes.map( recipe => ( recipe.className, recipe ) ).toMap
 
         data.schematics
@@ -220,14 +224,14 @@ case class RecipeClassifier( data: GameData ):
               .tupleLeft( schematic.className )
           .toMap
 
-      val noBaseRecipes: Set[ClassName] =
+      val noBaseRecipes: Set[ClassName[GameItem]] =
         data.items.values
           .collect:
             case item if item.nativeClass == NativeClass.resourceDescClass && item.form == GameForm.Solid =>
               item.className
           .toSet
 
-      val baseRecipes: Map[ClassName /*Item*/, GameRecipe] =
+      val baseRecipes: Map[ClassName[GameItem], GameRecipe] =
         manufacturingRecipes
           .filter( recipe =>
             !recipe.displayName.toLowerCase.startsWith( "alternate" ) &&
@@ -238,7 +242,7 @@ case class RecipeClassifier( data: GameData ):
             case ( item, _ ) => noBaseRecipes.contains( item )
           .toMap
 
-      val manufacturerSchematics: Map[ClassName, Schematic] =
+      val manufacturerSchematics: Map[ClassName[Manufacturer], Schematic] =
         data.manufacturers.values.toVector
           .mapFilter( manu =>
             data.recipes
@@ -293,7 +297,7 @@ object RecipeClassifier:
 
   object AnalysisItem:
     extension ( analysisItem: AnalysisItem )
-      def className: ClassName = analysisItem match
+      def className: ClassName[Any] = analysisItem match
         case OfRecipe( recipe )       => recipe.className
         case OfSchematic( schematic ) => schematic.className
       def displayName: String = analysisItem match
@@ -301,3 +305,12 @@ object RecipeClassifier:
         case OfSchematic( schematic ) => schematic.displayName
 
     given Show[AnalysisItem] = Show.fromToString
+
+  case class Analyses[A](
+      schematics: SortedMap[ClassName[Schematic], A],
+      recipes: SortedMap[ClassName[GameRecipe], A]
+  ) derives Traverse:
+    def get( item: AnalysisItem ): Option[A] =
+      item match
+        case AnalysisItem.OfRecipe( recipe )       => recipes.get( recipe.className )
+        case AnalysisItem.OfSchematic( schematic ) => schematics.get( schematic.className )

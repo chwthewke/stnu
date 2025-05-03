@@ -6,7 +6,7 @@ import cats.syntax.all.*
 import io.circe.Decoder
 
 final case class Manufacturer(
-    className: ClassName,
+    className: ClassName[Manufacturer],
     displayName: String,
     powerConsumption: Double,
     powerConsumptionExponent: Double,

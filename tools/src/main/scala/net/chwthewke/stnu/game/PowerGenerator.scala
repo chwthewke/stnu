@@ -8,7 +8,7 @@ import io.circe.Decoder
 import data.Countable
 
 case class PowerGenerator(
-    className: ClassName,
+    className: ClassName[PowerGenerator],
     displayName: String,
     powerProduction: Double, // MW
     powerConsumptionExponent: Double,
@@ -27,9 +27,9 @@ object PowerGenerator:
           |""".stripMargin
 
   case class GeneratorFuel(
-      fuel: ClassName,
-      byproduct: Option[Countable[Int, ClassName]],
-      supplementalResource: Option[ClassName]
+      fuel: ClassName[GameItem],
+      byproduct: Option[Countable[Int, ClassName[GameItem]]],
+      supplementalResource: Option[ClassName[GameItem]]
   )
 
   object GeneratorFuel:
@@ -52,11 +52,17 @@ object PowerGenerator:
           )
 
   given Decoder[Vector[GeneratorFuel]] =
-    given Decoder[Option[ClassName]] =
+    given Decoder[Option[ClassName[GameItem]]] =
       Decoder.decodeString.map( str => Option.when( str.nonEmpty )( ClassName( str ) ) )
 
     given Decoder[GeneratorFuel] =
-      Decoder.forProduct4[GeneratorFuel, ClassName, Option[ClassName], Types.ByproductAmount, Option[ClassName]](
+      Decoder.forProduct4[
+        GeneratorFuel,
+        ClassName[GameItem],
+        Option[ClassName[GameItem]],
+        Types.ByproductAmount,
+        Option[ClassName[GameItem]]
+      ](
         "mFuelClass",
         "mByproduct",
         "mByproductAmount",
@@ -66,11 +72,12 @@ object PowerGenerator:
     Decoder.decodeVector[GeneratorFuel]
 
   given Decoder[PowerGenerator] =
-    Decoder.forProduct6[PowerGenerator, ClassName, String, Double, Double, Double, Vector[GeneratorFuel]](
-      "ClassName",
-      "mDisplayName",
-      "mPowerProduction",
-      "mPowerConsumptionExponent",
-      "mSupplementalToPowerRatio",
-      "mFuel"
-    )( PowerGenerator( _, _, _, _, _, _ ) )
+    Decoder
+      .forProduct6[PowerGenerator, ClassName[PowerGenerator], String, Double, Double, Double, Vector[GeneratorFuel]](
+        "ClassName",
+        "mDisplayName",
+        "mPowerProduction",
+        "mPowerConsumptionExponent",
+        "mSupplementalToPowerRatio",
+        "mFuel"
+      )( PowerGenerator( _, _, _, _, _, _ ) )

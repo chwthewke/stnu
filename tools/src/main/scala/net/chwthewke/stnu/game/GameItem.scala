@@ -6,7 +6,7 @@ import cats.Show
 import cats.syntax.all.*
 
 final case class GameItem(
-    className: ClassName,
+    className: ClassName[GameItem],
     displayName: String,
     form: GameForm,
     energyValue: Double,

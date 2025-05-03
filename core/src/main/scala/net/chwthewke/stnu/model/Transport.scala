@@ -7,7 +7,7 @@ import io.circe.derivation.ConfiguredDecoder
 import io.circe.derivation.ConfiguredEncoder
 
 case class Transport(
-    className: ClassName,
+    className: ClassName[Transport],
     displayName: String,
     perMinute: Int
 ) derives ConfiguredDecoder,

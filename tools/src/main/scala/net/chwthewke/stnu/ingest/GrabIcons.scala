@@ -39,7 +39,7 @@ class GrabIcons[F[_]: Async]( private val loader: Loader[F] )( using Files: File
   private def hash( bytes: Stream[F, Byte] ): F[ByteVector] =
     bytes.through( Hashing.hash( HashAlgorithm.SHA256 ) ).compile.lastOrError.map( _.bytes.toByteVector )
 
-  private def grabIcon( className: ClassName, iconData: IconData ): OptionT[F, ( ClassName, ImageName )] =
+  private def grabIcon( className: ClassName[Any], iconData: IconData ): OptionT[F, ( ClassName[Any], ImageName )] =
     findTexture( iconData )
       .flatTapNone:
         console.println( show"${iconData.fullName} not found" )
@@ -50,7 +50,7 @@ class GrabIcons[F[_]: Async]( private val loader: Loader[F] )( using Files: File
           _ <- Files.exists( target ).flatMap( exists => Files.copy( texture.path, target ).whenA( !exists ) )
         yield ( className, ImageName( texture.filename ) )
 
-  private def process( iconData: Vector[( ClassName, IconData )] ): F[Unit] =
+  private def process( iconData: Vector[( ClassName[Any], IconData )] ): F[Unit] =
     iconData
       .traverseFilter( grabIcon.tupled( _ ).value )
       .flatTap: found =>
@@ -59,20 +59,23 @@ class GrabIcons[F[_]: Async]( private val loader: Loader[F] )( using Files: File
       .flatMap: index =>
         writeJson( index, GrabIcons.indexPath( loader.version ) )
 
-  private def buildables( gameData: GameData, classNames: Vector[ClassName] ): F[Vector[( ClassName, IconData )]] =
+  private def buildables(
+      gameData: GameData,
+      classNames: Vector[ClassName[Any]]
+  ): F[Vector[( ClassName[Any], IconData )]] =
     classNames.traverse: cn =>
       gameData
         .getBuildingIcon( cn )
         .liftTo[F]( Error( show"No desc class with icon data found for $cn" ) )
         .tupleLeft( cn )
 
-  private def getConveyorBeltIcons( gameData: GameData, model: Model ): F[Vector[( ClassName, IconData )]] =
+  private def getConveyorBeltIcons( gameData: GameData, model: Model ): F[Vector[( ClassName[Any], IconData )]] =
     buildables( gameData, model.conveyorBelts.map( _.className ) )
 
-  private def getPipelineIcons( gameData: GameData, model: Model ): F[Vector[( ClassName, IconData )]] =
+  private def getPipelineIcons( gameData: GameData, model: Model ): F[Vector[( ClassName[Any], IconData )]] =
     buildables( gameData, model.pipelines.map( _.className ) )
 
-  private def getMachineIcons( gameData: GameData, model: Model ): F[Vector[( ClassName, IconData )]] =
+  private def getMachineIcons( gameData: GameData, model: Model ): F[Vector[( ClassName[Any], IconData )]] =
     buildables(
       gameData,
       ( model.manufacturingRecipes.map( _.producedIn ) ++
@@ -80,14 +83,14 @@ class GrabIcons[F[_]: Async]( private val loader: Loader[F] )( using Files: File
         model.extractionRecipes.map( _._3.producedIn ) ).map( _.className ).distinct
     )
 
-  private def getItemIcons( gameData: GameData, model: Model ): F[Vector[( ClassName, IconData )]] =
+  private def getItemIcons( gameData: GameData, model: Model ): F[Vector[( ClassName[Any], IconData )]] =
     model.items.keys.toVector.foldMapM: className =>
       gameData.items
-        .get( className )
+        .get( ClassName( className.name ) )
         .liftTo[F]( Error( show"Unknown item in model" ) )
         .map( item => Vector( ( className, item.smallIcon ) ) )
 
-  private def getAllIcons( gameData: GameData, model: Model ): F[Vector[( ClassName, IconData )]] =
+  private def getAllIcons( gameData: GameData, model: Model ): F[Vector[( ClassName[Any], IconData )]] =
     (
       getConveyorBeltIcons( gameData, model ),
       getPipelineIcons( gameData, model ),
