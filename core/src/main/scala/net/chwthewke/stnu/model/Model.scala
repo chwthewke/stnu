@@ -25,14 +25,14 @@ case class Model(
     extractedItems: Vector[Item],
     manufacturingRecipes: Vector[Recipe.Prod],
     powerRecipes: Vector[Recipe.PowerGen],
-    extractionRecipes: Vector[( Item, ResourcePurity, Recipe.Prod )],
+    extractionRecipes: SortedMap[( Item, Machine ), ExtractionRecipes],
     machines: SortedMap[ClassName[Machine], Machine],
     conveyorBelts: Vector[Transport],
     pipelines: Vector[Transport],
     defaultResourceOptions: ResourceOptions
 ):
   lazy val recipes: Map[ClassName[Recipe], Recipe] =
-    ( manufacturingRecipes ++ powerRecipes ++ extractionRecipes.map( _._3 ) ).fproductLeft( _.className ).toMap
+    ( manufacturingRecipes ++ powerRecipes ++ extractionRecipes.foldMap( _.recipes ) ).fproductLeft( _.className ).toMap
 
   lazy val masked: Model = Model.maskExcluded( this )
 
@@ -42,10 +42,6 @@ object Model:
       "biofuel",
       "gas nobelisk",
       "biomass",
-      "ficsmas",
-      "snow",
-      "fireworks",
-      "candy",
       "alien protein",
       "alien dna"
     )
@@ -80,7 +76,7 @@ object Model:
 
   given Show[Model] = Show.show: model =>
     show"""Manufacturing Recipes
-          |${model.manufacturingRecipes.map( _.show ).intercalate( "\n" )}
+          |${model.manufacturingRecipes.mkString_( "\n" )}
           |
           |Items
           |${model.items.values.map( _.toString ).intercalate( "\n" )}
@@ -88,7 +84,7 @@ object Model:
           |Extracted Items ${model.extractedItems.map( _.displayName ).intercalate( ", " )}
           |
           |Extraction Recipes
-          |${model.extractionRecipes.map( _._3 ).map( _.show ).intercalate( "\n" )}
+          |${model.extractionRecipes.foldMap( _.recipes ).mkString_( "\n" )}
           |
           |Resource nodes
           |${model.defaultResourceOptions.show.linesIterator.map( "  " + _ ).toSeq.mkString_( "\n" )}
@@ -157,13 +153,37 @@ object Model:
         recipe.power
       )
 
+  private case class CompactExtractionRecipes( recipes: Vector[CompactRecipe] )
+      derives Show,
+        ConfiguredDecoder,
+        ConfiguredEncoder:
+    def extractionRecipes: ReaderT[ValidatedNel[String, *], Types.Index, ExtractionRecipes] =
+      recipes match
+        case Vector( recipe ) => recipe.prod.map( ExtractionRecipes.Fixed( _ ) )
+
+        case v if v.size == ResourcePurity.cases.size =>
+          recipes
+            .zip( ResourcePurity.cases )
+            .traverse:
+              case ( recipe, purity ) => recipe.prod.tupleLeft( purity )
+            .mapF: recipesV =>
+              recipesV.andThen: recipes =>
+                ExtractionRecipes.ByPurity( recipes )
+
+        case _ =>
+          ReaderT.liftF( s"CompactExtractionRecipes must have 1 or ${ResourcePurity.cases.size} elements".invalidNel )
+
+  private object CompactExtractionRecipes:
+    def of( extractionRecipes: ExtractionRecipes ): CompactExtractionRecipes =
+      CompactExtractionRecipes( extractionRecipes.recipes.map( CompactRecipe.of( _ ) ) )
+
   private case class Compact(
       version: ModelVersion,
       items: Vector[Item],
       extractedItems: Vector[ClassName[Item]],
       manufacturingRecipes: Vector[CompactRecipe],
       powerRecipes: Vector[CompactRecipe],
-      extractionRecipes: Vector[( ClassName[Item], ResourcePurity, CompactRecipe )],
+      extractionRecipes: Vector[( ClassName[Item], ClassName[Machine], CompactExtractionRecipes )],
       machines: Vector[Machine],
       conveyorBelts: Vector[Transport],
       pipelines: Vector[Transport],
@@ -178,9 +198,14 @@ object Model:
         ReaderT( ( index: Types.Index ) => extractedItems.traverse( index.item ) ),
         manufacturingRecipes.traverse( _.prod ),
         powerRecipes.traverse( _.powerGen ),
-        extractionRecipes.traverse:
-          case ( className, purity, recipe ) =>
-            ( Types.Index.item( className ), recipe.prod ).mapN( ( _, purity, _ ) )
+        extractionRecipes
+          .traverse:
+            case ( itemClass, machineClass, recipes ) =>
+              (
+                ( Types.Index.item( itemClass ), Types.Index.machine( machineClass ) ).tupled,
+                recipes.extractionRecipes
+              ).tupled
+          .map( _.to( SortedMap ) )
       ).mapN( Model( version, itemsMap, _, _, _, _, machinesMap, conveyorBelts, pipelines, defaultResourceOptions ) )
         .run( Types.Index( itemsMap, machinesMap ) )
         .leftMap( _.mkString_( "Model encoding errors: ", ", ", "" ) )
@@ -194,8 +219,9 @@ object Model:
         model.extractedItems.map( _.className ),
         model.manufacturingRecipes.map( CompactRecipe.of( _ ) ),
         model.powerRecipes.map( CompactRecipe.of( _ ) ),
-        model.extractionRecipes.map:
-          case ( item, purity, recipe ) => ( item.className, purity, CompactRecipe.of( recipe ) ),
+        model.extractionRecipes.toVector.map:
+          case ( ( item, machine ), recipes ) =>
+            ( item.className, machine.className, CompactExtractionRecipes.of( recipes ) ),
         model.machines.values.toVector,
         model.conveyorBelts,
         model.pipelines,

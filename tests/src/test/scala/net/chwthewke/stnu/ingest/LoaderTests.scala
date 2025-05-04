@@ -2,7 +2,12 @@ package net.chwthewke.stnu
 package ingest
 
 import cats.effect.IO
+import io.circe.Decoder.Result
+import io.circe.Json
+import io.circe.syntax.*
 import munit.CatsEffectSuite
+
+import model.Model
 
 class LoaderTests extends CatsEffectSuite:
   DataVersionStorage.cases.foreach: version =>
@@ -33,3 +38,12 @@ class LoaderTests extends CatsEffectSuite:
       Loader[IO]( version ).use:
         _.model
           .assert( _ => true )
+
+    test( s"${version.docsKey} model round-trips to JSON" ):
+      Loader[IO]( version )
+        .use:
+          _.model.map: model =>
+            val json: Json             = model.asJson
+            val decoded: Result[Model] = json.as[Model]
+            assertEquals( decoded, Right( model ) )
+        .unsafeRunSync()
