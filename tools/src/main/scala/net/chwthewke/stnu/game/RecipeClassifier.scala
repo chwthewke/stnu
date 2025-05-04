@@ -20,7 +20,7 @@ import model.Tier
 
 case class RecipeClassifier( data: GameData ):
 
-  def classifyRecipes: Map[ClassName[GameRecipe], RecipeCategory] = MilestoneAnalyzer.init.run
+  def classifyRecipes: RecipeClassifier.Result = MilestoneAnalyzer.init.run
 
   import RecipeClassifier.*
 
@@ -30,7 +30,9 @@ case class RecipeClassifier( data: GameData ):
       val schematicDependencies: Map[ClassName[Schematic], AllOf[Schematic]],
       val alternateUnlocks: Map[ClassName[Schematic], GameRecipe],
       val baseRecipes: Map[ClassName[GameItem], GameRecipe],
-      val manufacturerSchematics: Map[ClassName[Manufacturer], Schematic]
+      val manufacturerSchematics: Map[ClassName[Manufacturer], Schematic],
+      val powerGeneratorSchematics: Map[ClassName[PowerGenerator], Schematic],
+      val extractorSchematics: Map[ClassName[Extractor], Schematic]
   ):
 
     private def findBaseRecipe( altRecipeSchematic: Schematic ): AllOf[AnalysisItem] =
@@ -41,12 +43,10 @@ case class RecipeClassifier( data: GameData ):
     def findItemBaseRecipe( itemClass: ClassName[GameItem] ): AllOf[AnalysisItem] =
       baseRecipes
         .get( itemClass )
-        .map( r => AllOf( Vector( OneOf( Vector( AnalysisItem.OfRecipe( r ) ) ) ) ) )
+        .map( r => AllOf.one( AnalysisItem.OfRecipe( r ) ) )
         .orEmpty
 
-    def analyzeSchematic(
-        schematic: Schematic
-    ): Option[Either[Milestone, AllOf[AnalysisItem]]] =
+    def analyzeSchematic( schematic: Schematic ): Option[Either[Milestone, AllOf[AnalysisItem]]] =
       schematic.`type` match
         case SchematicType.HardDrive | SchematicType.Shop => None
         case SchematicType.Custom | SchematicType.Customization | SchematicType.Milestone | SchematicType.Tutorial =>
@@ -66,31 +66,54 @@ case class RecipeClassifier( data: GameData ):
         case SchematicType.Mam =>
           Some( Right( schematic.cost.foldMap( c => findItemBaseRecipe( c.item ) ) ) )
 
-    def analyzeRecipe(
-        recipe: GameRecipe
-    ): Either[Milestone, AllOf[AnalysisItem]] =
+    def analyzeRecipe( recipe: GameRecipe ): Either[Milestone, AllOf[AnalysisItem]] =
       Right(
-        AllOf(
+        AllOf.allOf(
           Vector(
             recipe.producedIn.collectFirstSome( manufacturerSchematics.get ),
             recipeSchematics.get( recipe.className )
-          ).unite
-            .map( s => OneOf( Vector( AnalysisItem.OfSchematic( s ) ) ) )
+          ).flattenOption
+            .map( s => AnalysisItem.OfSchematic( s ) )
         )
       )
+
+    def analyzeGenerators: SortedMap[ClassName[PowerGenerator], Either[Milestone, AllOf[AnalysisItem]]] =
+      powerGeneratorSchematics
+        .fmap( schem => Right( AllOf.one( AnalysisItem.OfSchematic( schem ) ) ) )
+        .to( SortedMap )
+
+    def analyzeExtractors: SortedMap[ClassName[Extractor], Right[Nothing, AllOf[AnalysisItem]]] =
+      extractorSchematics
+        .fmap( schem => Right( AllOf.one( AnalysisItem.OfSchematic( schem ) ) ) )
+        .to( SortedMap )
 
     val boolOrMonoid: Monoid[Boolean] = new Monoid[Boolean]:
       override def empty: Boolean                             = false
       override def combine( x: Boolean, y: Boolean ): Boolean = x || y
 
-    @tailrec
-    private def loop1(
-        currentAnalyses: Analyses[Either[Milestone, AllOf[AnalysisItem]]]
-    ): Map[ClassName[GameRecipe], Milestone] =
+    private def finishAnalysis[A](
+        results: Map[ClassName[A], Either[Milestone, AllOf[AnalysisItem]]]
+    ): ( Vector[ClassName[Any]], Map[ClassName[A], Milestone] ) =
+      results.toVector
+        .traverse:
+          case ( cn, e ) =>
+            (
+              e.as( cn ).toOption.toVector,
+              Map( cn -> e.swap.getOrElse( Milestone.Zero ) )
+            )
+        .fmap( _.foldLeft( Map.empty[ClassName[A], Milestone] )( _ ++ _ ) )
 
-      given Monoid[Boolean] = boolOrMonoid
+    @tailrec
+    private def loop(
+        currentAnalyses: Analyses[Either[Milestone, AllOf[AnalysisItem]]]
+    ): (
+        Map[ClassName[GameRecipe], Milestone],
+        Map[ClassName[Extractor], Milestone],
+        Map[ClassName[PowerGenerator], Milestone]
+    ) =
 
       val ( progressed, newAnalyses ) =
+        given Monoid[Boolean] = boolOrMonoid
         currentAnalyses.traverse: toAnalyze =>
           toAnalyze
             .flatTraverse: reqs =>
@@ -102,61 +125,72 @@ case class RecipeClassifier( data: GameData ):
                   ( false, Right( reqs ) )
                 )
 
-      if ( progressed ) loop1( newAnalyses )
+      if ( progressed ) loop( newAnalyses )
       else
-        val ( notAnalyzed, result ) =
-          newAnalyses.recipes.toVector
-            .traverse:
-              case ( cn, e ) =>
-                (
-                  e.toOption.foldMap( _ => Set( cn ) ),
-                  Map( ( cn, e.swap.getOrElse( Milestone.Zero ) ) )
-                )
-            .fmap( _.foldLeft( Map.empty[ClassName[GameRecipe], Milestone] )( _ ++ _ ) )
+        val (
+          notAnalyzed: Vector[ClassName[Any]],
+          result: (
+              Map[ClassName[GameRecipe], Milestone],
+              Map[ClassName[Extractor], Milestone],
+              Map[ClassName[PowerGenerator], Milestone]
+          )
+        ) =
+          (
+            finishAnalysis( newAnalyses.recipes ),
+            finishAnalysis( newAnalyses.extractors ),
+            finishAnalysis( newAnalyses.powerGenerators )
+          ).tupled( using cats.Invariant.catsStdMonadForTuple2, cats.Invariant.catsStdMonadForTuple2 ) // Huh?
 
         // good enough
         notAnalyzed.foreach( na => println( show"INFO [NOT ANALYZED] $na" ) )
 
         result
 
-    def analyze: Map[ClassName[GameRecipe], Milestone] = loop1( initAnalyses )
-
     def initAnalyses: Analyses[Either[Milestone, AllOf[AnalysisItem]]] =
       Analyses(
         data.schematics
           .mapFilter( schematic => analyzeSchematic( schematic ).tupleLeft( schematic.className ) )
           .to( SortedMap ),
-        data.recipes.map( recipe => ( recipe.className, analyzeRecipe( recipe ) ) ).to( SortedMap )
+        data.recipes.map( recipe => ( recipe.className, analyzeRecipe( recipe ) ) ).to( SortedMap ),
+        analyzeGenerators,
+        analyzeExtractors
       )
 
-    def run: Map[ClassName[GameRecipe], RecipeCategory] =
-      val analysis: Map[ClassName[GameRecipe], Milestone] = analyze
+    def run: Result =
+      val (
+        recipeAnalysis: Map[ClassName[GameRecipe], Milestone],
+        extractorAnalysis: Map[ClassName[Extractor], Milestone],
+        powerGeneratorAnalysis: Map[ClassName[PowerGenerator], Milestone]
+      ) = loop( initAnalyses )
 
-      manufacturingRecipes
-        .mapFilter: recipe =>
-          val tier: Tier = analysis.getOrElse( recipe.className, Milestone.Zero ).tier
+      val recipeCategories: Map[ClassName[GameRecipe], RecipeCategory] =
+        manufacturingRecipes
+          .mapFilter: recipe =>
+            val tier: Tier = recipeAnalysis.getOrElse( recipe.className, Milestone.Zero ).tier
 
-          recipeSchematics
-            .get( recipe.className )
-            .flatMap[RecipeCategory]( s =>
-              s.`type` match
-                case SchematicType.Milestone | SchematicType.Tutorial | SchematicType.Custom |
-                    SchematicType.Customization =>
-                  Some( RecipeCategory.Milestone( tier ) )
-                case SchematicType.Alternate =>
-                  Some( RecipeCategory.Alternate( tier ) )
-                case SchematicType.Mam =>
-                  MilestoneAnalyzer.researchCategoryOf( s ).map( RecipeCategory.Mam( tier, _ ) )
-                case SchematicType.HardDrive | SchematicType.Shop => None
-            )
-            .tupleLeft( recipe.className )
-        .toMap
+            recipeSchematics
+              .get( recipe.className )
+              .flatMap[RecipeCategory]( s =>
+                s.`type` match
+                  case SchematicType.Milestone | SchematicType.Tutorial | SchematicType.Custom |
+                      SchematicType.Customization =>
+                    Some( RecipeCategory.Milestone( tier ) )
+                  case SchematicType.Alternate =>
+                    Some( RecipeCategory.Alternate( tier ) )
+                  case SchematicType.Mam =>
+                    MilestoneAnalyzer.researchCategoryOf( s ).map( RecipeCategory.Mam( tier, _ ) )
+                  case SchematicType.HardDrive | SchematicType.Shop => None
+              )
+              .tupleLeft( recipe.className )
+          .toMap
+
+      Result( recipeCategories, powerGeneratorAnalysis.fmap( _.tier ), extractorAnalysis.fmap( _.tier ) )
 
   object MilestoneAnalyzer:
-    private def alterClassName( manufacturerClass: ClassName[Manufacturer] ): ClassName[GameItem] =
+    private def alterClassName[A]( manufacturerClass: ClassName[A] ): ClassName[GameItem] =
       ClassName( "Desc_" + manufacturerClass.name.stripPrefix( "Build_" ) )
 
-    def researchCategoryOf( schematic: Schematic ): Option[ResearchCategory] =
+    private def researchCategoryOf( schematic: Schematic ): Option[ResearchCategory] =
       ResearchCategory.cases
         .find( rc => rc.keys.exists( k => schematic.className.name.startsWith( s"Research_${k}_" ) ) )
         .filter( _ => !schematic.displayName.toLowerCase.startsWith( "discontinued" ) )
@@ -204,9 +238,9 @@ case class RecipeClassifier( data: GameData ):
             (
               schematic.className,
               if ( schematic.requireAllDependencies )
-                AllOf( dependenciesOf( schematic ).map( s => OneOf( Vector( s ) ) ) )
+                AllOf.allOf( dependenciesOf( schematic ) )
               else
-                AllOf( Vector( OneOf( dependenciesOf( schematic ) ) ) )
+                AllOf.anyOf( dependenciesOf( schematic ) )
             )
           )
           .toMap
@@ -242,18 +276,24 @@ case class RecipeClassifier( data: GameData ):
             case ( item, _ ) => noBaseRecipes.contains( item )
           .toMap
 
-      val manufacturerSchematics: Map[ClassName[Manufacturer], Schematic] =
-        data.manufacturers.values.toVector
-          .mapFilter( manu =>
+      def schematicsOf[A]( things: Vector[ClassName[A]] ): Map[ClassName[A], Schematic] =
+        things
+          .mapFilter: thing =>
             data.recipes
-              .find( _.products.exists( _.item == alterClassName( manu.className ) ) )
-              .flatMap( recipe =>
-                data.schematics
-                  .find( schem => schem.unlocks.contains( recipe.className ) )
-              )
-              .tupleLeft( manu.className )
-          )
+              .find( _.products.exists( _.item == alterClassName( thing ) ) )
+              .mapFilter: recipe =>
+                data.schematics.find( _.unlocks.contains( recipe.className ) )
+              .tupleLeft( thing )
           .toMap
+
+      val manufacturerSchematics: Map[ClassName[Manufacturer], Schematic] =
+        schematicsOf( data.manufacturers.values.map( _.className ).toVector )
+
+      val powerGeneratorSchematics: Map[ClassName[PowerGenerator], Schematic] =
+        schematicsOf( data.powerGenerators.values.map( _.className ).toVector )
+
+      val extractorSchematics: Map[ClassName[Extractor], Schematic] =
+        schematicsOf( data.extractors.values.map( _.className ).toVector )
 
       new MilestoneAnalyzer(
         manufacturingRecipes,
@@ -261,13 +301,16 @@ case class RecipeClassifier( data: GameData ):
         schematicDependencies,
         alternateUnlocks,
         baseRecipes,
-        manufacturerSchematics
+        manufacturerSchematics,
+        powerGeneratorSchematics,
+        extractorSchematics
       )
 
 object RecipeClassifier:
 
   opaque type OneOf[A] = Vector[A]
   object OneOf:
+    def one[A]( item: A ): OneOf[A]                       = Vector( item )
     inline def apply[A]( items: Vector[A] ): OneOf[A]     = items
     given Traverse[OneOf]                                 = Traverse[Vector]
     given oneOfMonoidK: MonoidK[OneOf]                    = MonoidK[Vector]
@@ -276,6 +319,9 @@ object RecipeClassifier:
 
   opaque type AllOf[A] = Nested[Vector, OneOf, A]
   object AllOf:
+    def one[A]( item: A ): AllOf[A]                              = allOf( Vector( item ) )
+    def allOf[A]( items: Vector[A] ): AllOf[A]                   = items.map( OneOf.one ).nested
+    def anyOf[A]( items: Vector[A] ): AllOf[A]                   = Vector( OneOf( items ) ).nested
     inline def apply[A]( items: Vector[OneOf[A]] ): AllOf[A]     = items.nested
     given Traverse[AllOf]                                        = Traverse[Nested[Vector, OneOf, *]]
     given allOfMonoidK: MonoidK[AllOf]                           = MonoidK[Nested[Vector, OneOf, *]]
@@ -308,9 +354,17 @@ object RecipeClassifier:
 
   case class Analyses[A](
       schematics: SortedMap[ClassName[Schematic], A],
-      recipes: SortedMap[ClassName[GameRecipe], A]
+      recipes: SortedMap[ClassName[GameRecipe], A],
+      powerGenerators: SortedMap[ClassName[PowerGenerator], A],
+      extractors: SortedMap[ClassName[Extractor], A]
   ) derives Traverse:
     def get( item: AnalysisItem ): Option[A] =
       item match
         case AnalysisItem.OfRecipe( recipe )       => recipes.get( recipe.className )
         case AnalysisItem.OfSchematic( schematic ) => schematics.get( schematic.className )
+
+  case class Result(
+      recipes: Map[ClassName[GameRecipe], RecipeCategory],
+      powerGenerators: Map[ClassName[PowerGenerator], Tier],
+      extractors: Map[ClassName[Extractor], Tier]
+  )
