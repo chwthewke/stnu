@@ -40,7 +40,7 @@ object ResourceOptions:
         show"N ${f"${distrib.normalNodes}% 2d"} I ${f"${distrib.impureNodes}% 2d"}"
 
     def showExtractorType( extractorType: ExtractorType, items: Map[ClassName[Item], ResourceDistrib] ): String =
-      items.toVector.map( showItem.tupled ).mkString_( show"${extractorType.description}\n  ", "\n  ", "" )
+      items.toVector.map( showItem.tupled ).mkString_( show"${extractorType.toString}\n  ", "\n  ", "" )
 
     Show.show: opts =>
       show"""NODES

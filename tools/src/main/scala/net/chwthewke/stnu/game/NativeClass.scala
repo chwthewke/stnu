@@ -45,3 +45,4 @@ object NativeClass:
   val buildingDescriptorClass: NativeClass = NativeClass( "Class'/Script/FactoryGame.FGBuildingDescriptor'" )
   val conveyorBeltClass: NativeClass       = NativeClass( "Class'/Script/FactoryGame.FGBuildableConveyorBelt'" )
   val pipelineClass: NativeClass           = NativeClass( "Class'/Script/FactoryGame.FGBuildablePipeline'" )
+  val simpleProducerClass: NativeClass = NativeClass( "Class'/Script/FactoryGame.FGBuildableFactorySimpleProducer'" )

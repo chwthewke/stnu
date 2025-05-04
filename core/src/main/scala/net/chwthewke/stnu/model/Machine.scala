@@ -1,6 +1,7 @@
 package net.chwthewke.stnu
 package model
 
+import cats.Order
 import cats.Show
 import cats.syntax.all.*
 import io.circe.derivation.ConfiguredDecoder
@@ -21,3 +22,6 @@ object Machine:
       show"""$displayName # $className
             |$machineType
             |Power: ${f"$powerConsumption%.0f MW"} (exp: ${f"$powerConsumptionExponent%.4f"})""".stripMargin
+
+  given Order[Machine]    = Order.by( _.className )
+  given Ordering[Machine] = Order.catsKernelOrderingForOrder

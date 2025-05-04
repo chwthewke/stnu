@@ -10,6 +10,7 @@ import scala.collection.immutable.SortedMap
 import scala.concurrent.duration.*
 
 import data.Countable
+import model.ExtractionRecipes
 import model.ExtractorType
 import model.Form
 import model.Item
@@ -25,15 +26,18 @@ import model.ResourcePurity
 import model.ResourceWeights
 import model.Transport
 
-opaque type ModelItems = Map[ClassName[Item], Item]
-object ModelItems:
-  inline def apply( items: Map[ClassName[Item], Item] ): ModelItems = items
-  extension ( modelItems: ModelItems )
-    def items: Map[ClassName[Item], Item] = modelItems
-    def get( className: ClassName[Item] ): ValidatedNel[String, Item] =
-      modelItems.get( className ).toValidNel( "No such item: " + className )
-
 object ModelInit:
+
+  object Types:
+    opaque type ModelItems = Map[ClassName[Item], Item]
+    object ModelItems:
+      inline def apply( items: Map[ClassName[Item], Item] ): ModelItems = items
+      extension ( modelItems: ModelItems )
+        def items: Map[ClassName[Item], Item] = modelItems
+        def get( className: ClassName[Item] ): ValidatedNel[String, Item] =
+          modelItems.get( className ).toValidNel( "No such item: " + className )
+
+  import Types.ModelItems
 
   extension [A]( className: ClassName[A] ) inline def translate[B]: ClassName[B] = ClassName( className.name )
 
@@ -51,8 +55,22 @@ object ModelInit:
       val extractorMachines: ValidatedNel[String, Map[ClassName[Extractor], ( Extractor, Machine )]] =
         data.extractors.traverse( ex => extractorMachine( ex ).toValidatedNel.tupleLeft( ex ) )
 
-      val extractionRecipes: ValidatedNel[String, Vector[( Item, ResourcePurity, Recipe.Prod )]] =
-        extractorMachines.andThen( getExtractionRecipes( data, modelItems, _, rawSelfExtraction ) )
+      val simpleProducersExtraction: ValidatedNel[String, Vector[( ( Item, Machine ), ExtractionRecipes )]] =
+        data.simpleProducers.traverseFilter( simpleProducerExtraction( modelItems, _ ) )
+
+      val extractionRecipes: ValidatedNel[String, SortedMap[( Item, Machine ), ExtractionRecipes]] =
+        (
+          extractorMachines
+            .andThen( getExtractionRecipes( data, modelItems, _, rawSelfExtraction ) )
+            .andThen:
+              _.traverse:
+                case ( item, machine, byPurity ) =>
+                  ExtractionRecipes.ByPurity( byPurity ).map( ( ( item, machine ), _ ) )
+          ,
+          simpleProducersExtraction
+        )
+          .mapN: ( ex, sp ) =>
+            ( ex ++ sp ).to( SortedMap )
 
       val manufacturingRecipeClassification: Map[ClassName[GameRecipe], RecipeCategory] =
         RecipeClassifier( data ).classifyRecipes
@@ -78,7 +96,7 @@ object ModelInit:
         .mapN: ( ex, mf, pw, cb, pp, ro ) =>
 
           val usefulItemClasses: Set[ClassName[Item]] =
-            ex.foldMap( t => itemClassesOf( t._3 ) ) ++
+            ex.foldMap( t => t.recipes.foldMap( itemClassesOf( _ ) ) ) ++
               mf.foldMap( itemClassesOf( _ ) ) ++
               pw.foldMap( itemClassesOf( _ ) )
 
@@ -89,13 +107,13 @@ object ModelInit:
               .to( SortedMap )
 
           val machines: SortedMap[ClassName[Machine], Machine] =
-            ( ex.map( _._3.producedIn ) ++ mf.map( _.producedIn ) ++ pw.map( _.producedIn ) )
+            ( ex.foldMap( _.recipes.map( _.producedIn ) ) ++ mf.map( _.producedIn ) ++ pw.map( _.producedIn ) )
               .fproductLeft( _.className )
               .to( SortedMap )
 
-          Model( version, usefulItems, ex.map( _._1 ).distinct, mf, pw, ex, machines, cb, pp, ro )
+          Model( version, usefulItems, ex.keySet.map( _._1 ).toVector, mf, pw, ex, machines, cb, pp, ro )
 
-  private def itemClassesOf[P[_]: Traverse]( recipe: Recipe ): Set[ClassName[Item]] =
+  private def itemClassesOf( recipe: Recipe ): Set[ClassName[Item]] =
     recipe.itemsPerMinuteMap.keySet.map( _.className )
 
   private def validateTransports( gameTransports: Vector[LogisticsData] ): ValidatedNel[String, Vector[Transport]] =
@@ -165,19 +183,23 @@ object ModelInit:
       modelItems: ModelItems,
       machines: Map[ClassName[Extractor], ( Extractor, Machine )],
       selfExtraction: Vector[GameRecipe]
-  ): ValidatedNel[String, Vector[( Item, ResourcePurity, Recipe.Prod )]] =
+  ): ValidatedNel[String, Vector[( Item, Machine, Vector[( ResourcePurity, Recipe.Prod )] )]] =
     val ( miners, otherExtractors ) =
       machines.values.toVector.partition( _._2.machineType.is( ExtractorType.Miner ) )
 
     (
       getMinerProducts( data, modelItems, miners, selfExtraction ),
       getOtherExtractionProducts( data, modelItems, otherExtractors )
-    ).mapN( _ ++ _ )
-      .map:
-        _.flatMap:
+    )
+      .mapN: ( miner, other ) =>
+        ( miner ++ other ).map:
           case ( gameItem, item, extractor, machine ) =>
-            ResourcePurity.cases
-              .map( purity => ( item, purity, extractionRecipe( gameItem, item, extractor, purity, machine ) ) )
+            (
+              item,
+              machine,
+              ResourcePurity.cases
+                .map( purity => ( purity, extractionRecipe( gameItem, item, extractor, purity, machine ) ) )
+            )
 
   def getMinerProducts(
       data: GameData,
@@ -238,6 +260,45 @@ object ModelInit:
           extractor.powerConsumptionExponent
         )
       )
+
+  def simpleProducerExtraction(
+      modelItems: ModelItems,
+      simpleProducer: SimpleProducer
+  ): ValidatedNel[String, Option[( ( Item, Machine ), ExtractionRecipes )]] =
+    val machineClass: ClassName[Machine] = simpleProducer.className.translate[Machine]
+    SimpleProducer.knownSimpleProducers
+      .get( simpleProducer.className )
+      .traverse: itemClass =>
+        (
+          modelItems.get( itemClass.translate ),
+          ExtractorType.cases
+            .find( _.dataKey.fold( _ => false, _ == machineClass ) )
+            .toValidNel( show"Extractor type not found for simple producer $machineClass" )
+        )
+          .mapN: ( item, extractorType ) =>
+            val machine: Machine = Machine(
+              machineClass,
+              simpleProducer.displayName,
+              MachineType( extractorType ),
+              0d,
+              1d
+            )
+
+            (
+              ( item, machine ),
+              ExtractionRecipes.Fixed(
+                Recipe.Prod(
+                  ClassName( show"${itemClass}_$machineClass" ),
+                  show"${item.displayName} (${simpleProducer.displayName})",
+                  RecipeCategory.Extraction,
+                  Nil,
+                  NonEmptyList.one( Countable( item, 1 ) ),
+                  simpleProducer.timeToProduceItem,
+                  machine,
+                  Power.Fixed( 0d )
+                )
+              )
+            )
 
   def extractionRecipe(
       gameItem: GameItem,

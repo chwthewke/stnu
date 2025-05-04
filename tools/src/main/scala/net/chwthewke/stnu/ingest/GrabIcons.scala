@@ -80,7 +80,7 @@ class GrabIcons[F[_]: Async]( private val loader: Loader[F] )( using Files: File
       gameData,
       ( model.manufacturingRecipes.map( _.producedIn ) ++
         model.powerRecipes.map( _.producedIn ) ++
-        model.extractionRecipes.map( _._3.producedIn ) ).map( _.className ).distinct
+        model.extractionRecipes.foldMap( _.recipes.map( _.producedIn ) ) ).map( _.className ).distinct
     )
 
   private def getItemIcons( gameData: GameData, model: Model ): F[Vector[( ClassName[Any], IconData )]] =
@@ -122,3 +122,4 @@ object GrabIcons:
         new GrabIcons[IO]( loader ).run.as( ExitCode.Success )
 
 object GrabIconsR1_0 extends GrabIcons.Program( DataVersionStorage.Release1_0 )
+object GrabIconsR1_1 extends GrabIcons.Program( DataVersionStorage.Release1_1 )

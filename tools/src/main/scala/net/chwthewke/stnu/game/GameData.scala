@@ -16,7 +16,8 @@ final case class GameData(
     schematics: Vector[Schematic],
     conveyorBelts: Vector[LogisticsData],
     pipelines: Vector[LogisticsData],
-    buildingDescriptors: Map[ClassName[BuildingDescriptor], BuildingDescriptor]
+    buildingDescriptors: Map[ClassName[BuildingDescriptor], BuildingDescriptor],
+    simpleProducers: Vector[SimpleProducer]
 ):
   private def buildingDescriptor[A]( className: ClassName[A] ): Option[ClassName[BuildingDescriptor]] =
     Option.when( className.name.startsWith( GameData.buildingPrefix ) )(
@@ -41,7 +42,8 @@ object GameData:
       schematics: Vector[Schematic] = Vector.empty,
       conveyorBelts: Vector[LogisticsData] = Vector.empty,
       pipelines: Vector[LogisticsData] = Vector.empty,
-      buildingDescriptors: Map[ClassName[BuildingDescriptor], BuildingDescriptor] = Map.empty
+      buildingDescriptors: Map[ClassName[BuildingDescriptor], BuildingDescriptor] = Map.empty,
+      simpleProducers: Vector[SimpleProducer] = Vector.empty
   ): GameData =
     GameData(
       items,
@@ -52,7 +54,8 @@ object GameData:
       schematics,
       conveyorBelts,
       pipelines,
-      buildingDescriptors
+      buildingDescriptors,
+      simpleProducers
     )
 
   val empty: GameData = init()
@@ -69,6 +72,8 @@ object GameData:
     init( buildingDescriptors = descriptors )
   def conveyorBelts( logisticsData: Vector[LogisticsData] ): GameData = init( conveyorBelts = logisticsData )
   def pipelines( logisticsData: Vector[LogisticsData] ): GameData     = init( pipelines = logisticsData )
+  def simpleProducers( producers: Vector[SimpleProducer] ): GameData =
+    init( simpleProducers = producers )
 
   given Monoid[GameData]:
     override def empty: GameData = GameData.empty
@@ -83,7 +88,8 @@ object GameData:
         x.schematics ++ y.schematics,
         x.conveyorBelts ++ y.conveyorBelts,
         x.pipelines ++ y.pipelines,
-        x.buildingDescriptors ++ y.buildingDescriptors
+        x.buildingDescriptors ++ y.buildingDescriptors,
+        x.simpleProducers ++ y.simpleProducers
       )
 
   import Parsers.*
@@ -136,6 +142,8 @@ object GameData:
         Decoder.decodeVector( Decoder[LogisticsData.ConveyorBelt].map( _.data ) ).map( GameData.conveyorBelts )
       case NativeClass.pipelineClass =>
         Decoder.decodeVector( Decoder[LogisticsData.Pipeline].map( _.data ) ).map( GameData.pipelines )
+      case NativeClass.simpleProducerClass =>
+        Decoder.decodeVector( Decoder[SimpleProducer] ).map( GameData.simpleProducers )
       case _ => Decoder.const( GameData.empty )
 
   given Decoder[GameData] =
@@ -152,7 +160,6 @@ object GameData:
       show"""Recipes:
             |
             |${model.recipes.map( _.show ).intercalate( "\n" )}
-            |
             |
             |Items:
             |
