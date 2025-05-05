@@ -69,5 +69,5 @@ class SolverService[F[_]: Async](
         yield resp
 
 object SolverService:
-  def apply[F[_]: Async]( models: Map[ModelVersionId, Model] ): SolverService[F] =
-    new SolverService[F]( models, new ConstraintSolver[F] )
+  def apply[F[_]: Async]( models: Vector[Model] ): SolverService[F] =
+    new SolverService[F]( models.fproductLeft( _.version.version ).toMap, new ConstraintSolver[F] )

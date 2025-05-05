@@ -20,8 +20,6 @@ object Index:
           tags2.title( "Satisfactory Planner" )
         ),
         body(
-          h1( "Satisfactory Planner" ),
-          p( s"Version ${StnuBuildInfo.version} built on ${StnuBuildInfo.builtAt}" ),
           div( id        := "app" ),
           script( `type` := "module", src := "js/launcher.js" )
         )
