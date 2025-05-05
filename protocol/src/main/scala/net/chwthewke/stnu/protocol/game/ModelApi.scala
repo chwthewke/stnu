@@ -5,7 +5,6 @@ package game
 import cats.data.OptionT
 import cats.~>
 
-import model.Model
 import model.ModelIndex
 import protocol.codec.PathCodec
 import protocol.codec.SegmentCodec
@@ -16,18 +15,18 @@ trait ModelApi[F[_]]:
 
   def getModelIndex: F[ModelIndex]
 
-  def getModel( version: ModelVersionId ): OptionT[F, Model]
+  def getModel( version: ModelVersionId ): OptionT[F, FullModel]
 
-  def getLatestModel: F[Model]
+  def getLatestModel: F[FullModel]
 
   final def mapK[G[_]]( f: F ~> G ): ModelApi[G] = new ModelApi[G]:
     override def getModelIndex: G[ModelIndex] =
       f( self.getModelIndex )
 
-    override def getModel( version: ModelVersionId ): OptionT[G, Model] =
+    override def getModel( version: ModelVersionId ): OptionT[G, FullModel] =
       self.getModel( version ).mapK( f )
 
-    override def getLatestModel: G[Model] =
+    override def getLatestModel: G[FullModel] =
       f( self.getLatestModel )
 
 object ModelApi:

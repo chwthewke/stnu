@@ -1,7 +1,7 @@
 package net.chwthewke.stnu
 package server
 
-import cats.data.NonEmptyMap
+import cats.data.NonEmptyVector
 import cats.data.OptionT
 import cats.effect.Async
 import cats.effect.Deferred
@@ -17,7 +17,8 @@ import pureconfig.ConfigSource
 import pureconfig.module.catseffect.syntax.*
 import scala.concurrent.duration.*
 
-import model.Model
+import model.ModelIndex
+import protocol.game.FullModel
 import server.middleware.Cors
 import server.middleware.LastModifiedMiddleware
 import server.middleware.LoggingMiddleware
@@ -49,26 +50,27 @@ object AppServer:
       .map: now =>
         LastModifiedMiddleware[F]( _ => OptionT.pure( now.truncatedTo( ChronoUnit.SECONDS ) ) )
 
-  private def loadModels[F[_]: Async]: F[NonEmptyMap[ModelVersionId, Model]] =
+  private def loadModels[F[_]: Async]: F[( ModelIndex, NonEmptyVector[FullModel] )] =
     for
       modelIndex <- assets.loadModelIndex[F]
       models <- modelIndex.versions.toVector.traverse: version =>
-                  assets.loadModel[F]( version ).tupleLeft( version.version )
+                  ( assets.loadModel[F]( version ).map( _.masked ), assets.loadIconIndex[F]( version ) )
+                    .mapN( FullModel( _, _ ) )
       modelsNev <- models.toNev.liftTo[F]( Error( "No model was loaded - index empty" ) )
-    yield modelsNev.toNem
+    yield ( modelIndex, modelsNev )
 
   def resource[F[_]: Async]: Resource[F, Unit] =
     for
       config                 <- Resource.eval( ConfigSource.default.loadF[F, AppConfig]() )
       lastModifiedMiddleware <- lastModifiedMiddleware[F]
       shutdown               <- Resource.eval( Deferred[F, Unit] )
-      models                 <- Resource.eval( loadModels[F] )
+      ( modelIndex, models ) <- Resource.eval( loadModels[F] )
       server <- new AppServer(
                   config.server,
                   Routes(
                     config.server,
-                    ModelService( models ),
-                    SolverService( models.toSortedMap ),
+                    ModelService( modelIndex, models ),
+                    SolverService( models.toVector.map( _.game ) ),
                     Cors[F],
                     LoggingMiddleware[F]( config.logging ),
                     lastModifiedMiddleware,
