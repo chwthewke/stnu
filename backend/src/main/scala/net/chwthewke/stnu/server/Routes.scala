@@ -31,7 +31,8 @@ class Routes[F[_]: Sync](
   private val systemRoutes: HttpRoutes[F] = HttpRoutes.of:
     case GET -> Root / "shutdown" => shutdown *> Ok()
 
-  private val staticFileTypes: List[String] = List( ".js", ".css", ".map", ".png", ".ico" )
+  private val staticFileTypes: List[String] =
+    List( ".js", ".css", ".map", ".png", ".ico", ".svg", ".json", ".ttf", ".woff", ".woff2" )
 
   private val staticRoutes: HttpRoutes[F] = HttpRoutes.of:
     case req @ GET -> "static" /: rest if staticFileTypes.exists( rest.renderString.endsWith ) =>
