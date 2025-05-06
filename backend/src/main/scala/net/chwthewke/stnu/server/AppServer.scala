@@ -14,6 +14,7 @@ import org.http4s.Request
 import org.http4s.ember.server.EmberServerBuilder
 import pureconfig.ConfigSource
 import pureconfig.module.catseffect.syntax.*
+import scala.concurrent.duration.*
 
 import server.middleware.Cors
 import server.middleware.LastModifiedMiddleware
@@ -32,11 +33,12 @@ class AppServer[F[_]: Async](
       .withHost( config.listenAddress )
       .withPort( config.listenPort )
       .withHttpApp( routes.orNotFound )
+      .withShutdownTimeout( 1.second )
       .build
       .flatMap( _ => Resource.make( shutdown.get )( _ => Async[F].unit ) )
 
 object AppServer:
-  private def modelsLastModifiedMiddleware[F[_]]( using
+  private def lastModifiedMiddleware[F[_]]( using
       F: Async[F]
   ): Resource[F, LastModifiedMiddleware.T[F]] =
     Resource
@@ -48,7 +50,7 @@ object AppServer:
     for
       config                 <- Resource.eval( ConfigSource.default.loadF[F, AppConfig]() )
       modelApi               <- Resource.eval( ModelService.load[F] )
-      lastModifiedMiddleware <- modelsLastModifiedMiddleware[F]
+      lastModifiedMiddleware <- lastModifiedMiddleware[F]
       shutdown               <- Resource.eval( Deferred[F, Unit] )
       server <- new AppServer(
                   config.server,
