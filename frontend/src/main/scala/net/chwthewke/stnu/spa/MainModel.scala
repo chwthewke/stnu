@@ -8,8 +8,12 @@ import org.http4s.Uri
 import org.scalajs.dom
 import tyrian.Cmd
 
+import model.ModelIndex
+import protocol.game.FullModel
 import spa.browse.BrowseModel
 import spa.browse.BrowseMsg
+import spa.plan.PlanModel
+import spa.plan.PlanMsg
 
 enum MainModel[F[_]]:
   case Error( message: String )
@@ -18,7 +22,8 @@ enum MainModel[F[_]]:
       http: Http[F],
       location: LocationModel,
       content: ContentModel,
-      browsePage: BrowseModel
+      browsePage: BrowseModel,
+      planPage: PlanModel
   )
 
 object MainModel:
@@ -41,33 +46,46 @@ object MainModel:
         // INIT & DATA FETCH ("KERNEL")
         case ( MainModel.Error( _ ), _ ) => model -> Cmd.None
 
-        case ( MainModel.Loading( http, location ), Msg.RecvGameModel( index, model ) ) =>
-          MainModel.Loaded( http, location, ContentModel( index, model, http ), BrowseModel.init ) -> Cmd.None
+        case ( m @ MainModel.Loading( _, _ ), Msg.RecvGameModel( index, model ) ) =>
+          m.receiveGameModel( index, model )
 
-        case ( m @ MainModel.Loaded( http, _, _, _ ), Msg.RecvGameModel( index, model ) ) =>
-          m.copy( content = ContentModel( index, model, http ) ) -> Cmd.None
+        case ( m @ MainModel.Loaded( _, _, _, _, _ ), Msg.RecvGameModel( index, model ) ) =>
+          m.receiveGameModel( index, model )
 
-        case ( m @ MainModel.Loaded( http, _, content, _ ), Msg.FetchGameModel( version ) ) =>
+        case ( m @ MainModel.Loaded( http, _, content, _, _ ), Msg.FetchGameModel( version ) ) =>
           m -> http.fetchGameModel( content.modelIndex, version )
 
         // NAVIGATION
         case ( _, Msg.SetLocation( location ) ) =>
           model match
-            case MainModel.Loading( http, _ ) => Loading( http, location ) -> Cmd.None
-            case m @ MainModel.Loaded( _, _, _, _ ) =>
-              m.setLocation( location ) -> Cmd.None
-            case _ => model -> Cmd.None
+            case MainModel.Loading( http, _ )          => Loading( http, location ) -> Cmd.None
+            case m @ MainModel.Loaded( _, _, _, _, _ ) => m.setLocation( location ) -> Cmd.None
+            case _                                     => model                     -> Cmd.None
 
         case ( model, Msg.NavigateExternal( uri ) ) =>
           model -> Cmd.SideEffect( dom.window.open( url = uri, target = "_blank" ) )
 
         // PAGE MESSAGES
-        case ( m @ MainModel.Loaded( _, _, _, _ ), Msg.BrowseMessage( browseMsg ) ) =>
+        case ( m @ MainModel.Loaded( _, _, _, _, _ ), Msg.BrowseMessage( browseMsg ) ) =>
           val ( newBrowsePage: BrowseModel, browseCmd: Cmd[F, BrowseMsg] ) =
             m.browsePage.update( browseMsg )
           m.copy( browsePage = newBrowsePage ) -> browseCmd.map( Msg.BrowseMessage( _ ) )
+        case ( m @ MainModel.Loaded( _, _, _, _, _ ), Msg.PlanMessage( planMsg ) ) =>
+          val ( newPlanPage: PlanModel, planCmd: Cmd[F, PlanMsg] ) =
+            m.planPage.update( planMsg )
+          m.copy( planPage = newPlanPage ) -> planCmd.map( Msg.PlanMessage( _ ) )
 
         case ( _, _ ) => model -> Cmd.None
+
+  extension [F[_]: Sync]( model: MainModel.Loading[F] )
+    def receiveGameModel( index: ModelIndex, fullModel: FullModel ): ( MainModel.Loaded[F], Cmd[F, Msg] ) =
+      MainModel.Loaded(
+        model.http,
+        model.location,
+        ContentModel( index, fullModel, model.http ),
+        BrowseModel.init,
+        PlanModel.init( fullModel.game )
+      ) -> Cmd.None
 
   extension [F[_]: Sync]( model: MainModel.Loaded[F] )
     def setLocation( location: LocationModel ): MainModel.Loaded[F] =
@@ -75,5 +93,8 @@ object MainModel:
         model.http,
         location,
         model.content,
-        if ( location == LocationModel.Browse ) model.browsePage.restore else model.browsePage
+        if ( location == LocationModel.Browse ) model.browsePage.restore else model.browsePage,
+        if ( location == LocationModel.Plan ) model.planPage.restore else model.planPage
       )
+    def receiveGameModel( index: ModelIndex, fullModel: FullModel ): ( MainModel.Loaded[F], Cmd[F, Msg] ) =
+      model.copy( content = ContentModel( index, fullModel, model.http ) ) -> Cmd.None // TODO adapt page models to new content

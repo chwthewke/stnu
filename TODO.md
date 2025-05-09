@@ -40,5 +40,8 @@
 - ~~serve static assets~~
 - ~~serve index.html for prod~~
 
+## frontend
+- "deep" internal navigation
+
 ## refactorings vs. legacy
 - ~~check circe codecs in tools for actual use~~

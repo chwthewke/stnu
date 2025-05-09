@@ -101,8 +101,8 @@ object MainView:
         )
       case MainModel.Loading( _, location ) =>
         withNav( location.some, none )()
-      case MainModel.Loaded( _, location, content, browsePage ) =>
+      case MainModel.Loaded( _, location, content, browsePage, planPage ) =>
         withNav( location.some, content.some ):
           location match
             case LocationModel.Browse => BrowseView( content.env, browsePage ).map( Msg.BrowseMessage( _ ) )
-            case LocationModel.Plan   => Html.div()
+            case LocationModel.Plan   => PlanView( content.env, planPage ).map( Msg.PlanMessage( _ ) )
