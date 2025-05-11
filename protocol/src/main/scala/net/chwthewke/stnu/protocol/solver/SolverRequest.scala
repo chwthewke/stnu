@@ -16,7 +16,7 @@ import model.Recipe
 case class SolverRequest(
     modelVersion: ModelVersionId,
     requested: Vector[Countable[Double, ClassName[Item]]],
-    recipeSelection: Set[ClassName[Recipe]],
+    recipeSelection: Set[ClassName[Recipe.NonExtraction]],
     resources: Map[ClassName[Item], SolverRequest.Resource]
 ) derives Show,
       ConfiguredDecoder,

@@ -25,17 +25,17 @@ class SolverService[F[_]: Async](
     with UriCodec.Dsl[F]:
   private def validateInputs( model: Model )(
       requested: Vector[Countable[Double, ClassName[Item]]],
-      recipeSelection: Set[ClassName[Recipe]],
+      recipeSelection: Set[ClassName[Recipe.NonExtraction]],
       resources: Map[ClassName[Item], SolverRequest.Resource]
   ): Either[
     SolverResponse.Error,
-    ( Vector[Countable[Double, Item]], Vector[Recipe], Map[ClassName[Item], SolverRequest.Resource] )
+    ( Vector[Countable[Double, Item]], Vector[Recipe.NonExtraction], Map[ClassName[Item], SolverRequest.Resource] )
   ] =
     (
       requested.traverse: item =>
         item.traverse( cn => model.items.get( cn ).toValidNel( cn: ClassName[Any] ) ),
       recipeSelection.toVector.traverse: cn =>
-        model.recipes.get( cn ).toValidNel( cn: ClassName[Any] ),
+        model.recipes.get( cn ).collect { case ne: Recipe.NonExtraction => ne }.toValidNel( cn: ClassName[Any] ),
       resources.toVector
         .traverse:
           case ( cn, res ) => model.items.get( cn ).toValidNel( cn: ClassName[Any] ).as( ( cn, res ) )

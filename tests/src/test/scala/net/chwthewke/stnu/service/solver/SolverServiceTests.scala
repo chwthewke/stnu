@@ -57,8 +57,8 @@ class SolverServiceTests extends CatsEffectSuite:
   loadModels
     .map( models =>
       for
-        ( version, model ) <- models
-        item               <- allProducts( model.masked )
+        ( _, model ) <- models
+        item         <- allProducts( model )
       do checkCanProduce( model, item )
     )
     .unsafeRunSync()

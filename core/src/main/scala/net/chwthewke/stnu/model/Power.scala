@@ -7,24 +7,32 @@ import io.circe.derivation.ConfiguredDecoder
 import io.circe.derivation.ConfiguredEncoder
 
 enum Power derives ConfiguredDecoder, ConfiguredEncoder:
-  case Fixed( value: Double )               extends Power
-  case Variable( min: Double, max: Double ) extends Power
+  case Production( value: Double )          extends Power
+  case Fixed( value: Double )               extends Power with Power.Consumption_
+  case Variable( min: Double, max: Double ) extends Power with Power.Consumption_
 
 object Power:
   extension ( power: Power )
     def average: Double = power match
+      case Production( value )  => -value
       case Fixed( value )       => value
       case Variable( min, max ) => ( min + max ) / 2
     def min: Double = power match
-      case Fixed( value )       => value
-      case Variable( min, max ) => min
+      case Production( value ) => -value
+      case Fixed( value )      => value
+      case Variable( min, _ )  => min
     def max: Double = power match
-      case Fixed( value )       => value
-      case Variable( min, max ) => max
-    def map( f: Double => Double ): Power = power match
-      case Fixed( value )       => Fixed( f( value ) )
-      case Variable( min, max ) => Variable( f( min ), f( max ) )
-    def combine( other: Power ): Power = power match
+      case Production( value ) => -value
+      case Fixed( value )      => value
+      case Variable( _, max )  => max
+
+    def map( consumed: Double => Double, produced: Double => Double ): Power = power match
+      case Production( value )  => Production( produced( value ) )
+      case Fixed( value )       => Fixed( consumed( value ) )
+      case Variable( min, max ) => Variable( consumed( min ), consumed( max ) )
+
+  extension ( powerConsumption: Power.Consumption )
+    def combine( other: Power.Consumption ): Power.Consumption = powerConsumption match
       case Fixed( value ) =>
         other match
           case Fixed( otherValue )  => Fixed( value + otherValue )
@@ -32,11 +40,16 @@ object Power:
       case Variable( min, max ) =>
         Variable( min + other.min, max + other.max )
 
-  given Monoid[Power]:
-    override def empty: Power = Fixed( 0d )
+  sealed trait Consumption_
 
-    override def combine( x: Power, y: Power ): Power = x.combine( y )
+  type Consumption = Power & Consumption_
+
+  given Monoid[Power.Consumption]:
+    override def empty: Power.Consumption = Fixed( 0d )
+
+    override def combine( x: Power.Consumption, y: Power.Consumption ): Power.Consumption = x.combine( y )
 
   given Show[Power] = Show.show:
+    case Production( value )  => f"$value% 8.2f"
     case Fixed( value )       => f"$value% 6.2f"
     case Variable( min, max ) => f"$min%6.2f-$max%6.2f"

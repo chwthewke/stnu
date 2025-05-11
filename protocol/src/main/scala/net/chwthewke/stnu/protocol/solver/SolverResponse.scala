@@ -17,7 +17,7 @@ import model.Recipe
 enum SolverResponse derives Show, ConfiguredDecoder, ConfiguredEncoder:
   case Solution(
       inputs: Vector[Countable[Double, ClassName[Item]]],
-      recipes: Vector[Countable[Double, ClassName[Recipe]]]
+      recipes: Vector[Countable[Double, ClassName[Recipe.NonExtraction]]]
   )                                                            extends SolverResponse with SolverResponse.Ok_
   case InvalidModelVersion                                     extends SolverResponse with SolverResponse.Error_
   case InvalidClasses( classes: NonEmptyList[ClassName[Any]] ) extends SolverResponse with SolverResponse.Error_
@@ -29,3 +29,9 @@ object SolverResponse:
 
   type Ok    = SolverResponse & SolverResponse.Ok_
   type Error = SolverResponse & SolverResponse.Error_
+
+  extension ( response: SolverResponse )
+    def ok: Option[SolverResponse.Ok] =
+      response match
+        case s: SolverResponse.Solution => Some( s )
+        case _                          => None

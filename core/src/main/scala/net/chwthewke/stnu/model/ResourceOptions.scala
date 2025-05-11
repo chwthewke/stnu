@@ -10,8 +10,7 @@ import io.circe.derivation.ConfiguredDecoder
 import io.circe.derivation.ConfiguredEncoder
 
 case class ResourceOptions(
-    resourceNodes: Map[ExtractorType, Map[ClassName[Item], ResourceDistrib]],
-    resourceWeights: ResourceWeights
+    resourceNodes: Map[ExtractorType, Map[ClassName[Item], ResourceDistrib]]
 ) derives ConfiguredDecoder,
       ConfiguredEncoder:
   def get( machine: Machine, item: Item ): ResourceDistrib =
@@ -32,7 +31,7 @@ case class ResourceOptions(
 
 object ResourceOptions:
 
-  val empty: ResourceOptions = ResourceOptions( Map.empty, ResourceWeights( Map.empty ) )
+  val empty: ResourceOptions = ResourceOptions( Map.empty )
 
   given Show[ResourceOptions] =
     def showItem( item: ClassName[Item], distrib: ResourceDistrib ): String =
@@ -45,9 +44,6 @@ object ResourceOptions:
     Show.show: opts =>
       show"""NODES
             |${opts.resourceNodes.toVector.map( showExtractorType.tupled ).mkString_( "\n\n" )}
-            |
-            |WEIGHTS
-            |${opts.resourceWeights}
             |""".stripMargin
 
-  given Eq[ResourceOptions] = Eq.by( ro => ( ro.resourceNodes, ro.resourceWeights ) )
+  given Eq[ResourceOptions] = Eq.by( ro => ro.resourceNodes )

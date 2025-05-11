@@ -4,7 +4,9 @@ package model
 import alleycats.std.iterable.*
 import cats.Show
 import cats.Traverse
+import cats.data.Ior
 import cats.data.NonEmptyList
+import cats.data.NonEmptyVector
 import cats.data.ReaderT
 import cats.data.ValidatedNel
 import cats.derived.strict.*
@@ -14,7 +16,6 @@ import io.circe.Encoder
 import io.circe.derivation.ConfiguredDecoder
 import io.circe.derivation.ConfiguredEncoder
 import scala.collection.immutable.SortedMap
-import scala.collection.immutable.SortedSet
 import scala.concurrent.duration.*
 
 import data.Countable
@@ -23,56 +24,50 @@ case class Model(
     version: ModelVersion,
     items: SortedMap[ClassName[Item], Item],
     extractedItems: Vector[Item],
-    manufacturingRecipes: Vector[Recipe.Prod],
-    powerRecipes: Vector[Recipe.PowerGen],
+    manufacturingRecipes: Vector[Recipe.Manufacturing],
+    powerRecipes: Vector[Recipe.PowerGeneration],
     extractionRecipes: SortedMap[( Item, Machine ), ExtractionRecipes],
     machines: SortedMap[ClassName[Machine], Machine],
-    conveyorBelts: Vector[Transport],
-    pipelines: Vector[Transport],
+    conveyorBelts: NonEmptyVector[Transport],
+    pipelines: NonEmptyVector[Transport],
     defaultResourceOptions: ResourceOptions
 ):
-  lazy val recipes: Map[ClassName[Recipe], Recipe] =
-    ( manufacturingRecipes ++ powerRecipes ++ extractionRecipes.foldMap( _.recipes ) ).fproductLeft( _.className ).toMap
+  lazy val recipes: SortedMap[ClassName[Recipe], Recipe] =
+    ( manufacturingRecipes ++ powerRecipes ++ extractionRecipes.foldMap( _.recipes ) )
+      .fproductLeft( _.className )
+      .to( SortedMap )
 
-  lazy val masked: Model = Model.maskExcluded( this )
+  def withItems( items: SortedMap[ClassName[Item], Item] ): Either[String, Model] =
+    Model.Compact( this ).copy( items = items.values.toVector ).model
+
+  def resourceCaps(
+      minerClass: ClassName[Machine],
+      clockSpeed: ClockSpeedPreset,
+      extractors: Set[ExtractorType],
+      resourceNodes: Map[ExtractorType, Map[ClassName[Item], ResourceDistrib]]
+  ): Map[ClassName[Item], Double] =
+    def getExtractionRecipes( machineFilter: Machine => Boolean ): Map[ClassName[Item], ExtractionRecipes] =
+      extractionRecipes
+        .flatMap:
+          case ( ( item, machine ), recipes ) =>
+            Option.when( machineFilter( machine ) )( ( item.className, recipes ) )
+
+    resourceNodes.toVector.foldMap:
+      case ( extractor, distribs ) =>
+        val extractorRecipes: Map[ClassName[Item], ExtractionRecipes] = extractor match
+          case ExtractorType.Miner =>
+            getExtractionRecipes( _.className == minerClass )
+          case other =>
+            getExtractionRecipes( _.machineType.extractor.contains( other ) && extractors.contains( other ) )
+
+        extractorRecipes.alignWith( distribs ) {
+          case Ior.Both( ExtractionRecipes.Variable( byPurity ), distrib ) =>
+            clockSpeed.value.fraction *
+              distrib.foldMap( ( purity, count ) => count * byPurity.get( purity ).productsPerMinute.amount )
+          case _ => 0d
+        }
 
 object Model:
-  private val excludedProducts: Vector[String] =
-    Vector(
-      "biofuel",
-      "gas nobelisk",
-      "biomass",
-      "alien protein",
-      "alien dna"
-    )
-
-  private def maskExcluded( model: Model ): Model =
-    val excludedItems: SortedSet[ClassName[Item]] =
-      model.items
-        .filter:
-          case ( cn, item ) =>
-            excludedProducts.exists( item.displayName.toLowerCase.contains ) &&
-            !model.extractedItems.exists( _.className == cn )
-        .keySet
-    def exludeRecipe( recipe: Recipe ): Boolean =
-      recipe.itemsPerMinute.exists( ci => excludedItems.contains( ci.item.className ) )
-    val allowedManufacturingRecipes: Vector[Recipe.Prod] =
-      model.manufacturingRecipes.filterNot( exludeRecipe )
-    val allowedPowerRecipes: Vector[Recipe.PowerGen] =
-      model.powerRecipes.filterNot( exludeRecipe )
-
-    Model(
-      model.version,
-      model.items.removedAll( excludedItems ),
-      model.extractedItems,
-      allowedManufacturingRecipes,
-      allowedPowerRecipes,
-      model.extractionRecipes,
-      model.machines,
-      model.conveyorBelts,
-      model.pipelines,
-      model.defaultResourceOptions
-    )
 
   given Show[Model] = Show.show: model =>
     show"""Manufacturing Recipes
@@ -109,6 +104,11 @@ object Model:
       def machine( className: ClassName[Machine] ): ReaderT[ValidatedNel[String, *], Types.Index, Machine] =
         ReaderT( index => index.machine( className ) )
 
+  private def validateRecipeCategory[C <: RecipeCategory]( p: RecipeCategory => Option[C] )(
+      category: RecipeCategory
+  ): ValidatedNel[String, C] =
+    p( category ).toValidNel( s"invalid category $category" )
+
   private case class CompactRecipe(
       className: ClassName[Recipe],
       displayName: String,
@@ -121,24 +121,51 @@ object Model:
   ) derives Show,
         ConfiguredDecoder,
         ConfiguredEncoder:
-    def prod: ReaderT[ValidatedNel[String, *], Types.Index, Recipe.Prod] = ReaderT: index =>
+    def manufacturing: ReaderT[ValidatedNel[String, *], Types.Index, Recipe.Manufacturing] = ReaderT: index =>
       (
-        ingredients.traverse( _.traverse( index.item ) ),
+        validateRecipeCategory( _.manufacturing )( category ).tag( show"Category $category" ),
+        ingredients.traverse( _.traverse( index.item( _ ).tag( "Ingredient" ) ) ),
         products.toNel
           .toValidNel( show"Recipe with empty products $className" )
           .andThen:
-            _.traverse( _.traverse( index.item ) )
+            _.traverse( _.traverse( index.item ).tag( "Product" ) )
         ,
-        index.machine( producedIn )
-      ).mapN( Recipe.Prod( className.narrow[Recipe.Prod], displayName, category, _, _, duration, _, power ) )
+        index.machine( producedIn ).tag( "Producer" )
+      ).mapN(
+        Recipe.Manufacturing( className.narrow[Recipe.Manufacturing], displayName, _, _, _, duration, _, power )
+      ).tag( s"Manufacturing $displayName ($className)" )
 
-    def powerGen: ReaderT[ValidatedNel[String, *], Types.Index, Recipe.PowerGen] =
+    def extraction: ReaderT[ValidatedNel[String, *], Types.Index, Recipe.Extraction] = ReaderT: index =>
+      (
+        validateRecipeCategory( _.extraction )( category ),
+        ingredients.traverse( _.traverse( index.item ) ),
+        products match
+          case product :: Nil => product.traverse( index.item )
+          case _              => show"Extraction recipe with 0 or 2+ products $className".invalidNel,
+        index.machine( producedIn )
+      ).mapN(
+        Recipe.Extraction( className.narrow[Recipe.Extraction], displayName, _, _, _, duration, _, power )
+      ).tag( s"Extraction $displayName ($className)" )
+
+    def powerGeneration: ReaderT[ValidatedNel[String, *], Types.Index, Recipe.PowerGeneration] =
       ReaderT: index =>
         (
+          validateRecipeCategory( _.powerGeneration )( category ),
           ingredients.traverse( _.traverse( index.item ) ),
           products.traverse( _.traverse( index.item ) ),
           index.machine( producedIn )
-        ).mapN( Recipe.PowerGen( className.narrow[Recipe.PowerGen], displayName, category, _, _, duration, _, power ) )
+        ).mapN(
+          Recipe.PowerGeneration(
+            className.narrow[Recipe.PowerGeneration],
+            displayName,
+            _,
+            _,
+            _,
+            duration,
+            _,
+            power
+          )
+        ).tag( s"PowerGeneration $displayName ($className)" )
 
   private object CompactRecipe:
     def of( recipe: Recipe )( using Traverse[recipe.P] ): CompactRecipe =
@@ -159,13 +186,13 @@ object Model:
         ConfiguredEncoder:
     def extractionRecipes: ReaderT[ValidatedNel[String, *], Types.Index, ExtractionRecipes] =
       recipes match
-        case Vector( recipe ) => recipe.prod.map( ExtractionRecipes.Fixed( _ ) )
+        case Vector( recipe ) => recipe.extraction.map( ExtractionRecipes.Fixed( _ ) )
 
         case v if v.size == ResourcePurity.cases.size =>
           recipes
             .zip( ResourcePurity.cases )
             .traverse:
-              case ( recipe, purity ) => recipe.prod.tupleLeft( purity )
+              case ( recipe, purity ) => recipe.extraction.tupleLeft( purity )
             .mapF: recipesV =>
               recipesV.andThen: recipes =>
                 ExtractionRecipes.ByPurity( recipes )
@@ -177,6 +204,10 @@ object Model:
     def of( extractionRecipes: ExtractionRecipes ): CompactExtractionRecipes =
       CompactExtractionRecipes( extractionRecipes.recipes.map( CompactRecipe.of( _ ) ) )
 
+  extension [A]( validated: ValidatedNel[String, A] )
+    private def tag( t: String ): ValidatedNel[String, A] =
+      validated.leftMap( _.map( err => s"[$t $err]" ) )
+
   private case class Compact(
       version: ModelVersion,
       items: Vector[Item],
@@ -185,8 +216,8 @@ object Model:
       powerRecipes: Vector[CompactRecipe],
       extractionRecipes: Vector[( ClassName[Item], ClassName[Machine], CompactExtractionRecipes )],
       machines: Vector[Machine],
-      conveyorBelts: Vector[Transport],
-      pipelines: Vector[Transport],
+      conveyorBelts: NonEmptyVector[Transport],
+      pipelines: NonEmptyVector[Transport],
       defaultResourceOptions: ResourceOptions
   ) derives Show,
         ConfiguredDecoder,
@@ -195,9 +226,9 @@ object Model:
       val itemsMap: SortedMap[ClassName[Item], Item]          = items.fproductLeft( _.className ).to( SortedMap )
       val machinesMap: SortedMap[ClassName[Machine], Machine] = machines.fproductLeft( _.className ).to( SortedMap )
       (
-        ReaderT( ( index: Types.Index ) => extractedItems.traverse( index.item ) ),
-        manufacturingRecipes.traverse( _.prod ),
-        powerRecipes.traverse( _.powerGen ),
+        ReaderT( ( index: Types.Index ) => extractedItems.traverse( index.item( _ ).tag( "Extracted" ) ) ),
+        manufacturingRecipes.traverse( _.manufacturing ),
+        powerRecipes.traverse( _.powerGeneration ),
         extractionRecipes
           .traverse:
             case ( itemClass, machineClass, recipes ) =>

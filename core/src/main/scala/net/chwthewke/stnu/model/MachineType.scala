@@ -1,17 +1,20 @@
 package net.chwthewke.stnu
 package model
 
-opaque type MachineType = ExtractorType | ManufacturerType
+opaque type MachineType = ExtractorType | ManufacturerType | PowerGeneratorType.type
 
 object MachineType
     extends Enum[MachineType]
     with CatsEnum[MachineType]
     with OrderEnum[MachineType]
     with CirceEnum[MachineType]:
-  override val values: Array[MachineType] = ExtractorType.values ++ ManufacturerType.values
 
-  inline def apply( manufacturerType: ManufacturerType ): MachineType = manufacturerType
-  inline def apply( extractorType: ExtractorType ): MachineType       = extractorType
+  override val values: Array[MachineType] =
+    ExtractorType.values ++ ManufacturerType.values :+ PowerGeneratorType
+
+  inline def apply( manufacturerType: ManufacturerType ): MachineType          = manufacturerType
+  inline def apply( extractorType: ExtractorType ): MachineType                = extractorType
+  inline def apply( powerGeneratorType: PowerGeneratorType.type ): MachineType = powerGeneratorType
 
   extension ( machineType: MachineType )
     def extractor: Option[ExtractorType] = machineType match
@@ -22,8 +25,9 @@ object MachineType
       case manufacturerType: ManufacturerType => Some( manufacturerType )
       case _                                  => None
 
-    def isExtractor: Boolean    = extractor.isDefined
-    def isManufacturer: Boolean = manufacturer.isDefined
+    def isExtractor: Boolean      = extractor.isDefined
+    def isManufacturer: Boolean   = manufacturer.isDefined
+    def isPowerGenerator: Boolean = machineType == PowerGeneratorType
 
     def is( extractorType: ExtractorType ): Boolean       = extractor.contains( extractorType )
     def is( manufacturerType: ManufacturerType ): Boolean = manufacturer.contains( manufacturerType )

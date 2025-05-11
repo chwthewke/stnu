@@ -11,6 +11,7 @@ case class Machine(
     className: ClassName[Machine],
     displayName: String,
     machineType: MachineType,
+    tier: Tier,
     powerConsumption: Double,
     powerConsumptionExponent: Double
 ) derives ConfiguredDecoder,
@@ -18,9 +19,9 @@ case class Machine(
 
 object Machine:
   given Show[Machine] = Show.show:
-    case Machine( className, displayName, machineType, powerConsumption, powerConsumptionExponent ) =>
+    case Machine( className, displayName, machineType, tier, powerConsumption, powerConsumptionExponent ) =>
       show"""$displayName # $className
-            |$machineType
+            |$machineType Tier $tier
             |Power: ${f"$powerConsumption%.0f MW"} (exp: ${f"$powerConsumptionExponent%.4f"})""".stripMargin
 
   given Order[Machine]    = Order.by( _.className )

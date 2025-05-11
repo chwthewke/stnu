@@ -5,7 +5,6 @@ enum ExtractorType(
     val description: String,
     val dataKey: Either[String, ClassName[Machine]]
 ):
-
   case Miner       extends ExtractorType( "miner", Left( "Miner" ) )
   case WaterPump   extends ExtractorType( "water extractor", Right( ExtractorType.waterExtractorClass ) )
   case OilPump     extends ExtractorType( "oil extractor", Right( ExtractorType.oilExtractorClass ) )

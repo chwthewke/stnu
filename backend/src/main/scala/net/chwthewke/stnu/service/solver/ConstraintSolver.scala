@@ -17,7 +17,7 @@ import protocol.solver.SolverResponse
 trait ConstraintSolver:
   def solve(
       requested: Vector[Countable[Double, Item]],
-      recipes: Vector[Recipe],
+      recipes: Vector[Recipe.NonExtraction],
       inputs: Map[ClassName[Item], SolverRequest.Resource]
   ): Either[SolverResponse.Error, SolverResponse.Ok]
 
@@ -29,12 +29,12 @@ object ConstraintSolver extends ConstraintSolver:
 
   def solve(
       requested: Vector[Countable[Double, Item]],
-      recipes: Vector[Recipe],
+      recipes: Vector[Recipe.NonExtraction],
       inputs: Map[ClassName[Item], SolverRequest.Resource]
   ): Either[SolverResponse.Error, SolverResponse.Ok] =
     val model: ExpressionsBasedModel = new ExpressionsBasedModel
 
-    val recipeVars: Map[ClassName[Recipe], Variable] =
+    val recipeVars: Map[ClassName[Recipe.NonExtraction], Variable] =
       recipes
         .map: recipe =>
           val name   = recipeVarName( recipe.className )
@@ -60,7 +60,7 @@ object ConstraintSolver extends ConstraintSolver:
         case Countable( item, amount ) => Map( ( item.className, amount ) )
 
     val itemExprs: Map[ClassName[Item], Expression] =
-      ( recipes.foldMap( _.itemsPerMinuteMap.keySet.map( _.className ) ) ++ requested.map( _.item.className ) ).toVector
+      ( recipes.foldMap( _.items.toSet.map( _.className ) ) ++ requested.map( _.item.className ) ).toVector
         .map: item =>
           (
             item,

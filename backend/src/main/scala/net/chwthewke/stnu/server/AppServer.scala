@@ -54,7 +54,7 @@ object AppServer:
     for
       modelIndex <- assets.loadModelIndex[F]
       models <- modelIndex.versions.toVector.traverse: version =>
-                  ( assets.loadModel[F]( version ).map( _.masked ), assets.loadIconIndex[F]( version ) )
+                  ( assets.loadModel[F]( version ), assets.loadIconIndex[F]( version ) )
                     .mapN( FullModel( _, _ ) )
       modelsNev <- models.toNev.liftTo[F]( Error( "No model was loaded - index empty" ) )
     yield ( modelIndex, modelsNev )

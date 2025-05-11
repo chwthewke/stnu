@@ -70,10 +70,10 @@ class GrabIcons[F[_]: Async]( private val loader: Loader[F] )( using Files: File
         .tupleLeft( cn )
 
   private def getConveyorBeltIcons( gameData: GameData, model: Model ): F[Vector[( ClassName[Any], IconData )]] =
-    buildables( gameData, model.conveyorBelts.map( _.className ) )
+    buildables( gameData, model.conveyorBelts.map( _.className ).toVector )
 
   private def getPipelineIcons( gameData: GameData, model: Model ): F[Vector[( ClassName[Any], IconData )]] =
-    buildables( gameData, model.pipelines.map( _.className ) )
+    buildables( gameData, model.pipelines.map( _.className ).toVector )
 
   private def getMachineIcons( gameData: GameData, model: Model ): F[Vector[( ClassName[Any], IconData )]] =
     buildables(

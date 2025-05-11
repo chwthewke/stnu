@@ -20,14 +20,26 @@ final case class GameData(
     simpleProducers: Vector[SimpleProducer]
 ):
   private def buildingDescriptor[A]( className: ClassName[A] ): Option[ClassName[BuildingDescriptor]] =
-    Option.when( className.name.startsWith( GameData.buildingPrefix ) )(
-      ClassName( GameData.descriptorPrefix + className.name.stripPrefix( GameData.buildingPrefix ) )
-    )
+    descriptorOfBuilding[BuildingDescriptor]( className )
 
   def getBuildingIcon[A]( className: ClassName[A] ): Option[IconData] =
     buildingDescriptor( className )
       .flatMap( buildingDescriptors.get )
       .flatMap( _.smallIcon )
+
+  def descriptorOfBuilding[A]: DescriptorOfBuildingPartiallyApplied[A] = new DescriptorOfBuildingPartiallyApplied[A]
+  class DescriptorOfBuildingPartiallyApplied[A]:
+    def apply[B]( className: ClassName[B] ): Option[ClassName[A]] =
+      Option.when( className.name.startsWith( GameData.buildingPrefix ) )(
+        ClassName( GameData.descriptorPrefix + className.name.stripPrefix( GameData.buildingPrefix ) )
+      )
+
+  def buildingOfDescriptor[A]: BuildingOfDecriptorPartiallyApplied[A] = new BuildingOfDecriptorPartiallyApplied[A]
+  class BuildingOfDecriptorPartiallyApplied[A]:
+    def apply[B]( className: ClassName[B] ): Option[ClassName[A]] =
+      Option.when( className.name.startsWith( GameData.descriptorPrefix ) )(
+        ClassName( GameData.buildingPrefix + className.name.stripPrefix( GameData.descriptorPrefix ) )
+      )
 
 object GameData:
   private val buildingPrefix: String   = "Build_"
@@ -72,7 +84,7 @@ object GameData:
     init( buildingDescriptors = descriptors )
   def conveyorBelts( logisticsData: Vector[LogisticsData] ): GameData = init( conveyorBelts = logisticsData )
   def pipelines( logisticsData: Vector[LogisticsData] ): GameData     = init( pipelines = logisticsData )
-  def simpleProducers( producers: Vector[SimpleProducer] ): GameData =
+  def simpleProducers( producers: Vector[SimpleProducer] ): GameData  =
     init( simpleProducers = producers )
 
   given Monoid[GameData]:
@@ -149,7 +161,7 @@ object GameData:
   given Decoder[GameData] =
     for
       nativeClass <- Decoder[NativeClass].prepare( _.downField( "NativeClass" ) )
-      gameData <-
+      gameData    <-
         modelClassDecoder( nativeClass )
           .prepare( _.downField( "Classes" ) )
           .handleErrorWith( f => Decoder.failed( f.withMessage( show"in NativeClass $nativeClass: ${f.message}" ) ) )
