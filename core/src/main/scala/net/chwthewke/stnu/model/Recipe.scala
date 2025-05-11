@@ -1,6 +1,7 @@
 package net.chwthewke.stnu
 package model
 
+import cats.Order
 import cats.Show
 import cats.Traverse
 import cats.data.NonEmptyList
@@ -58,43 +59,68 @@ sealed trait Recipe:
 
 object Recipe:
 
-  case class Prod(
-      className: ClassName[Recipe.Prod],
+  sealed trait NonExtraction extends Recipe:
+    def category: RecipeCategory.Manufacturing | RecipeCategory.PowerGeneration
+
+  case class Extraction(
+      className: ClassName[Recipe.Extraction],
       displayName: String,
-      category: RecipeCategory,
+      category: RecipeCategory.Extraction,
+      ingredients: List[Countable[Double, Item]],
+      products: Countable[Double, Item],
+      duration: FiniteDuration,
+      producedIn: Machine,
+      power: Power
+  ) extends Recipe:
+    type P[a] = a
+
+    override def productsList: List[Countable[Double, Item]] = products :: Nil
+
+  object Extraction:
+    given Show[Recipe.Extraction]  = Show.show( showRecipe )
+    given Order[Recipe.Extraction] = Order.by( _.displayName )
+
+  case class Manufacturing(
+      className: ClassName[Recipe.Manufacturing],
+      displayName: String,
+      category: RecipeCategory.Manufacturing,
       ingredients: List[Countable[Double, Item]],
       products: NonEmptyList[Countable[Double, Item]],
       duration: FiniteDuration,
       producedIn: Machine,
       power: Power
-  ) extends Recipe:
+  ) extends Recipe
+      with NonExtraction:
     type P[a] = NonEmptyList[a]
 
     override def productsList: List[Countable[Double, Item]] = products.toList
 
-  object Prod:
-    given Show[Recipe.Prod] = Show.show( showRecipe )
+  object Manufacturing:
+    given Show[Recipe.Manufacturing]  = Show.show( showRecipe )
+    given Order[Recipe.Manufacturing] = Order.by( _.displayName )
 
-  case class PowerGen(
-      className: ClassName[Recipe.PowerGen],
+  case class PowerGeneration(
+      className: ClassName[Recipe.PowerGeneration],
       displayName: String,
-      category: RecipeCategory,
+      category: RecipeCategory.PowerGeneration,
       ingredients: List[Countable[Double, Item]],
       products: List[Countable[Double, Item]],
       duration: FiniteDuration,
       producedIn: Machine,
       power: Power
-  ) extends Recipe:
+  ) extends Recipe
+      with NonExtraction:
     type P[a] = List[a]
 
     override def productsList: List[Countable[Double, Item]] = products
 
-  object PowerGen:
-    given Show[Recipe.PowerGen] = Show.show( showRecipe )
+  object PowerGeneration:
+    given Show[Recipe.PowerGeneration]  = Show.show( showRecipe )
+    given Order[Recipe.PowerGeneration] = Order.by( _.displayName )
 
   private def showRecipe( recipe: Recipe ): String =
     import recipe._
-    show"""$displayName # $className ${category.tierOpt.map( t => s"(tier $t)" ).orEmpty}
+    show"""$displayName # $className (tier ${category.tier})
           |  Ingredients:
           |    ${ingredients.map( _.map( _.displayName ).show ).intercalate( "\n    " )}
           |  Products:
@@ -104,4 +130,5 @@ object Recipe:
           |  Produced in: ${producedIn.displayName}
           |""".stripMargin
 
-  given Show[Recipe] = Show.show( showRecipe )
+  given Show[Recipe]  = Show.show( showRecipe )
+  given Order[Recipe] = Order.by( _.displayName )

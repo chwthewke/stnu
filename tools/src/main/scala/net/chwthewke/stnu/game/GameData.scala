@@ -29,6 +29,13 @@ final case class GameData(
       .flatMap( buildingDescriptors.get )
       .flatMap( _.smallIcon )
 
+  def buildingOfDescriptor[A]: BuildingOfDecriptorPartiallyApplied[A] = new BuildingOfDecriptorPartiallyApplied[A]
+  class BuildingOfDecriptorPartiallyApplied[A]:
+    def apply[B]( className: ClassName[B] ): Option[ClassName[A]] =
+      Option.when( className.name.startsWith( GameData.descriptorPrefix ) )(
+        ClassName( GameData.buildingPrefix + className.name.stripPrefix( GameData.descriptorPrefix ) )
+      )
+
 object GameData:
   private val buildingPrefix: String   = "Build_"
   private val descriptorPrefix: String = "Desc_"

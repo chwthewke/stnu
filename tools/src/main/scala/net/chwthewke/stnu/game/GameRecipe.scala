@@ -18,8 +18,7 @@ case class GameRecipe(
     producedIn: List[ClassName[Manufacturer]],
     variablePowerMin: Double,
     variablePowerRange: Double
-):
-  def isSelfExtraction: Boolean = ingredients == List( products.head )
+)
 
 object GameRecipe:
 

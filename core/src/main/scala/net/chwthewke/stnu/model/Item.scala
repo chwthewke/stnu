@@ -12,7 +12,8 @@ case class Item(
     displayName: String,
     form: Form,
     fuelValue: Double,
-    sinkPoints: Int
+    sinkPoints: Int,
+    tier: Tier
 ) derives ConfiguredDecoder,
       ConfiguredEncoder
 

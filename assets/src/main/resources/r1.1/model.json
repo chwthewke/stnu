@@ -1266,7 +1266,7 @@
           {
             "category" : {
               "Extraction" : {
-                "tier" : null
+                "tier" : 0
               }
             },
             "className" : "Desc_Gift_C_Build_TreeGiftProducer_C",
@@ -2977,1176 +2977,1344 @@
       "displayName" : "Portable Miner",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 56
+      "sinkPoints" : 56,
+      "tier" : 0
     },
     {
       "className" : "Desc_AlienDNACapsule_C",
       "displayName" : "Alien DNA Capsule",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 0
+      "sinkPoints" : 0,
+      "tier" : 0
     },
     {
       "className" : "Desc_AlienPowerFuel_C",
       "displayName" : "Alien Power Matrix",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 210
+      "sinkPoints" : 210,
+      "tier" : 9
     },
     {
       "className" : "Desc_AlienProtein_C",
       "displayName" : "Alien Protein",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 0
+      "sinkPoints" : 0,
+      "tier" : 0
     },
     {
       "className" : "Desc_AluminaSolution_C",
       "displayName" : "Alumina Solution",
       "form" : "Liquid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 20
+      "sinkPoints" : 20,
+      "tier" : 7
     },
     {
       "className" : "Desc_AluminumCasing_C",
       "displayName" : "Aluminum Casing",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 393
+      "sinkPoints" : 393,
+      "tier" : 7
     },
     {
       "className" : "Desc_AluminumIngot_C",
       "displayName" : "Aluminum Ingot",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 131
+      "sinkPoints" : 131,
+      "tier" : 7
     },
     {
       "className" : "Desc_AluminumPlateReinforced_C",
       "displayName" : "Heat Sink",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 2804
+      "sinkPoints" : 2804,
+      "tier" : 8
     },
     {
       "className" : "Desc_AluminumPlate_C",
       "displayName" : "Alclad Aluminum Sheet",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 266
+      "sinkPoints" : 266,
+      "tier" : 7
     },
     {
       "className" : "Desc_AluminumScrap_C",
       "displayName" : "Aluminum Scrap",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 27
+      "sinkPoints" : 27,
+      "tier" : 7
     },
     {
       "className" : "Desc_Battery_C",
       "displayName" : "Battery",
       "form" : "Solid",
       "fuelValue" : 6000.0,
-      "sinkPoints" : 465
+      "sinkPoints" : 465,
+      "tier" : 7
     },
     {
       "className" : "Desc_Biofuel_C",
       "displayName" : "Solid Biofuel",
       "form" : "Solid",
       "fuelValue" : 450.0,
-      "sinkPoints" : 48
+      "sinkPoints" : 48,
+      "tier" : 2
     },
     {
       "className" : "Desc_Cable_C",
       "displayName" : "Cable",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 24
+      "sinkPoints" : 24,
+      "tier" : 0
     },
     {
       "className" : "Desc_CandyCane_C",
       "displayName" : "Candy Cane",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 6
+      "sinkPoints" : 6,
+      "tier" : 0
     },
     {
       "className" : "Desc_CartridgeChaos_C",
       "displayName" : "Turbo Rifle Ammo",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 120
+      "sinkPoints" : 120,
+      "tier" : 7
     },
     {
       "className" : "Desc_CartridgeSmartProjectile_C",
       "displayName" : "Homing Rifle Ammo",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 855
+      "sinkPoints" : 855,
+      "tier" : 6
     },
     {
       "className" : "Desc_CartridgeStandard_C",
       "displayName" : "Rifle Ammo",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 25
+      "sinkPoints" : 25,
+      "tier" : 5
     },
     {
       "className" : "Desc_Cement_C",
       "displayName" : "Concrete",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 12
+      "sinkPoints" : 12,
+      "tier" : 0
     },
     {
       "className" : "Desc_CircuitBoardHighSpeed_C",
       "displayName" : "AI Limiter",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 920
+      "sinkPoints" : 920,
+      "tier" : 2
     },
     {
       "className" : "Desc_CircuitBoard_C",
       "displayName" : "Circuit Board",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 696
+      "sinkPoints" : 696,
+      "tier" : 5
     },
     {
       "className" : "Desc_Coal_C",
       "displayName" : "Coal",
       "form" : "Solid",
       "fuelValue" : 300.0,
-      "sinkPoints" : 3
+      "sinkPoints" : 3,
+      "tier" : 0
     },
     {
       "className" : "Desc_CompactedCoal_C",
       "displayName" : "Compacted Coal",
       "form" : "Solid",
       "fuelValue" : 630.0,
-      "sinkPoints" : 28
+      "sinkPoints" : 28,
+      "tier" : 2
     },
     {
       "className" : "Desc_ComputerSuper_C",
       "displayName" : "Supercomputer",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 97352
+      "sinkPoints" : 97352,
+      "tier" : 7
     },
     {
       "className" : "Desc_Computer_C",
       "displayName" : "Computer",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 8352
+      "sinkPoints" : 8352,
+      "tier" : 6
     },
     {
       "className" : "Desc_CoolingSystem_C",
       "displayName" : "Cooling System",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 12006
+      "sinkPoints" : 12006,
+      "tier" : 8
     },
     {
       "className" : "Desc_CopperDust_C",
       "displayName" : "Copper Powder",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 72
+      "sinkPoints" : 72,
+      "tier" : 8
     },
     {
       "className" : "Desc_CopperIngot_C",
       "displayName" : "Copper Ingot",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 6
+      "sinkPoints" : 6,
+      "tier" : 0
     },
     {
       "className" : "Desc_CopperSheet_C",
       "displayName" : "Copper Sheet",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 24
+      "sinkPoints" : 24,
+      "tier" : 2
     },
     {
       "className" : "Desc_CrystalOscillator_C",
       "displayName" : "Crystal Oscillator",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 3072
+      "sinkPoints" : 3072,
+      "tier" : 6
     },
     {
       "className" : "Desc_CrystalShard_C",
       "displayName" : "Power Shard",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 0
+      "sinkPoints" : 0,
+      "tier" : 0
     },
     {
       "className" : "Desc_Crystal_C",
       "displayName" : "Blue Power Slug",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 0
+      "sinkPoints" : 0,
+      "tier" : 0
     },
     {
       "className" : "Desc_Crystal_mk2_C",
       "displayName" : "Yellow Power Slug",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 0
+      "sinkPoints" : 0,
+      "tier" : 0
     },
     {
       "className" : "Desc_Crystal_mk3_C",
       "displayName" : "Purple Power Slug",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 0
+      "sinkPoints" : 0,
+      "tier" : 0
     },
     {
       "className" : "Desc_DarkEnergy_C",
       "displayName" : "Dark Matter Residue",
       "form" : "Gas",
       "fuelValue" : 0.0,
-      "sinkPoints" : 130
+      "sinkPoints" : 130,
+      "tier" : 9
     },
     {
       "className" : "Desc_DarkMatter_C",
       "displayName" : "Dark Matter Crystal",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 1780
+      "sinkPoints" : 1780,
+      "tier" : 9
     },
     {
       "className" : "Desc_Diamond_C",
       "displayName" : "Diamonds",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 240
+      "sinkPoints" : 240,
+      "tier" : 9
     },
     {
       "className" : "Desc_DissolvedSilica_C",
       "displayName" : "Dissolved Silica",
       "form" : "Liquid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 0
+      "sinkPoints" : 0,
+      "tier" : 8
     },
     {
       "className" : "Desc_ElectromagneticControlRod_C",
       "displayName" : "Electromagnetic Control Rod",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 2560
+      "sinkPoints" : 2560,
+      "tier" : 8
     },
     {
       "className" : "Desc_Fabric_C",
       "displayName" : "Fabric",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 140
+      "sinkPoints" : 140,
+      "tier" : 2
     },
     {
       "className" : "Desc_FicsiteIngot_C",
       "displayName" : "Ficsite Ingot",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 1936
+      "sinkPoints" : 1936,
+      "tier" : 9
     },
     {
       "className" : "Desc_FicsiteMesh_C",
       "displayName" : "Ficsite Trigon",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 1291
+      "sinkPoints" : 1291,
+      "tier" : 9
     },
     {
       "className" : "Desc_FicsoniumFuelRod_C",
       "displayName" : "Ficsonium Fuel Rod",
       "form" : "Solid",
       "fuelValue" : 150000.0,
-      "sinkPoints" : 0
+      "sinkPoints" : 0,
+      "tier" : 9
     },
     {
       "className" : "Desc_Ficsonium_C",
       "displayName" : "Ficsonium",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 0
+      "sinkPoints" : 0,
+      "tier" : 9
     },
     {
       "className" : "Desc_Filter_C",
       "displayName" : "Gas Filter",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 608
+      "sinkPoints" : 608,
+      "tier" : 6
     },
     {
       "className" : "Desc_Fireworks_Projectile_01_C",
       "displayName" : "Sweet Fireworks",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 60
+      "sinkPoints" : 60,
+      "tier" : 2
     },
     {
       "className" : "Desc_Fireworks_Projectile_02_C",
       "displayName" : "Fancy Fireworks",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 40
+      "sinkPoints" : 40,
+      "tier" : 2
     },
     {
       "className" : "Desc_Fireworks_Projectile_03_C",
       "displayName" : "Sparkly Fireworks",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 32
+      "sinkPoints" : 32,
+      "tier" : 2
     },
     {
       "className" : "Desc_FluidCanister_C",
       "displayName" : "Empty Canister",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 60
+      "sinkPoints" : 60,
+      "tier" : 5
     },
     {
       "className" : "Desc_Fuel_C",
       "displayName" : "Packaged Fuel",
       "form" : "Solid",
       "fuelValue" : 750.0,
-      "sinkPoints" : 270
+      "sinkPoints" : 270,
+      "tier" : 5
     },
     {
       "className" : "Desc_GasTank_C",
       "displayName" : "Empty Fluid Tank",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 170
+      "sinkPoints" : 170,
+      "tier" : 8
     },
     {
       "className" : "Desc_GenericBiomass_C",
       "displayName" : "Biomass",
       "form" : "Solid",
       "fuelValue" : 180.0,
-      "sinkPoints" : 12
+      "sinkPoints" : 12,
+      "tier" : 0
     },
     {
       "className" : "Desc_Gift_C",
       "displayName" : "FICSMAS Gift",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 1
+      "sinkPoints" : 1,
+      "tier" : 0
     },
     {
       "className" : "Desc_GoldIngot_C",
       "displayName" : "Caterium Ingot",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 42
+      "sinkPoints" : 42,
+      "tier" : 0
     },
     {
       "className" : "Desc_GunpowderMK2_C",
       "displayName" : "Smokeless Powder",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 58
+      "sinkPoints" : 58,
+      "tier" : 5
     },
     {
       "className" : "Desc_Gunpowder_C",
       "displayName" : "Black Powder",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 14
+      "sinkPoints" : 14,
+      "tier" : 2
     },
     {
       "className" : "Desc_HatcherParts_C",
       "displayName" : "Hatcher Remains",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 0
+      "sinkPoints" : 0,
+      "tier" : 0
     },
     {
       "className" : "Desc_HazmatFilter_C",
       "displayName" : "Iodine-Infused Filter",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 2274
+      "sinkPoints" : 2274,
+      "tier" : 7
     },
     {
       "className" : "Desc_HeavyOilResidue_C",
       "displayName" : "Heavy Oil Residue",
       "form" : "Liquid",
       "fuelValue" : 400.0,
-      "sinkPoints" : 30
+      "sinkPoints" : 30,
+      "tier" : 5
     },
     {
       "className" : "Desc_HighSpeedConnector_C",
       "displayName" : "High-Speed Connector",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 3776
+      "sinkPoints" : 3776,
+      "tier" : 6
     },
     {
       "className" : "Desc_HighSpeedWire_C",
       "displayName" : "Quickwire",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 17
+      "sinkPoints" : 17,
+      "tier" : 0
     },
     {
       "className" : "Desc_HogParts_C",
       "displayName" : "Hog Remains",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 0
+      "sinkPoints" : 0,
+      "tier" : 0
     },
     {
       "className" : "Desc_IonizedFuel_C",
       "displayName" : "Ionized Fuel",
       "form" : "Gas",
       "fuelValue" : 5000.0,
-      "sinkPoints" : 2398
+      "sinkPoints" : 2398,
+      "tier" : 8
     },
     {
       "className" : "Desc_IronIngot_C",
       "displayName" : "Iron Ingot",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 2
+      "sinkPoints" : 2,
+      "tier" : 0
     },
     {
       "className" : "Desc_IronPlateReinforced_C",
       "displayName" : "Reinforced Iron Plate",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 120
+      "sinkPoints" : 120,
+      "tier" : 2
     },
     {
       "className" : "Desc_IronPlate_C",
       "displayName" : "Iron Plate",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 6
+      "sinkPoints" : 6,
+      "tier" : 0
     },
     {
       "className" : "Desc_IronRod_C",
       "displayName" : "Iron Rod",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 4
+      "sinkPoints" : 4,
+      "tier" : 0
     },
     {
       "className" : "Desc_IronScrew_C",
       "displayName" : "Screws",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 2
+      "sinkPoints" : 2,
+      "tier" : 0
     },
     {
       "className" : "Desc_Leaves_C",
       "displayName" : "Leaves",
       "form" : "Solid",
       "fuelValue" : 15.0,
-      "sinkPoints" : 3
+      "sinkPoints" : 3,
+      "tier" : 0
     },
     {
       "className" : "Desc_LiquidBiofuel_C",
       "displayName" : "Liquid Biofuel",
       "form" : "Liquid",
       "fuelValue" : 750.0,
-      "sinkPoints" : 261
+      "sinkPoints" : 261,
+      "tier" : 5
     },
     {
       "className" : "Desc_LiquidFuel_C",
       "displayName" : "Fuel",
       "form" : "Liquid",
       "fuelValue" : 750.0,
-      "sinkPoints" : 75
+      "sinkPoints" : 75,
+      "tier" : 5
     },
     {
       "className" : "Desc_LiquidOil_C",
       "displayName" : "Crude Oil",
       "form" : "Liquid",
       "fuelValue" : 320.0,
-      "sinkPoints" : 30
+      "sinkPoints" : 30,
+      "tier" : 5
     },
     {
       "className" : "Desc_LiquidTurboFuel_C",
       "displayName" : "Turbofuel",
       "form" : "Liquid",
       "fuelValue" : 2000.0,
-      "sinkPoints" : 225
+      "sinkPoints" : 225,
+      "tier" : 5
     },
     {
       "className" : "Desc_ModularFrameFused_C",
       "displayName" : "Fused Modular Frame",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 62840
+      "sinkPoints" : 62840,
+      "tier" : 8
     },
     {
       "className" : "Desc_ModularFrameHeavy_C",
       "displayName" : "Heavy Modular Frame",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 10800
+      "sinkPoints" : 10800,
+      "tier" : 6
     },
     {
       "className" : "Desc_ModularFrameLightweight_C",
       "displayName" : "Radio Control Unit",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 32352
+      "sinkPoints" : 32352,
+      "tier" : 7
     },
     {
       "className" : "Desc_ModularFrame_C",
       "displayName" : "Modular Frame",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 408
+      "sinkPoints" : 408,
+      "tier" : 2
     },
     {
       "className" : "Desc_MotorLightweight_C",
       "displayName" : "Turbo Motor",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 240496
+      "sinkPoints" : 240496,
+      "tier" : 8
     },
     {
       "className" : "Desc_Motor_C",
       "displayName" : "Motor",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 1520
+      "sinkPoints" : 1520,
+      "tier" : 4
     },
     {
       "className" : "Desc_Mycelia_C",
       "displayName" : "Mycelia",
       "form" : "Solid",
       "fuelValue" : 20.0,
-      "sinkPoints" : 10
+      "sinkPoints" : 10,
+      "tier" : 0
     },
     {
       "className" : "Desc_NitricAcid_C",
       "displayName" : "Nitric Acid",
       "form" : "Liquid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 94
+      "sinkPoints" : 94,
+      "tier" : 8
     },
     {
       "className" : "Desc_NitrogenGas_C",
       "displayName" : "Nitrogen Gas",
       "form" : "Gas",
       "fuelValue" : 0.0,
-      "sinkPoints" : 10
+      "sinkPoints" : 10,
+      "tier" : 8
     },
     {
       "className" : "Desc_NobeliskCluster_C",
       "displayName" : "Cluster Nobelisk",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 1376
+      "sinkPoints" : 1376,
+      "tier" : 5
     },
     {
       "className" : "Desc_NobeliskExplosive_C",
       "displayName" : "Nobelisk",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 152
+      "sinkPoints" : 152,
+      "tier" : 3
     },
     {
       "className" : "Desc_NobeliskGas_C",
       "displayName" : "Gas Nobelisk",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 544
+      "sinkPoints" : 544,
+      "tier" : 3
     },
     {
       "className" : "Desc_NobeliskNuke_C",
       "displayName" : "Nuke Nobelisk",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 19600
+      "sinkPoints" : 19600,
+      "tier" : 8
     },
     {
       "className" : "Desc_NobeliskShockwave_C",
       "displayName" : "Pulse Nobelisk",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 1533
+      "sinkPoints" : 1533,
+      "tier" : 6
     },
     {
       "className" : "Desc_NonFissibleUranium_C",
       "displayName" : "Non-Fissile Uranium",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 0
+      "sinkPoints" : 0,
+      "tier" : 8
     },
     {
       "className" : "Desc_NuclearFuelRod_C",
       "displayName" : "Uranium Fuel Rod",
       "form" : "Solid",
       "fuelValue" : 750000.0,
-      "sinkPoints" : 43468
+      "sinkPoints" : 43468,
+      "tier" : 8
     },
     {
       "className" : "Desc_NuclearWaste_C",
       "displayName" : "Uranium Waste",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 0
+      "sinkPoints" : 0,
+      "tier" : 8
     },
     {
       "className" : "Desc_OreBauxite_C",
       "displayName" : "Bauxite",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 8
+      "sinkPoints" : 8,
+      "tier" : 0
     },
     {
       "className" : "Desc_OreCopper_C",
       "displayName" : "Copper Ore",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 3
+      "sinkPoints" : 3,
+      "tier" : 0
     },
     {
       "className" : "Desc_OreGold_C",
       "displayName" : "Caterium Ore",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 7
+      "sinkPoints" : 7,
+      "tier" : 0
     },
     {
       "className" : "Desc_OreIron_C",
       "displayName" : "Iron Ore",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 1
+      "sinkPoints" : 1,
+      "tier" : 0
     },
     {
       "className" : "Desc_OreUranium_C",
       "displayName" : "Uranium",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 35
+      "sinkPoints" : 35,
+      "tier" : 0
     },
     {
       "className" : "Desc_PackagedAlumina_C",
       "displayName" : "Packaged Alumina Solution",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 160
+      "sinkPoints" : 160,
+      "tier" : 7
     },
     {
       "className" : "Desc_PackagedBiofuel_C",
       "displayName" : "Packaged Liquid Biofuel",
       "form" : "Solid",
       "fuelValue" : 750.0,
-      "sinkPoints" : 370
+      "sinkPoints" : 370,
+      "tier" : 5
     },
     {
       "className" : "Desc_PackagedIonizedFuel_C",
       "displayName" : "Packaged Ionized Fuel",
       "form" : "Solid",
       "fuelValue" : 10000.0,
-      "sinkPoints" : 5246
+      "sinkPoints" : 5246,
+      "tier" : 8
     },
     {
       "className" : "Desc_PackagedNitricAcid_C",
       "displayName" : "Packaged Nitric Acid",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 412
+      "sinkPoints" : 412,
+      "tier" : 8
     },
     {
       "className" : "Desc_PackagedNitrogenGas_C",
       "displayName" : "Packaged Nitrogen Gas",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 312
+      "sinkPoints" : 312,
+      "tier" : 8
     },
     {
       "className" : "Desc_PackagedOilResidue_C",
       "displayName" : "Packaged Heavy Oil Residue",
       "form" : "Solid",
       "fuelValue" : 400.0,
-      "sinkPoints" : 180
+      "sinkPoints" : 180,
+      "tier" : 5
     },
     {
       "className" : "Desc_PackagedOil_C",
       "displayName" : "Packaged Oil",
       "form" : "Solid",
       "fuelValue" : 320.0,
-      "sinkPoints" : 180
+      "sinkPoints" : 180,
+      "tier" : 5
     },
     {
       "className" : "Desc_PackagedRocketFuel_C",
       "displayName" : "Packaged Rocket Fuel",
       "form" : "Solid",
       "fuelValue" : 7200.0,
-      "sinkPoints" : 1028
+      "sinkPoints" : 1028,
+      "tier" : 8
     },
     {
       "className" : "Desc_PackagedSulfuricAcid_C",
       "displayName" : "Packaged Sulfuric Acid",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 152
+      "sinkPoints" : 152,
+      "tier" : 7
     },
     {
       "className" : "Desc_PackagedWater_C",
       "displayName" : "Packaged Water",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 130
+      "sinkPoints" : 130,
+      "tier" : 5
     },
     {
       "className" : "Desc_PetroleumCoke_C",
       "displayName" : "Petroleum Coke",
       "form" : "Solid",
       "fuelValue" : 180.0,
-      "sinkPoints" : 20
+      "sinkPoints" : 20,
+      "tier" : 5
     },
     {
       "className" : "Desc_Plastic_C",
       "displayName" : "Plastic",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 75
+      "sinkPoints" : 75,
+      "tier" : 5
     },
     {
       "className" : "Desc_PlutoniumCell_C",
       "displayName" : "Encased Plutonium Cell",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 0
+      "sinkPoints" : 0,
+      "tier" : 8
     },
     {
       "className" : "Desc_PlutoniumFuelRod_C",
       "displayName" : "Plutonium Fuel Rod",
       "form" : "Solid",
       "fuelValue" : 1500000.0,
-      "sinkPoints" : 153184
+      "sinkPoints" : 153184,
+      "tier" : 8
     },
     {
       "className" : "Desc_PlutoniumPellet_C",
       "displayName" : "Plutonium Pellet",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 0
+      "sinkPoints" : 0,
+      "tier" : 8
     },
     {
       "className" : "Desc_PlutoniumWaste_C",
       "displayName" : "Plutonium Waste",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 0
+      "sinkPoints" : 0,
+      "tier" : 8
     },
     {
       "className" : "Desc_PolymerResin_C",
       "displayName" : "Polymer Resin",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 12
+      "sinkPoints" : 12,
+      "tier" : 5
     },
     {
       "className" : "Desc_PressureConversionCube_C",
       "displayName" : "Pressure Conversion Cube",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 255088
+      "sinkPoints" : 255088,
+      "tier" : 8
     },
     {
       "className" : "Desc_QuantumEnergy_C",
       "displayName" : "Excited Photonic Matter",
       "form" : "Gas",
       "fuelValue" : 0.0,
-      "sinkPoints" : 100
+      "sinkPoints" : 100,
+      "tier" : 9
     },
     {
       "className" : "Desc_QuantumOscillator_C",
       "displayName" : "Superposition Oscillator",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 37292
+      "sinkPoints" : 37292,
+      "tier" : 9
     },
     {
       "className" : "Desc_QuartzCrystal_C",
       "displayName" : "Quartz Crystal",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 50
+      "sinkPoints" : 50,
+      "tier" : 0
     },
     {
       "className" : "Desc_RawQuartz_C",
       "displayName" : "Raw Quartz",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 15
+      "sinkPoints" : 15,
+      "tier" : 0
     },
     {
       "className" : "Desc_Rebar_Explosive_C",
       "displayName" : "Explosive Rebar",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 360
+      "sinkPoints" : 360,
+      "tier" : 6
     },
     {
       "className" : "Desc_Rebar_Spreadshot_C",
       "displayName" : "Shatter Rebar",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 332
+      "sinkPoints" : 332,
+      "tier" : 2
     },
     {
       "className" : "Desc_Rebar_Stunshot_C",
       "displayName" : "Stun Rebar",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 186
+      "sinkPoints" : 186,
+      "tier" : 2
     },
     {
       "className" : "Desc_RocketFuel_C",
       "displayName" : "Rocket Fuel",
       "form" : "Gas",
       "fuelValue" : 3600.0,
-      "sinkPoints" : 289
+      "sinkPoints" : 289,
+      "tier" : 8
     },
     {
       "className" : "Desc_Rotor_C",
       "displayName" : "Rotor",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 140
+      "sinkPoints" : 140,
+      "tier" : 2
     },
     {
       "className" : "Desc_Rubber_C",
       "displayName" : "Rubber",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 60
+      "sinkPoints" : 60,
+      "tier" : 5
     },
     {
       "className" : "Desc_SAMFluctuator_C",
       "displayName" : "SAM Fluctuator",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 1968
+      "sinkPoints" : 1968,
+      "tier" : 6
     },
     {
       "className" : "Desc_SAMIngot_C",
       "displayName" : "Reanimated SAM",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 160
+      "sinkPoints" : 160,
+      "tier" : 0
     },
     {
       "className" : "Desc_SAM_C",
       "displayName" : "SAM",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 20
+      "sinkPoints" : 20,
+      "tier" : 0
     },
     {
       "className" : "Desc_Silica_C",
       "displayName" : "Silica",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 20
+      "sinkPoints" : 20,
+      "tier" : 0
     },
     {
       "className" : "Desc_SingularityCell_C",
       "displayName" : "Singularity Cell",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 114675
+      "sinkPoints" : 114675,
+      "tier" : 9
     },
     {
       "className" : "Desc_Snow_C",
       "displayName" : "FICSMAS Actual Snow",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 5
+      "sinkPoints" : 5,
+      "tier" : 0
     },
     {
       "className" : "Desc_SnowballProjectile_C",
       "displayName" : "Snowball",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 30
+      "sinkPoints" : 30,
+      "tier" : 0
     },
     {
       "className" : "Desc_SpaceElevatorPart_10_C",
       "displayName" : "Biochemical Sculptor",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 301778
+      "sinkPoints" : 301778,
+      "tier" : 9
     },
     {
       "className" : "Desc_SpaceElevatorPart_11_C",
       "displayName" : "Ballistic Warp Drive",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 2895334
+      "sinkPoints" : 2895334,
+      "tier" : 9
     },
     {
       "className" : "Desc_SpaceElevatorPart_12_C",
       "displayName" : "AI Expansion Server",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 597652
+      "sinkPoints" : 597652,
+      "tier" : 9
     },
     {
       "className" : "Desc_SpaceElevatorPart_1_C",
       "displayName" : "Smart Plating",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 520
+      "sinkPoints" : 520,
+      "tier" : 2
     },
     {
       "className" : "Desc_SpaceElevatorPart_2_C",
       "displayName" : "Versatile Framework",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 1176
+      "sinkPoints" : 1176,
+      "tier" : 3
     },
     {
       "className" : "Desc_SpaceElevatorPart_3_C",
       "displayName" : "Automated Wiring",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 1440
+      "sinkPoints" : 1440,
+      "tier" : 4
     },
     {
       "className" : "Desc_SpaceElevatorPart_4_C",
       "displayName" : "Modular Engine",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 9960
+      "sinkPoints" : 9960,
+      "tier" : 6
     },
     {
       "className" : "Desc_SpaceElevatorPart_5_C",
       "displayName" : "Adaptive Control Unit",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 76368
+      "sinkPoints" : 76368,
+      "tier" : 6
     },
     {
       "className" : "Desc_SpaceElevatorPart_6_C",
       "displayName" : "Magnetic Field Generator",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 11000
+      "sinkPoints" : 11000,
+      "tier" : 8
     },
     {
       "className" : "Desc_SpaceElevatorPart_7_C",
       "displayName" : "Assembly Director System",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 500176
+      "sinkPoints" : 500176,
+      "tier" : 7
     },
     {
       "className" : "Desc_SpaceElevatorPart_8_C",
       "displayName" : "Thermal Propulsion Rocket",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 728508
+      "sinkPoints" : 728508,
+      "tier" : 8
     },
     {
       "className" : "Desc_SpaceElevatorPart_9_C",
       "displayName" : "Nuclear Pasta",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 538976
+      "sinkPoints" : 538976,
+      "tier" : 8
     },
     {
       "className" : "Desc_SpikedRebar_C",
       "displayName" : "Iron Rebar",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 8
+      "sinkPoints" : 8,
+      "tier" : 2
     },
     {
       "className" : "Desc_SpitterParts_C",
       "displayName" : "Spitter Remains",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 0
+      "sinkPoints" : 0,
+      "tier" : 0
     },
     {
       "className" : "Desc_Stator_C",
       "displayName" : "Stator",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 240
+      "sinkPoints" : 240,
+      "tier" : 4
     },
     {
       "className" : "Desc_SteelIngot_C",
       "displayName" : "Steel Ingot",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 8
+      "sinkPoints" : 8,
+      "tier" : 3
     },
     {
       "className" : "Desc_SteelPipe_C",
       "displayName" : "Steel Pipe",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 24
+      "sinkPoints" : 24,
+      "tier" : 3
     },
     {
       "className" : "Desc_SteelPlateReinforced_C",
       "displayName" : "Encased Industrial Beam",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 528
+      "sinkPoints" : 528,
+      "tier" : 4
     },
     {
       "className" : "Desc_SteelPlate_C",
       "displayName" : "Steel Beam",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 64
+      "sinkPoints" : 64,
+      "tier" : 3
     },
     {
       "className" : "Desc_StingerParts_C",
       "displayName" : "Stinger Remains",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 0
+      "sinkPoints" : 0,
+      "tier" : 0
     },
     {
       "className" : "Desc_Stone_C",
       "displayName" : "Limestone",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 2
+      "sinkPoints" : 2,
+      "tier" : 0
     },
     {
       "className" : "Desc_Sulfur_C",
       "displayName" : "Sulfur",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 11
+      "sinkPoints" : 11,
+      "tier" : 0
     },
     {
       "className" : "Desc_SulfuricAcid_C",
       "displayName" : "Sulfuric Acid",
       "form" : "Liquid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 16
+      "sinkPoints" : 16,
+      "tier" : 7
     },
     {
       "className" : "Desc_TemporalProcessor_C",
       "displayName" : "Neural-Quantum Processor",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 248034
+      "sinkPoints" : 248034,
+      "tier" : 9
     },
     {
       "className" : "Desc_TimeCrystal_C",
       "displayName" : "Time Crystal",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 960
+      "sinkPoints" : 960,
+      "tier" : 9
     },
     {
       "className" : "Desc_TurboFuel_C",
       "displayName" : "Packaged Turbofuel",
       "form" : "Solid",
       "fuelValue" : 2000.0,
-      "sinkPoints" : 570
+      "sinkPoints" : 570,
+      "tier" : 5
     },
     {
       "className" : "Desc_UraniumCell_C",
       "displayName" : "Encased Uranium Cell",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 147
+      "sinkPoints" : 147,
+      "tier" : 8
     },
     {
       "className" : "Desc_Water_C",
       "displayName" : "Water",
       "form" : "Liquid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 5
+      "sinkPoints" : 5,
+      "tier" : 3
     },
     {
       "className" : "Desc_Wire_C",
       "displayName" : "Wire",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 6
+      "sinkPoints" : 6,
+      "tier" : 0
     },
     {
       "className" : "Desc_Wood_C",
       "displayName" : "Wood",
       "form" : "Solid",
       "fuelValue" : 100.0,
-      "sinkPoints" : 30
+      "sinkPoints" : 30,
+      "tier" : 0
     },
     {
       "className" : "Desc_XmasBall1_C",
       "displayName" : "Red FICSMAS Ornament",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 2
+      "sinkPoints" : 2,
+      "tier" : 0
     },
     {
       "className" : "Desc_XmasBall2_C",
       "displayName" : "Blue FICSMAS Ornament",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 1
+      "sinkPoints" : 1,
+      "tier" : 0
     },
     {
       "className" : "Desc_XmasBall3_C",
       "displayName" : "Copper FICSMAS Ornament",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 32
+      "sinkPoints" : 32,
+      "tier" : 3
     },
     {
       "className" : "Desc_XmasBall4_C",
       "displayName" : "Iron FICSMAS Ornament",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 18
+      "sinkPoints" : 18,
+      "tier" : 3
     },
     {
       "className" : "Desc_XmasBallCluster_C",
       "displayName" : "FICSMAS Ornament Bundle",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 100
+      "sinkPoints" : 100,
+      "tier" : 3
     },
     {
       "className" : "Desc_XmasBow_C",
       "displayName" : "FICSMAS Bow",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 4
+      "sinkPoints" : 4,
+      "tier" : 0
     },
     {
       "className" : "Desc_XmasBranch_C",
       "displayName" : "FICSMAS Tree Branch",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 2
+      "sinkPoints" : 2,
+      "tier" : 0
     },
     {
       "className" : "Desc_XmasStar_C",
       "displayName" : "FICSMAS Wonder Star",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 6540
+      "sinkPoints" : 6540,
+      "tier" : 3
     },
     {
       "className" : "Desc_XmasWreath_C",
       "displayName" : "FICSMAS Wreath",
       "form" : "Solid",
       "fuelValue" : 0.0,
-      "sinkPoints" : 630
+      "sinkPoints" : 630,
+      "tier" : 3
     }
   ],
   "machines" : [
@@ -6436,7 +6604,7 @@
     {
       "category" : {
         "Alternate" : {
-          "tier" : 6
+          "tier" : 5
         }
       },
       "className" : "Recipe_Alternate_TurboHeavyFuel_C",
@@ -10432,7 +10600,7 @@
     {
       "category" : {
         "Milestone" : {
-          "tier" : 7
+          "tier" : 8
         }
       },
       "className" : "Recipe_Alternate_Silica_Distilled_C",
@@ -10472,7 +10640,7 @@
     {
       "category" : {
         "Alternate" : {
-          "tier" : 7
+          "tier" : 8
         }
       },
       "className" : "Recipe_Alternate_Quartz_Purified_C",
@@ -12932,7 +13100,7 @@
     {
       "category" : {
         "Milestone" : {
-          "tier" : 6
+          "tier" : 7
         }
       },
       "className" : "Recipe_CartridgeChaos_Packaged_C",

@@ -15,7 +15,6 @@ object ClassName:
     def name: String            = className
     def narrow[B]: ClassName[B] = className
 
-
   given [A] => Show[ClassName[A]]       = Show[String]
   given [A] => Order[ClassName[A]]      = Order[String]
   given [A] => Ordering[ClassName[A]]   = Order.catsKernelOrderingForOrder
