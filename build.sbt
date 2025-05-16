@@ -106,6 +106,7 @@ val `stnu-backend`: Project = project
   .settings( sharedSettings )
   .dependsOn( `stnu-assets`, `stnu-protocol-jvm` )
   .settings(
+    circeParser,
     http4sCore,
     http4sDsl,
     http4sEmberServer,
@@ -159,6 +160,7 @@ val `stnu-frontend-run`: Project = project
       Seq( ".parcel-cache", "dist", "node_modules" ).map( n => baseDirectory.value / n )
   )
   .settings( scalaJSLinkerConfig ~= { _.withModuleKind( ModuleKind.ESModule ) } )
+  .settings( circeParser )
   .enablePlugins( FrontendDev )
   .dependsOn( `stnu-frontend` )
 

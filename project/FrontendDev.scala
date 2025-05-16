@@ -21,9 +21,9 @@ object FrontendDev extends AutoPlugin {
     val target: File     = targetDir / "launch.js"
     val contents: String =
       s"""// GENERATED FILE, DO NOT EDIT!
-         |import { TyrianApp } from "$importFrom";
+         |import { DevTyrianApp } from "$importFrom";
          |
-         |TyrianApp.launch("app", { "backend": "http://localhost:7869" })
+         |DevTyrianApp.launch("app", { "backend": "http://localhost:7869" })
          |""".stripMargin
 
     val noModifications =
