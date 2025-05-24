@@ -1,5 +1,3 @@
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import sbtcrossproject.CrossProject
 
 ThisBuild / organization := "net.chwthewke"
@@ -8,7 +6,7 @@ ThisBuild / organization := "net.chwthewke"
 //ThisBuild / conflictManager                        := ConflictManager.strict
 //ThisBuild / updateSbtClassifiers / conflictManager := ConflictManager.default
 
-ThisBuild / SettingKey[Seq[String]]( "ide-base-packages" ).withRank( KeyRanks.Invisible ) := Seq( "net.chwthewke.stnu" )
+ThisBuild / ideBasePackages.withRank( KeyRanks.Invisible ) := Seq( "net.chwthewke.stnu" )
 
 ThisBuild / Compile / doc / sources                := Seq.empty
 ThisBuild / Compile / packageDoc / publishArtifact := false
@@ -17,7 +15,8 @@ enablePlugins( Scalafmt )
 enablePlugins( Dependencies )
 
 val sharedSettings = Seq(
-  scalaVersion := "3.6.4"
+  scalaVersion                                          := "3.6.4",
+  ideExcludedDirectories.withRank( KeyRanks.Invisible ) := Seq( target.value )
 )
 
 val `stnu-core`: CrossProject =
@@ -120,6 +119,10 @@ val `stnu-frontend-run`: Project = project
   .enablePlugins( Scalac )
   .enablePlugins( ScalaJSPlugin )
   .settings( sharedSettings )
+  .settings(
+    ideExcludedDirectories ++=
+      Seq( ".parcel-cache", "dist", "node_modules" ).map( n => baseDirectory.value / n )
+  )
   .settings( scalaJSLinkerConfig ~= { _.withModuleKind( ModuleKind.ESModule ) } )
   .enablePlugins( FrontendDev )
   .dependsOn( `stnu-frontend` )
