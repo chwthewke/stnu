@@ -14,9 +14,10 @@ object Index:
         lang := "en",
         head(
           link( rel := "stylesheet", `type` := "text/css", href := "/static/css/bulma-prefixed.min.css" ),
-          link( rel := "stylesheet", `type` := "text/css", href := "/static/fonts/regular/styles.css" ),
-          link( rel := "stylesheet", `type` := "text/css", href := "/static/fonts/fill/styles.css" ),
-          link( rel := "stylesheet", `type` := "text/css", href := "/static/fonts/bold/styles.css" ),
+          link( rel := "stylesheet", `type` := "text/css", href := "/static/css/bulma-theme-overrides.css" ),
+          link( rel := "stylesheet", `type` := "text/css", href := "/static/fonts/regular/style.css" ),
+          link( rel := "stylesheet", `type` := "text/css", href := "/static/fonts/fill/style.css" ),
+          link( rel := "stylesheet", `type` := "text/css", href := "/static/fonts/bold/style.css" ),
           tags2.title( "Satisfactory Planner" )
         ),
         body(
