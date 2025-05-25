@@ -14,6 +14,7 @@ object Index:
         lang := "en",
         head(
           link( rel := "stylesheet", `type` := "text/css", href := "/static/css/bulma-prefixed.min.css" ),
+          link( rel := "stylesheet", `type` := "text/css", href := "/static/css/bulma-theme-overrides.min.css" ),
           link( rel := "stylesheet", `type` := "text/css", href := "/static/fonts/regular/styles.css" ),
           link( rel := "stylesheet", `type` := "text/css", href := "/static/fonts/fill/styles.css" ),
           link( rel := "stylesheet", `type` := "text/css", href := "/static/fonts/bold/styles.css" ),
