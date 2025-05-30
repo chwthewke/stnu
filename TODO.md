@@ -29,6 +29,8 @@
 ## features
 - ~~linear programming solver~~
 - ~~fix ficsmas (find the gift extractor)~~
+- minimize transports (logistics option, changes the radios into checkboxes)
+- ~~v-align icons inside text~~
 
 ### data-tools
 - ~~load GameData~~
@@ -39,6 +41,9 @@
 - ~~provide model(s) - from JSON rather than db?~~
 - ~~serve static assets~~
 - ~~serve index.html for prod~~
+
+## frontend
+- ~~"deep" internal navigation~~
 
 ## refactorings vs. legacy
 - ~~check circe codecs in tools for actual use~~

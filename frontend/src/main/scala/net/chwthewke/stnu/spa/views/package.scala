@@ -1,14 +1,19 @@
 package net.chwthewke.stnu
 package spa
 
+import cats.Traverse
+import cats.syntax.all.*
 import tyrian.Attr
 import tyrian.Elem
 import tyrian.Empty
 import tyrian.EmptyAttribute
 import tyrian.Html
 
-import css.CssClass
-import css.Classes
+import data.Countable
+import model.Item
+import model.Recipe
+import spa.css.Classes
+import spa.css.CssClass
 
 package object views:
   val nbsp: Elem[Nothing] = Html.raw( "span" )( "&nbsp;" )
@@ -33,3 +38,26 @@ package object views:
 
   given convertAttrOption[A]: Conversion[Option[Attr[A]], Attr[A]] = _.fold[Attr[A]]( EmptyAttribute )( identity )
   given convertElemOption[A]: Conversion[Option[Elem[A]], Elem[A]] = _.fold[Elem[A]]( Empty )( identity )
+
+  extension ( recipe: Recipe )
+    def describe: String =
+      def showAmount( d: Double ): String =
+        if ( d.isValidInt ) f"${d.toInt}%d"
+        else if ( d > 1 ) f"$d%.1f"
+        else f"$d%.2f"
+
+      def showItem( item: Countable[Double, Item], perMinute: Countable[Double, Item] ) =
+        show"${showAmount( item.amount )} x ${item.item.displayName} @ ${showAmount( perMinute.amount )}/min."
+
+      def showItemList[F[_]: Traverse]( items: F[( Countable[Double, Item], Countable[Double, Item] )] ) =
+        items
+          .map( showItem.tupled )
+          .mkString_( ", " )
+
+      val ingredients = showItemList( recipe.ingredients zip recipe.ingredientsPerMinute )
+      val products    = recipe match
+        case p: Recipe.Manufacturing   => showItemList( p.products zip p.productsPerMinute )
+        case p: Recipe.PowerGeneration => showItemList( p.products zip p.productsPerMinute )
+        case p: Recipe.Extraction      => showItemList( ( p.products, p.productsPerMinute ) :: Nil )
+
+      show"$ingredients \u21d2 $products"

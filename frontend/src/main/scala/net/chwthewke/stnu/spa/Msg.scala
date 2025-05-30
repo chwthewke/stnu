@@ -4,6 +4,7 @@ package spa
 import model.ModelIndex
 import protocol.game.FullModel
 import spa.browse.BrowseMsg
+import spa.plan.PlanMsg
 
 enum Msg:
   case Noop
@@ -12,3 +13,4 @@ enum Msg:
   case SetLocation( location: LocationModel )
   case NavigateExternal( href: String )
   case BrowseMessage( payload: BrowseMsg )
+  case PlanMessage( payload: PlanMsg )

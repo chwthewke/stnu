@@ -22,6 +22,11 @@ case class ResourceDistrib( impureNodes: Int, normalNodes: Int, pureNodes: Int )
     case ResourcePurity.Normal => normalNodes
     case ResourcePurity.Pure   => pureNodes
 
+  def set( purity: ResourcePurity, value: Int ): ResourceDistrib = purity match
+    case ResourcePurity.Impure => copy( impureNodes = value )
+    case ResourcePurity.Normal => copy( normalNodes = value )
+    case ResourcePurity.Pure   => copy( pureNodes = value )
+
   def foldMap[A: Semigroup]( f: ( ResourcePurity, Int ) => A ): A =
     f( ResourcePurity.Impure, impureNodes )
       |+| f( ResourcePurity.Normal, normalNodes )
