@@ -8,6 +8,7 @@ import cats.syntax.all.*
 import org.http4s.Uri
 import scala.annotation.tailrec
 import scala.collection.immutable.SortedMap
+import scala.reflect.ClassTag
 
 import model.ExtractorType
 import model.Item
@@ -27,6 +28,16 @@ case class Env(
     transportIcons: Map[ClassName[Transport], Uri]
 ):
   ///////////////
+  // Model
+  ///////////////
+
+  def getItem( className: ClassName[Item] ): Option[Item] =
+    game.items.get( className )
+
+  def getRecipe[R <: Recipe]( className: ClassName[R] )( using R: ClassTag[R] ): Option[R] =
+    game.recipes.get( className ).flatMap( R.unapply( _ ) )
+
+  ///////////////
   // Recipe presets
   ///////////////
 
@@ -39,10 +50,9 @@ case class Env(
       .mapFilter( recipe => Option.when( pred( recipe ) )( recipe.className ) )
       .toSet
 
-  lazy val nonExtractionRecipes: Vector[Recipe.NonExtraction] =
-    ( game.manufacturingRecipes ++ game.powerRecipes )
+  lazy val nonExtractionRecipes: Vector[Recipe.NonExtraction] = game.manufacturingRecipes ++ game.powerRecipes
 
-  def sortRecipes: Vector[Recipe.NonExtraction] =
+  lazy val sortedRecipes: Vector[Recipe.NonExtraction] =
     val byTier: SortedMap[Tier, Vector[Recipe.NonExtraction]] = nonExtractionRecipes.foldMap: recipe =>
       SortedMap( recipe.category.tier -> Vector( recipe ) )
 
@@ -76,6 +86,25 @@ case class Env(
 
     sort( game.extractedItems.map( _.className ).toSet, Vector.empty, byTier )
 
+  lazy val recipeOrdering: Ordering[Recipe] =
+    val m: Map[ClassName[Recipe], Int] =
+      sortedRecipes.zipWithIndex
+        .map:
+          case ( r, ix ) => ( r.className, ix )
+        .toMap
+
+    Ordering.by( recipe => ( m.get( recipe.className ), recipe.displayName ) )
+
+  lazy val itemOrder: Ordering[Item] =
+    val m: Map[ClassName[Item], Int] =
+      ( game.extractedItems.sortBy( _.displayName ).map( _.className ) ++
+        game.items.values.toVector
+          .sortBy: item =>
+            ( item.tier, item.displayName )
+          .map( _.className ) ).distinct.zipWithIndex.toMap
+
+    Ordering.by( item => m.get( item.className ) )
+
   ///////////////
   // Extraction
   ///////////////
@@ -93,7 +122,7 @@ case class Env(
         case ( _, extractors ) => extractors.size > 1 && extractors.contains( ExtractorType.Fracking )
       .keys
       .toList
-      .mapFilter( game.items.get )
+      .mapFilter( getItem )
       .sortBy( _.displayName )
 
   lazy val miners: List[Machine] =
@@ -121,3 +150,18 @@ case class Env(
     .toNel
     .map( _._2.minimumBy( _.displayName.length ) )
     .sortBy( _.perMinute )
+
+  /////////////////////
+  // Power generators
+  /////////////////////
+
+  lazy val powerGenerators: Vector[Machine] =
+    game.machines.values
+      .filter( _.machineType.isPowerGenerator )
+      .toVector
+      .sortBy: machine =>
+        game.recipes.values
+          .filter( _.producedIn == machine )
+          .map( _.category.tier )
+          .toVector
+          .minimumOption

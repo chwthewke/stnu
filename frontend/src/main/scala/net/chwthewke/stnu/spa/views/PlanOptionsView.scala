@@ -29,6 +29,8 @@ import spa.plan.LogisticsOptions
 import spa.plan.OptionsTab
 import spa.plan.PlanModel
 import spa.plan.PlanMsg
+import spa.plan.PowerOption
+import spa.plan.PowerOptions
 import spa.plan.RecipeOption
 import spa.plan.RecipeOptionsInputModel
 import spa.plan.ResourceOptionsInputModel
@@ -76,6 +78,9 @@ object PlanOptionsView:
           .combineAll
         ++: Option
           .when( model.ui.optionsTab == OptionsTab.Recipes )( recipePrefsTab( env, model.recipeOptions ) )
+          .combineAll
+        ++: Option
+          .when( model.ui.optionsTab == OptionsTab.Power )( powerPrefsTab( env, model.powerOptions ) )
           .combineAll
     )
 
@@ -212,7 +217,7 @@ object PlanOptionsView:
                   Html.tr( Html.td( Html.colspan := "7" )( Html.strong( extractor.description ) ) ) ::
                     resources.toList
                       .mapFilter:
-                        case ( itemClass, distrib ) => env.game.items.get( itemClass ).tupleRight( distrib )
+                        case ( itemClass, distrib ) => env.getItem( itemClass ).tupleRight( distrib )
                       .map:
                         case ( item, distrib ) =>
                           Html.tr(
@@ -464,3 +469,27 @@ object PlanOptionsView:
         )
       )
     ).map( _.map( PlanMsg.SetLogisticsOption( _ ) ) )
+
+  private def powerPrefsTab(
+      env: Env,
+      model: PowerOptions
+  ): List[Html[PlanMsg]] =
+    List(
+      Html.div( b.panelBlock )( Html.h3( b.subtitle )( "Power generators" ) ),
+      Html.div( b.panelBlock )( Html.div( b.field )( env.powerGenerators.toList.map: choice =>
+        val isChecked: Boolean = model.allowedGenerators.contains( choice.className )
+        Html.div( b.control )(
+          Html.label( b.checkbox )(
+            Html.input(
+              Html.`type` := "checkbox",
+              Html.name   := s"power_prefs_${choice.className}",
+              Option.when[Attr[Nothing]]( isChecked )( Html.checked ),
+              Html.value := isChecked.toString,
+              Html.onChange( _ => PowerOption.SetPowerGenerator( choice.className, !isChecked ) )
+            ),
+            icon.verticalAlign().withDropShadow().machine( env, choice ),
+            nbsp,
+            Html.text( choice.displayName )
+          )
+        ) ) )
+    ).map( _.map( PlanMsg.SetPowerOption( _ ) ) )

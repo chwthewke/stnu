@@ -20,11 +20,14 @@ object ExtractionRecipes:
 
   sealed trait ByPurity[R] derives Traverse:
     def get( purity: ResourcePurity ): R
+    def toMap: SortedMap[ResourcePurity, R]
 
   object ByPurity:
 
     private case class Impl[R]( map: SortedMap[ResourcePurity, R] ) extends ByPurity[R]:
       override def get( purity: ResourcePurity ): R = map( purity )
+
+      override def toMap: SortedMap[ResourcePurity, R] = map
 
     def apply( vector: Vector[( ResourcePurity, Recipe.Extraction )] ): ValidatedNel[String, ExtractionRecipes] =
       val map: SortedMap[ResourcePurity, Recipe.Extraction] = vector.to( SortedMap )

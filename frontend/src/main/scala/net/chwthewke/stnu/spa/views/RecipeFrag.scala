@@ -9,7 +9,6 @@ import data.Countable
 import model.Item
 import model.Power
 import model.Recipe
-import net.chwthewke.stnu
 import spa.Env
 import spa.css.Bulma
 import spa.css.CssClass

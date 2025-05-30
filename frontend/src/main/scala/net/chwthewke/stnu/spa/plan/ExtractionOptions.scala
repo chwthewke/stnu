@@ -2,11 +2,16 @@ package net.chwthewke.stnu
 package spa
 package plan
 
+import cats.syntax.all.*
+
 import model.ClockSpeedPreset
 import model.ExtractorType
 import model.Item
 import model.Machine
 import model.Model
+import model.ResourceDistrib
+import model.ResourceWeights
+import protocol.solver.SolverRequest
 
 case class ExtractionOptions(
     minerClass: ClassName[Machine],
@@ -30,7 +35,24 @@ case class ExtractionOptions(
     val wasEnabled: Boolean = previousValue.toBooleanOption.getOrElse( false )
     if ( wasEnabled ) set - key else set + key
 
+  private def resourceCaps(
+      env: Env,
+      resources: Map[ExtractorType, Map[ClassName[Item], ResourceDistrib]]
+  ): Map[ClassName[Item], Double] =
+    env.game.resourceCaps( minerClass, clockSpeed, extractors, resources )
+
+  def resources(
+      env: Env,
+      resources: Map[ExtractorType, Map[ClassName[Item], ResourceDistrib]]
+  ): Map[ClassName[Item], SolverRequest.Resource] =
+    val caps: Map[ClassName[Item], Double]  = resourceCaps( env, resources )
+    val costs: Map[ClassName[Item], Double] = ResourceWeights( resourceWeightSliders ).costs( caps )
+    caps.map:
+      case ( item, cap ) =>
+        ( item, SolverRequest.Resource( cap, costs.getOrElse( item, 1d ) ) )
+
 object ExtractionOptions:
+
   def init( game: Model ): ExtractionOptions =
     ExtractionOptions(
       game.machines.values

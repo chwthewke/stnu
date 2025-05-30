@@ -40,7 +40,7 @@ object MainModel:
         http => Loading( http, LocationModel.init ) -> http.fetchLatestGameModel
       )
 
-  extension [F[_]: Sync]( model: MainModel[F] )
+  extension [F[_]: Async]( model: MainModel[F] )
     def update( message: Msg ): ( MainModel[F], Cmd[F, Msg] ) =
       ( model, message ) match
         // INIT & DATA FETCH ("KERNEL")
@@ -72,7 +72,7 @@ object MainModel:
           m.copy( browsePage = newBrowsePage ) -> browseCmd.map( Msg.BrowseMessage( _ ) )
         case ( m @ MainModel.Loaded( _, _, _, _, _ ), Msg.PlanMessage( planMsg ) ) =>
           val ( newPlanPage: PlanModel, planCmd: Cmd[F, PlanMsg] ) =
-            m.planPage.update( m.content.env, planMsg )
+            m.planPage.update[F]( m.http, planMsg )
           m.copy( planPage = newPlanPage ) -> planCmd.map( Msg.PlanMessage( _ ) )
 
         case ( _, _ ) => model -> Cmd.None

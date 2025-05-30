@@ -3,11 +3,14 @@ package spa
 package saved
 
 import cats.syntax.all.*
+import io.circe.Json
 import io.circe.derivation.ConfiguredDecoder
 import io.circe.derivation.ConfiguredEncoder
 import io.circe.parser
 import io.circe.syntax.*
 import tyrian.Cmd
+
+import spa.plan.PlanMsg
 
 object LocalModel:
   case class Saved(
@@ -27,19 +30,39 @@ object LocalModel:
       browseModel: LocalBrowseModel.Loaded,
       planModel: LocalPlanModel.Loaded
   ) derives ConfiguredDecoder:
-    def patch[F[_]]( appModel: MainModel.Loaded[F] ): MainModel.Loaded[F] =
-      appModel.copy(
-        browsePage = browseModel.toBrowseModel,
-        planPage = planModel.patch( appModel.planPage )
+    def patch[F[_]]( appModel: MainModel.Loaded[F] ): ( MainModel.Loaded[F], Boolean ) =
+      val ( newPlan, compute ) = planModel.patch( appModel.planPage )
+      (
+        appModel.copy(
+          browsePage = browseModel.toBrowseModel,
+          planPage = newPlan
+        ),
+        compute
       )
 
     def loadInto[F[_]]( appModel: MainModel[F] ): Option[( MainModel[F], Cmd[F, Msg] )] =
       appModel match
-        case m: MainModel.Loaded[F] => ( patch( m ) -> Cmd.None ).some
-        case _                      => none
+        case m: MainModel.Loaded[F] =>
+          val ( newModel, compute ) = patch( m )
+          (
+            newModel,
+            Option.when[Cmd[F, Msg]]( compute )( Cmd.Emit( Msg.PlanMessage( PlanMsg.SendSolverRequest ) ) ).combineAll
+          ).some
+        case _ => none
 
   object Loaded:
     def decode( src: Option[String] ): Either[String, Loaded] =
       src
         .toRight( "No saved model to load" )
-        .flatMap( parser.decode[Loaded]( _ ).leftMap( e => s"Saved model decoder error: ${e.getMessage}" ) )
+        .flatMap( stored =>
+          parser
+            .decode[Loaded]( stored )
+            .leftMap( e =>
+              parser
+                .decode[Json]( stored )
+                .fold(
+                  e => s"Saved model parser error: ${e.getMessage}",
+                  json => s"Saved model decoder error: ${e.getMessage} in ${json.spaces2}"
+                )
+            )
+        )

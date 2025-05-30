@@ -27,7 +27,7 @@ object ResourceWeights:
           (
             item,
             1d / math.max( cap, 1e-5 ) *
-              math.pow( 2d, ( resourceWeights.getOrElse( item, range ) - range ).toDouble / 4d )
+              math.pow( 2d, ( -resourceWeights.getOrElse( item, range ) ).toDouble / range.toDouble )
           )
 
       val sum = raw.values.sum

@@ -22,6 +22,8 @@ final case class Countable[+N, +A]( item: A, amount: N ) derives Order:
   def withAmount[M]( a: M ): Countable[M, A]     = copy( amount = a )
 
 object Countable:
+  val Tolerance: Double = 1e-6
+
   extension [F[x] <: Iterable[x], N, A]( self: F[Countable[N, A]] )
     def gather( using N: Numeric[N], F: Factory[Countable[N, A], F[Countable[N, A]]] ): F[Countable[N, A]] =
       self
@@ -29,6 +31,12 @@ object Countable:
         .map:
           case ( item, amounts ) => Countable( item, amounts.sum )
         .to( F )
+  extension [N: Numeric, A]( self: Countable[N, A] )
+    def isSignificant: Boolean =
+      import Numeric.Implicits.given
+      self.amount.toDouble.abs > Countable.Tolerance
+    def significant: Option[Countable[N, A]] =
+      Option.when( self.isSignificant )( self )
 
   given [N: Numeric] => Monad[Countable[N, *]] & Traverse[Countable[N, *]] = new CountableInstance[N]
 

@@ -10,6 +10,8 @@ import model.Recipe
 import model.ResourcePurity
 import model.Tier
 import model.Transport
+import protocol.solver.SolverRequest
+import protocol.solver.SolverResponse
 
 enum PlanMsg:
   case SetResourceDistribution(
@@ -21,6 +23,13 @@ enum PlanMsg:
   case SetExtractionOption( extractionOption: ExtractionOption )
   case SetLogisticsOption( logisticsOption: LogisticsOption )
   case SetRecipeOption( recipeOption: RecipeOption )
+  case SetPowerOption( powerOption: PowerOption )
+  case RequestSelection( action: RequestSelectionAction )
+  case ToggleRequestSelection( enable: Boolean )
+  case SendSolverRequest
+  case ReceiveSolverResponse( request: SolverRequest, solution: SolverResponse )
+  case ToggleProductionRowExpanded( recipe: ClassName[Recipe] )
+  case ToggleProductionSummaryExpanded( open: Boolean )
 
 enum ExtractionOption:
   case SetMiner( machine: ClassName[Machine] )
@@ -45,3 +54,17 @@ enum RecipeOption:
   case SearchInput( value: String )
   case SearchReset
   case ToggleHideFicsmas( enable: Boolean )
+
+enum PowerOption:
+  case Reset
+  case SetPowerGenerator( generator: ClassName[Machine], enable: Boolean )
+
+enum RequestSelectionAction:
+  case SearchInput( value: String )
+  case SearchReset
+  case RequestItem( item: ClassName[Item] )
+  case EditAmountStart( item: ClassName[Item] )
+  case EditAmountCancel
+  case EditAmountCommit
+  case EditAmountDelete
+  case EditAmountSetValue( value: String )

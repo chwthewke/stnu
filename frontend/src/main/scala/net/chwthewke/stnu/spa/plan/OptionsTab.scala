@@ -7,6 +7,7 @@ enum OptionsTab:
   case ResourceNodes
   case ResourcePrefs
   case Logistics
+  case Power
 
 object OptionsTab extends CustomEnum[OptionsTab]:
   override def keyOf( tab: OptionsTab ): String =
@@ -19,3 +20,4 @@ object OptionsTab extends CustomEnum[OptionsTab]:
         case OptionsTab.ResourcePrefs => "Res. prefs"
         case OptionsTab.Logistics     => "Logistics"
         case OptionsTab.Recipes       => "Recipes"
+        case OptionsTab.Power         => "Power"

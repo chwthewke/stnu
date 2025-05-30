@@ -30,7 +30,7 @@ case class BrowseModel(
     val realEnv = if ( hideFicsmas ) env.withoutFicsmas else env
     sort match
       case Sort.Name => realEnv.nonExtractionRecipes.sortBy( _.displayName ).toList
-      case Sort.Topo => realEnv.sortRecipes.toList
+      case Sort.Topo => realEnv.sortedRecipes.toList
 
 object BrowseModel:
   val init: BrowseModel = BrowseModel( SearchQuery.init, SearchQuery.init, Sort.Name, hideFicsmas = false )
