@@ -6,11 +6,11 @@ enum ExtractorType(
     val dataKey: Either[String, ClassName[Machine]]
 ):
 
-  case Miner       extends ExtractorType( "miner", Left( "Miner" ) )
-  case WaterPump   extends ExtractorType( "water extractor", Right( ExtractorType.waterExtractorClass ) )
-  case OilPump     extends ExtractorType( "oil extractor", Right( ExtractorType.oilExtractorClass ) )
-  case Fracking    extends ExtractorType( "fracking extractor", Right( ExtractorType.frackingExtractorClass ) )
-  case FicsmasTree extends ExtractorType( "FICSMAS tree", Right( ExtractorType.ficsmasTree ) )
+  case Miner       extends ExtractorType( "Miner", Left( "Miner" ) )
+  case WaterPump   extends ExtractorType( "Water Pump", Right( ExtractorType.waterExtractorClass ) )
+  case OilPump     extends ExtractorType( "Oil Pump", Right( ExtractorType.oilExtractorClass ) )
+  case Fracking    extends ExtractorType( "Resource Well Pressurizer", Right( ExtractorType.frackingExtractorClass ) )
+  case FicsmasTree extends ExtractorType( "FICSMAS Gift Tree", Right( ExtractorType.ficsmasTree ) )
 
 object ExtractorType
     extends Enum[ExtractorType]

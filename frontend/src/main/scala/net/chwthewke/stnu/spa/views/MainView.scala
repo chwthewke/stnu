@@ -16,14 +16,11 @@ object MainView:
   val b: Bulma    = Bulma
   val p: Phosphor = Phosphor
 
-  private def internalLocationNavItem(
-      current: Option[LocationModel],
-      target: LocationModel
-  ): Html[Msg] =
+  private def internalLocationNavItem( isCurrent: Boolean, target: LocationModel ): Html[Msg] =
     Html.a(
-      b.navbarItem + Option.when( current.contains( target ) )( b.isActive ),
+      b.navbarItem + Option.when( isCurrent )( b.isActive ),
       Html.href := target.toInternalLocation
-    )( target.toString )
+    )( target.description )
 
   private def externalLocationNavItem( name: String, uri: Uri ): Html[Nothing] =
     Html.a(
@@ -45,7 +42,11 @@ object MainView:
       )
     )
 
-  def nav( locationModel: Option[LocationModel], models: Option[( ModelIndex, ModelVersionId )] ): Html[Msg] =
+  def nav(
+      location: Option[LocationModel],
+      planLocation: Option[LocationModel.Plan],
+      models: Option[( ModelIndex, ModelVersionId )]
+  ): Html[Msg] =
     Html.nav( b.navbar, Html.role := "navigation" )(
       Html.div( b.navbarBrand + b.px1 )(
         Html.div(
@@ -57,8 +58,11 @@ object MainView:
       ),
       Html.div( b.navbarMenu )(
         Html.div( b.navbarStart )(
-          internalLocationNavItem( locationModel, LocationModel.Browse ),
-          internalLocationNavItem( locationModel, LocationModel.Plan ),
+          internalLocationNavItem( location.flatMap( _.asBrowse ).isDefined, LocationModel.Browse ),
+          internalLocationNavItem(
+            location.flatMap( _.asPlan ).isDefined,
+            planLocation.getOrElse( LocationModel.Plan( none ) )
+          ),
           externalLocationNavItem( "Wiki", uri"https://satisfactory.wiki.gg/" ),
           externalLocationNavItem( "Map", uri"https://satisfactory-calculator.com/en/interactive-map" )
         ),
@@ -84,24 +88,32 @@ object MainView:
       )
     )
 
-  def withNav( location: Option[LocationModel], content: Option[ContentModel] )( contents: Elem[Msg]* ): Html[Msg] =
+  def withNav(
+      location: Option[LocationModel],
+      planLocation: Option[LocationModel.Plan],
+      content: Option[ContentModel]
+  )( contents: Elem[Msg]* ): Html[Msg] =
     Html.div( b.themeDark )(
-      ( nav( location, content.map( cm => ( cm.modelIndex, cm.model.game.version.version ) ) ) +: contents ).toList
+      ( nav(
+        location,
+        planLocation,
+        content.map( cm => ( cm.modelIndex, cm.model.game.version.version ) )
+      ) +: contents ).toList
     )
 
   def view[F[_]]( model: MainModel[F] ): Html[Msg] =
     model match
       case MainModel.Error( message ) =>
-        withNav( none, none )(
+        withNav( none, none, none )(
           Html.article( b.message + b.isDanger )(
             Html.div( b.messageHeader )( Html.p( Html.strong( "Error" ) ) ),
             Html.div( b.messageBody )( Html.p( message ) )
           )
         )
       case MainModel.Loading( _, location ) =>
-        withNav( location.some, none )()
-      case MainModel.Loaded( _, location, content, browsePage ) =>
-        withNav( location.some, content.some ):
+        withNav( location.some, none, none )()
+      case MainModel.Loaded( _, location, content, browsePage, planPage ) =>
+        withNav( location.some, planPage.getLocation.some, content.some ):
           location match
-            case LocationModel.Browse => BrowseView( content.env, browsePage ).map( Msg.BrowseMessage( _ ) )
-            case LocationModel.Plan   => Html.div()
+            case LocationModel.Browse  => BrowseView( content.env, browsePage ).map( Msg.BrowseMessage( _ ) )
+            case _: LocationModel.Plan => PlanView( content.env, planPage ).map( Msg.PlanMessage( _ ) )

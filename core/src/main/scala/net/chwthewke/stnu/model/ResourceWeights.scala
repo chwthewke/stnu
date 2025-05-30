@@ -21,13 +21,13 @@ object ResourceWeights:
   extension ( resourceWeights: ResourceWeights )
     def weights: Map[ClassName[Item], Int] = resourceWeights
 
-    def costs( resourceCaps: Map[Item, Double] ): Map[Item, Double] =
+    def costs( resourceCaps: Map[ClassName[Item], Double] ): Map[ClassName[Item], Double] =
       val raw = resourceCaps.map:
         case ( item, cap ) =>
           (
             item,
             1d / math.max( cap, 1e-5 ) *
-              math.pow( 2d, ( resourceWeights.getOrElse( item.className, range ) - range ).toDouble / 4d )
+              math.pow( 2d, ( resourceWeights.getOrElse( item, range ) - range ).toDouble / 4d )
           )
 
       val sum = raw.values.sum

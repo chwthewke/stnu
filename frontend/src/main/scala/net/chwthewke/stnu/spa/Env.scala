@@ -1,6 +1,9 @@
 package net.chwthewke.stnu
 package spa
 
+import cats.data.NonEmptyList
+import cats.data.NonEmptyMap
+import cats.data.NonEmptyVector
 import cats.syntax.all.*
 import org.http4s.Uri
 import scala.annotation.tailrec
@@ -29,6 +32,11 @@ case class Env(
 
   lazy val withoutFicsmas: Env =
     copy( game = ModelConsistency( game, ( _, ex ) => ex != ExtractorType.FicsmasTree ).getOrElse( game ) )
+
+  def manufacturingRecipesWhere( pred: Recipe.Manufacturing => Boolean ): Set[ClassName[Recipe.Manufacturing]] =
+    game.manufacturingRecipes
+      .mapFilter( recipe => Option.when( pred( recipe ) )( recipe.className ) )
+      .toSet
 
   lazy val nonExtractionRecipes: Vector[Recipe.NonExtraction] =
     ( game.manufacturingRecipes ++ game.powerRecipes )
@@ -77,3 +85,49 @@ case class Env(
         sort( nextProductAcc, acc ++ sortedTier, toSort.tail )
 
     sort( game.extractedItems.map( _.className ).toSet, Vector.empty, byTier )
+
+  ///////////////
+  // Extraction
+  ///////////////
+
+  lazy val itemsExtractibleByFrackingAndOtherMethod: List[Item] =
+    val extractorTypesByItem: Map[ClassName[Item], Set[ExtractorType]] =
+      game.defaultResourceOptions.resourceNodes
+        .fmap( _.keys )
+        .toVector
+        .foldMap:
+          case ( extractor, items ) =>
+            items.toVector.foldMap( item => Map( item -> Set( extractor ) ) )
+    extractorTypesByItem
+      .filter:
+        case ( _, extractors ) => extractors.size > 1 && extractors.contains( ExtractorType.Fracking )
+      .keys
+      .toList
+      .mapFilter( game.items.get )
+      .sortBy( _.displayName )
+
+  lazy val miners: List[Machine] =
+    game.machines.values
+      .filter: m =>
+        m.machineType.extractor.contains( ExtractorType.Miner )
+      .toList
+      .sortBy( _.powerConsumption )
+
+  lazy val machinesByExtractorType: SortedMap[ExtractorType, Machine] =
+    game.machines.values.toVector
+      .foldMap: machine =>
+        machine.machineType.extractor.foldMap( extractor => SortedMap( extractor -> NonEmptyVector.one( machine ) ) )
+      .fmap( _.maximumBy( _.powerConsumption ) )
+
+  ///////////////
+  // Logistics
+  ///////////////
+
+  lazy val conveyorBelts: NonEmptyList[Transport] = game.conveyorBelts.sortBy( _.perMinute ).toNonEmptyList
+
+  lazy val defaultPipelines: NonEmptyList[Transport] = game.pipelines
+    .reduceMap: pipeline =>
+      NonEmptyMap.one( pipeline.perMinute, NonEmptyVector.one( pipeline ) )
+    .toNel
+    .map( _._2.minimumBy( _.displayName.length ) )
+    .sortBy( _.perMinute )
