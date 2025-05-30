@@ -1,7 +1,14 @@
 package net.chwthewke.stnu
-package spa.views
+package spa
+package views
+
+import cats.syntax.all.*
+import spa.prod.ClockSpeed
 
 object Numbers:
   def showDouble1( d: Double ): String =
-    if ( d == d.floor ) d.toInt.toString
+    if ( d.isValidInt ) d.toInt.toString
     else f"$d%.1f"
+
+  def showDouble3( d: Double ): String         = f"$d%5.3f"
+  def showClockSpeed( cs: ClockSpeed ): String = cs.show

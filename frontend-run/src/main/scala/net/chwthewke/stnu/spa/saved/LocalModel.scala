@@ -9,6 +9,8 @@ import io.circe.parser
 import io.circe.syntax.*
 import tyrian.Cmd
 
+import spa.plan.PlanMsg
+
 object LocalModel:
   case class Saved(
       browseModel: LocalBrowseModel.Saved,
@@ -27,16 +29,25 @@ object LocalModel:
       browseModel: LocalBrowseModel.Loaded,
       planModel: LocalPlanModel.Loaded
   ) derives ConfiguredDecoder:
-    def patch[F[_]]( appModel: MainModel.Loaded[F] ): MainModel.Loaded[F] =
-      appModel.copy(
-        browsePage = browseModel.toBrowseModel,
-        planPage = planModel.patch( appModel.planPage )
+    def patch[F[_]]( appModel: MainModel.Loaded[F] ): ( MainModel.Loaded[F], Boolean ) =
+      val ( newPlan, compute ) = planModel.patch( appModel.planPage )
+      (
+        appModel.copy(
+          browsePage = browseModel.toBrowseModel,
+          planPage = newPlan
+        ),
+        compute
       )
 
     def loadInto[F[_]]( appModel: MainModel[F] ): Option[( MainModel[F], Cmd[F, Msg] )] =
       appModel match
-        case m: MainModel.Loaded[F] => ( patch( m ) -> Cmd.None ).some
-        case _                      => none
+        case m: MainModel.Loaded[F] =>
+          val ( newModel, compute ) = patch( m )
+          (
+            newModel,
+            Option.when[Cmd[F, Msg]]( compute )( Cmd.Emit( Msg.PlanMessage( PlanMsg.SendSolverRequest ) ) ).combineAll
+          ).some
+        case _ => none
 
   object Loaded:
     def decode( src: Option[String] ): Either[String, Loaded] =

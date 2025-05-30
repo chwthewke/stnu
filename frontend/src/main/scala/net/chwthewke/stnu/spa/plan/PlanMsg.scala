@@ -9,6 +9,8 @@ import model.Recipe
 import model.ResourcePurity
 import model.Tier
 import model.Transport
+import protocol.solver.SolverRequest
+import protocol.solver.SolverResponse
 import spa.prod.ClockSpeedPreset
 
 enum PlanMsg:
@@ -21,6 +23,10 @@ enum PlanMsg:
   case SetExtractionOption( extractionOption: ExtractionOption )
   case SetLogisticsOption( logisticsOption: LogisticsOption )
   case SetRecipeOption( recipeOption: RecipeOption )
+  case RequestSelection( action: RequestSelectionAction )
+  case ToggleRequestSelection( enable: Boolean )
+  case SendSolverRequest
+  case ReceiveSolverResponse( request: SolverRequest, otherInputs: SolutionModel.OtherInputs, solution: SolverResponse )
 
 enum ExtractionOption:
   case SetMiner( machine: ClassName[Machine] )
@@ -45,3 +51,13 @@ enum RecipeOption:
   case SearchInput( value: String )
   case SearchReset
   case ToggleHideFicsmas( enable: Boolean )
+
+enum RequestSelectionAction:
+  case SearchInput( value: String )
+  case SearchReset
+  case RequestItem( item: Item )
+  case EditAmountStart( item: Item )
+  case EditAmountCancel
+  case EditAmountCommit
+  case EditAmountDelete
+  case EditAmountSetValue( value: String )

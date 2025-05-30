@@ -29,8 +29,13 @@
 ## features
 - ~~linear programming solver~~
 - ~~fix ficsmas (find the gift extractor)~~
-- minimize transports (logistics option, changes the radios into checkboxes)
+- ~~minimize transports (logistics option, changes the radios into checkboxes)~~
 - ~~v-align icons inside text~~
+- ~~resource settings in SolverRequest~~
+- ~~canCompute on presentation-altering changes in plan options~~
+- ~~Edit request amounts & remove requests~~
+- ~~HotReload would be nice starting about right now. Or just store in LocalStorage ourselves?~~
+- Extract "generic" HotReloadApp
 
 ### data-tools
 - ~~load GameData~~
@@ -41,9 +46,11 @@
 - ~~provide model(s) - from JSON rather than db?~~
 - ~~serve static assets~~
 - ~~serve index.html for prod~~
+- ~~fix: solver's item weight should be inversely proportional to cap~~
 
 ## frontend
 - ~~"deep" internal navigation~~
+- Extraction recipes in table
 
 ## refactorings vs. legacy
 - ~~check circe codecs in tools for actual use~~
