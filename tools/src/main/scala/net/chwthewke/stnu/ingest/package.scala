@@ -1,6 +1,7 @@
 package net.chwthewke.stnu
 
 import cats.effect.Sync
+import cats.syntax.all.*
 import fs2.Stream
 import fs2.data.json
 import fs2.data.json.circe.*
@@ -15,11 +16,12 @@ import scala.annotation.unused
 
 package object ingest:
   def writeJson[F[_]: Sync, A: Encoder]( value: A, path: Path )( using Files: Files[F] ): F[Unit] =
-    Stream
-      .emit[F, String]( value.asJson.spaces2SortKeys ) // note fs2.data.json is very slow here
-      .through( Files.writeUtf8( path ) )
-      .compile
-      .drain
+    path.parent.traverse_( Files.createDirectories ) *>
+      Stream
+        .emit[F, String]( value.asJson.spaces2SortKeys ) // note fs2.data.json is very slow here
+        .through( Files.writeUtf8( path ) )
+        .compile
+        .drain
 
   class ReadJsonStringPartiallyApplied[A]( @unused private val dummy: Boolean = false ) extends AnyVal:
     def apply[F[_]: Sync]( stream: Stream[F, String] )( using Decoder[A] ): F[A] =

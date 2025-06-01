@@ -76,6 +76,14 @@ val `stnu-assets`: Project = project
   .dependsOn( `stnu-core-jvm` )
   .settings( catsEffect, fs2Core, fs2IO, fs2DataCirce )
 
+val `stnu-test-assets`: Project = project
+  .in( file( "test-assets" ) )
+  .enablePlugins( Scalac )
+  .enablePlugins( ScalaJSPlugin )
+  .settings( sharedSettings )
+  .dependsOn( `stnu-core-js` )
+  .settings( catsEffect, circeParser )
+
 val `stnu-protocol-cross`: CrossProject =
   crossProject( JSPlatform, JVMPlatform )
     .crossType( CrossType.Pure )
@@ -192,6 +200,20 @@ val `stnu-tests`: Project =
       `stnu-backend`
     )
 
+val `stnu-tests-js`: Project =
+  project
+    .in( file( "tests-js" ) )
+    .enablePlugins( Scalac )
+    .enablePlugins( ScalaJSPlugin )
+    .settings( sharedSettings )
+    .settings( munitScalacheck )
+    .dependsOn(
+      `stnu-core-js`,
+      `stnu-test-assets`,
+      `stnu-frontend`,
+      `stnu-frontend-run`
+    )
+
 val `stnu-jvm`: Project =
   project
     .in( file( "target/stnu-jvm" ) )
@@ -207,6 +229,20 @@ val `stnu-jvm`: Project =
       `stnu-tests`
     )
 
+val `stnu-js`: Project =
+  project
+    .in( file( "target/stnu-js" ) )
+    .settings( sharedSettings )
+    .settings( aggregateSettings )
+    .aggregate(
+      `stnu-core-js`,
+      `stnu-protocol-js`,
+      `stnu-test-assets`,
+      `stnu-frontend`,
+      `stnu-frontend-run`,
+      `stnu-tests-js`
+    )
+
 val stnu: Project =
   project
     .in( file( "." ) )
@@ -216,6 +252,7 @@ val stnu: Project =
       `stnu-core`,
       `stnu-tools`,
       `stnu-assets`,
+      `stnu-test-assets`,
       `stnu-protocol`,
       `stnu-backend`,
       `stnu-backend-app`,
@@ -223,5 +260,6 @@ val stnu: Project =
       `stnu-frontend`,
       `stnu-frontend-run`,
       `stnu-laws`,
-      `stnu-tests`
+      `stnu-tests`,
+      `stnu-tests-js`
     )

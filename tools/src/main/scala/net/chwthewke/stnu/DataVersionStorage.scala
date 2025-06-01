@@ -28,11 +28,13 @@ object DataVersionStorage
     with OrderEnum[DataVersionStorage]:
   override def keyOf( version: DataVersionStorage ): String = version.docsKey
 
-  val resourcesBase: Path = Path( "." ) / "assets" / "src" / "main" / "resources"
+  val resourcesBase: Path     = Path( "." ) / "assets" / "src" / "main" / "resources"
+  val testResourcesBase: Path = Path( "." ) / "test-assets" / "src" / "main" / "scala"
 
   extension ( version: DataVersionStorage )
-    def resourcesDir: Path = resourcesBase / version.docsKey
-    def docsKey: String    = version.modelVersion.key
+    def resourcesDir: Path     = resourcesBase / version.docsKey
+    def testResourcesDir: Path = testResourcesBase / version.docsKey
+    def docsKey: String        = version.modelVersion.key
 
   def epicPath: Path             = Path( "E:\\EpicGames\\Satisfactory" )
   def epicExperimentalPath: Path = Path( "E:\\EpicGames\\SatisfactoryExperimental" )
