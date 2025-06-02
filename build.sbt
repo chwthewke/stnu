@@ -29,7 +29,6 @@ val `stnu-core-cross`: CrossProject =
   crossProject( JSPlatform, JVMPlatform )
     .crossType( CrossType.Pure )
     .settings( sharedSettings )
-    .settings( name := "stnu-core" )
     .settings(
       cats,
       alleycats,
@@ -69,6 +68,23 @@ val `stnu-tools`: Project = project
     pureconfigCatsEffect,
     pureconfigFs2
   )
+
+val `stnu-inspect-cross`: CrossProject =
+  crossProject( JSPlatform, JVMPlatform )
+    .crossType( CrossType.Pure )
+    .in( file( "inspect" ) )
+    .enablePlugins( Scalac )
+    .settings( sharedSettings )
+    .dependsOn( `stnu-core-cross` )
+
+val `stnu-inspect-jvm`: Project = `stnu-inspect-cross`.jvm
+val `stnu-inspect-js`: Project  = `stnu-inspect-cross`.js
+
+val `stnu-inspect` = project
+  .in( file( "inspect/target" ) )
+  .settings( sharedSettings )
+  .settings( aggregateSettings )
+  .aggregate( `stnu-inspect-jvm`, `stnu-inspect-js` )
 
 val `stnu-assets`: Project = project
   .in( file( "assets" ) )
@@ -161,7 +177,7 @@ val `stnu-frontend-run`: Project = project
   .settings( scalaJSLinkerConfig ~= { _.withModuleKind( ModuleKind.ESModule ) } )
   .settings( circeParser )
   .enablePlugins( FrontendDev )
-  .dependsOn( `stnu-frontend` )
+  .dependsOn( `stnu-frontend`, `stnu-inspect-js` )
 
 val `stnu-backend-app`: Project =
   project
@@ -186,10 +202,13 @@ val `stnu-tests`: Project =
   project
     .in( file( "tests" ) )
     .enablePlugins( Scalac )
+    .settings( Scalac.maxInlines( 128 ) )
     .settings( sharedSettings )
     .settings( munitScalacheck )
     .dependsOn(
       `stnu-core-jvm`,
+      `stnu-protocol-jvm`,
+      `stnu-inspect-jvm`,
       `stnu-tools`,
       `stnu-assets`,
       `stnu-backend`

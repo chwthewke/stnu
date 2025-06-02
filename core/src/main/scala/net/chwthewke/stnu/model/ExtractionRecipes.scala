@@ -23,7 +23,7 @@ object ExtractionRecipes:
 
   object ByPurity:
 
-    private case class Impl[R]( map: SortedMap[ResourcePurity, R] ) extends ByPurity[R]:
+    case class Impl[R]( map: SortedMap[ResourcePurity, R] ) extends ByPurity[R]:
       override def get( purity: ResourcePurity ): R = map( purity )
 
     def apply( vector: Vector[( ResourcePurity, Recipe.Extraction )] ): ValidatedNel[String, ExtractionRecipes] =

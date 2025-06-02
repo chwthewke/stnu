@@ -14,7 +14,7 @@ object Scalac extends AutoPlugin {
       "-language:higherKinds",
       "-language:implicitConversions",
       "-Wconf:any:verbose",
-      "-Wsafe-init",
+//      "-Wsafe-init", // seems to have false positives, hard to disable locally
       "-Wunused:implicits",
       "-Wunused:explicits",
       "-Wunused:imports",
@@ -33,5 +33,8 @@ object Scalac extends AutoPlugin {
       Compile / console / scalacOptions := ( Compile / console / scalacOptions ).value
         .filterNot( _ == "-Xfatal-warnings" )
     )
+
+  def maxInlines( n: Int ): Def.Setting[_] =
+    scalacOptions ++= Seq( "-Xmax-inlines", s"$n" )
 
 }
