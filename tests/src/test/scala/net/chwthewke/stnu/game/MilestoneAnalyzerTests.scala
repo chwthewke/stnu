@@ -74,7 +74,7 @@ object MilestoneAnalyzerTests:
       def showMap[C]( m: SortedMap[ClassName[C], Either[Milestone, AllOf[AnalysisItem]]] ): String =
         m.toVector
           .map:
-            case ( cn, Left( t ) ) => show"  [$t] $cn\n"
+            case ( cn, Left( t ) )  => show"  [$t] $cn\n"
             case ( cn, Right( a ) ) =>
               show"""  [D] $cn
                     |    ${showAllOf( a ).linesIterator.toVector.mkString( "", "\n    ", "" )}

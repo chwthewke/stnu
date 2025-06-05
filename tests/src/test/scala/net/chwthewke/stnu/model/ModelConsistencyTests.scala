@@ -10,7 +10,7 @@ import ingest.Loader
 
 class ModelConsistencyTests extends CatsEffectSuite:
   DataVersionStorage.cases.foreach: version =>
-    val modelAttempt = Loader[IO]( version ).use( _.model ).map( ModelConsistency( _ ) ).unsafeRunSync()
+    val modelAttempt               = Loader[IO]( version ).use( _.model ).map( ModelConsistency( _ ) ).unsafeRunSync()
     val modelAttemptWithoutFicsmas =
       modelAttempt.flatMap( ModelConsistency( _, ( _, ex ) => ex != ExtractorType.FicsmasTree ) )
 
@@ -25,7 +25,7 @@ class ModelConsistencyTests extends CatsEffectSuite:
 
     test( s"Enforcing consistency without FICSMAS excludes recipes & items" ):
       ( modelAttempt, clue( modelAttemptWithoutFicsmas ) ).tupled match {
-        case Left( err ) => fail( err )
+        case Left( err )                   => fail( err )
         case Right( ( model, noFicsmas ) ) =>
           assert( clue( model.items.size ) - clue( noFicsmas.items.size ) == 16 )
           assert( clue( model.recipes.size ) - clue( noFicsmas.recipes.size ) == 16 )

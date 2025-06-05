@@ -59,7 +59,7 @@ object ModelConsistency:
       case ( ( item, machine ), _ ) => machine.machineType.extractor.exists( extractionFilter( item, _ ) )
 
     val ( feasibleItems: Set[ClassName[Item]], feasibleRecipes: Set[ClassName[Recipe]] ) =
-      val allRecipes: Vector[Recipe] = model.manufacturingRecipes ++ model.powerRecipes
+      val allRecipes: Vector[Recipe]                   = model.manufacturingRecipes ++ model.powerRecipes
       val allowedExtractionItems: Set[ClassName[Item]] =
         allowedExtractionRecipes.keySet.map( _._1.className )
 
@@ -103,8 +103,8 @@ object ModelConsistency:
   private def modifyRecipes[F[_]: Applicative]( f: RecipeFunctionK[F] )( model: Model ): F[Model] =
     val manufacturingRecipes = model.manufacturingRecipes.traverse( f.manufacturing )
     val powerRecipes         = model.powerRecipes.traverse( f.powerGeneration )
-    val extractionRecipes = model.extractionRecipes.traverse:
-      case ExtractionRecipes.Fixed( recipe ) => f.extraction( recipe ).map( ExtractionRecipes.Fixed( _ ) )
+    val extractionRecipes    = model.extractionRecipes.traverse:
+      case ExtractionRecipes.Fixed( recipe )      => f.extraction( recipe ).map( ExtractionRecipes.Fixed( _ ) )
       case ExtractionRecipes.Variable( byPurity ) =>
         byPurity.traverse( f.extraction ).map( ExtractionRecipes.Variable( _ ) )
     ( manufacturingRecipes, powerRecipes, extractionRecipes ).mapN( ( m, p, e ) =>

@@ -16,7 +16,8 @@ enablePlugins( Dependencies )
 
 val sharedSettings = Seq(
   scalaVersion                                          := "3.6.4",
-  ideExcludedDirectories.withRank( KeyRanks.Invisible ) := Seq( target.value )
+  ideExcludedDirectories.withRank( KeyRanks.Invisible ) := Seq( target.value ),
+  scalafmtOnCompile                                     := true
 )
 
 val aggregateSettings = Seq(

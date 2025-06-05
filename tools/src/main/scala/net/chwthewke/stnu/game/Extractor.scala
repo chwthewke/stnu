@@ -40,10 +40,10 @@ object Extractor:
   given Decoder[Extractor] =
     import Parsers.*
 
-    given Decoder[Boolean]             = Decoders.booleanStringDecoder
-    given Decoder[Double]              = Decoders.doubleStringDecoder
-    given Decoder[Int]                 = Decoders.intStringDecoder
-    given dlf: Decoder[List[GameForm]] = listOf( GameForm.parser ).decoder
+    given Decoder[Boolean]                        = Decoders.booleanStringDecoder
+    given Decoder[Double]                         = Decoders.doubleStringDecoder
+    given Decoder[Int]                            = Decoders.intStringDecoder
+    given dlf: Decoder[List[GameForm]]            = listOf( GameForm.parser ).decoder
     given dlc: Decoder[List[ClassName[GameItem]]] = listOf( bpGeneratedClass ).decoder
       .or(
         Decoder[String].ensure( _.isEmpty, "Cannot decode allowed resources" ).as( List.empty[ClassName[GameItem]] )

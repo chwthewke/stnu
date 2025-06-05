@@ -35,7 +35,7 @@ object ResourceWeights:
       raw.map:
         case ( item, rawCap ) => ( item, total * rawCap / sum )
 
-  given Eq[ResourceWeights] = Eq[Map[ClassName[Item], Int]]
+  given Eq[ResourceWeights]   = Eq[Map[ClassName[Item], Int]]
   given Show[ResourceWeights] = Show.show: weights =>
     weights
       .map:

@@ -20,7 +20,10 @@ object ModelVersionId:
   given Decoder[ModelVersionId] = Decoder[Int]
   given Encoder[ModelVersionId] = Encoder[Int]
 
-case class ModelVersion( version: ModelVersionId, name: String, key: String ) derives Show, ConfiguredDecoder, ConfiguredEncoder
+case class ModelVersion( version: ModelVersionId, name: String, key: String )
+    derives Show,
+      ConfiguredDecoder,
+      ConfiguredEncoder
 
 object ModelVersion:
   given Order[ModelVersion]    = Order.by( _.version )

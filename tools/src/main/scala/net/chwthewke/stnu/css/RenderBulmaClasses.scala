@@ -48,6 +48,7 @@ object RenderBulmaClasses:
        |trait $traitName[A]:
        |  def cls( name: String ): A
        |  
+       |  // format: off
        |  ${classesLines.mkString( "\n  " )}
        |""".stripMargin
 

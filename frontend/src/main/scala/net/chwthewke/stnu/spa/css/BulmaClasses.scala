@@ -9,6 +9,7 @@ package css
 trait BulmaClasses[A]:
   def cls( name: String ): A
   
+  // format: off
   //////////////////////
   // ELEMENTS
   //////////////////////

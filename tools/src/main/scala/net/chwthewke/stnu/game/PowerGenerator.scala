@@ -43,7 +43,7 @@ object PowerGenerator:
     object ByproductAmount:
       inline def apply( amount: Int ): ByproductAmount    = amount
       extension ( self: ByproductAmount ) def amount: Int = self
-      given Decoder[ByproductAmount] =
+      given Decoder[ByproductAmount]                      =
         Decoder
           .instance( hc =>
             hc.as[String] match

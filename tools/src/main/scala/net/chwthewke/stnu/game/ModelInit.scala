@@ -35,7 +35,7 @@ object ModelInit:
     object ModelItems:
       inline def apply( items: Map[ClassName[Item], Item] ): ModelItems = items
       extension ( modelItems: ModelItems )
-        def items: Map[ClassName[Item], Item] = modelItems
+        def items: Map[ClassName[Item], Item]                             = modelItems
         def get( className: ClassName[Item] ): ValidatedNel[String, Item] =
           modelItems.get( className ).toValidNel( "No such item: " + className )
 

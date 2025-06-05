@@ -37,7 +37,7 @@ class WriteModel[F[_]: {Async, Hashing}]( val version: DataVersionStorage )( usi
   def grabAndRun: F[Unit] =
     run:
       for
-        json <- GrabDocs( version ).run
+        json  <- GrabDocs( version ).run
         model <- Loader[F]( version, json.some ).use: loader =>
                    GrabIcons( loader ).run *> loader.model
       yield model

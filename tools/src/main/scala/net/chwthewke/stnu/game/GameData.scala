@@ -79,7 +79,7 @@ object GameData:
     init( buildingDescriptors = descriptors )
   def conveyorBelts( logisticsData: Vector[LogisticsData] ): GameData = init( conveyorBelts = logisticsData )
   def pipelines( logisticsData: Vector[LogisticsData] ): GameData     = init( pipelines = logisticsData )
-  def simpleProducers( producers: Vector[SimpleProducer] ): GameData =
+  def simpleProducers( producers: Vector[SimpleProducer] ): GameData  =
     init( simpleProducers = producers )
 
   given Monoid[GameData]:
@@ -156,7 +156,7 @@ object GameData:
   given Decoder[GameData] =
     for
       nativeClass <- Decoder[NativeClass].prepare( _.downField( "NativeClass" ) )
-      gameData <-
+      gameData    <-
         modelClassDecoder( nativeClass )
           .prepare( _.downField( "Classes" ) )
           .handleErrorWith( f => Decoder.failed( f.withMessage( show"in NativeClass $nativeClass: ${f.message}" ) ) )

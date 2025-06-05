@@ -26,7 +26,7 @@ trait CustomEnum[A]:
 
   def indexOf( a: A ): Int = cases.indexOf( a )
 
-  def withNameOption( name: String ): Option[A] = casesMap.get( name )
+  def withNameOption( name: String ): Option[A]         = casesMap.get( name )
   def withNameEither( name: String ): Either[String, A] =
     withNameOption( name ).toRight( s"$name not in $casesList" )
 
