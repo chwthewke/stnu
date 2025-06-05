@@ -4,6 +4,7 @@ package model
 import algebra.lattice.MeetSemilattice
 import cats.Eq
 import cats.Monoid
+import cats.Semigroup
 import cats.Show
 import cats.derived.strict.*
 import cats.syntax.all.*
@@ -20,6 +21,11 @@ case class ResourceDistrib( impureNodes: Int, normalNodes: Int, pureNodes: Int )
     case ResourcePurity.Impure => impureNodes
     case ResourcePurity.Normal => normalNodes
     case ResourcePurity.Pure   => pureNodes
+
+  def foldMap[A: Semigroup]( f: ( ResourcePurity, Int ) => A ): A =
+    f( ResourcePurity.Impure, impureNodes )
+      |+| f( ResourcePurity.Normal, normalNodes )
+      |+| f( ResourcePurity.Pure, pureNodes )
 
   override def toString: String = show"Impure: $impureNodes, Normal: $normalNodes, Pure: $pureNodes"
 

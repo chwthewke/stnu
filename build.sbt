@@ -24,6 +24,8 @@ val aggregateSettings = Seq(
   publishLocal := {}
 )
 
+addCommandAlias( "ci", "; scalafmtAll ; test ; stnu-backend-app / Universal / packageBin" )
+
 val `stnu-core-cross`: CrossProject =
   crossProject( JSPlatform, JVMPlatform )
     .crossType( CrossType.Pure )

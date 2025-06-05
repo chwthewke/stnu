@@ -61,15 +61,14 @@ class RenderPhosphorIconsClasses[F[_]](
 
     def renderIconsTrait( tpe: String, iconClasses: SortedSet[String] ): String =
       s"""  object $tpe extends Common:
-         |    override protected def cls( name: String ): A = tcls( "$tpe", name )
-         |${iconClasses.toVector.map( renderIconValue ).mkString( "\n" )}
-         |""".stripMargin
+         |    override protected def cls( name: String ): A = tcls( "$tpe", name )""".stripMargin +
+        iconClasses.toVector.map( renderIconValue ).toNev.map( _.mkString_( "\n", "\n", "" ) ).orEmpty
 
     def renderSubClasses =
       icons.toVector
         .map:
           case ( tpe, icons ) => renderIconsTrait( tpe, icons -- common )
-        .mkString( "\n" )
+        .mkString( "\n\n" )
 
     s"""////////////////////////////////////////
        |// GENERATED, DO NOT EDIT
@@ -78,11 +77,14 @@ class RenderPhosphorIconsClasses[F[_]](
        |${packageDecls.map( pkg => s"package $pkg" ).mkString( "\n" )}
        |
        |trait $traitName[A]:
-       |  def tcls( tpe: String, name: String ): A  
+       |  def tcls( tpe: String, name: String ): A
        |
        |  trait Common:
        |    protected def cls( name: String ): A
+       |    
+       |    // format: off
        |${common.toVector.map( renderIconValue ).mkString( "\n" )}
+       |    // format: on
        |
        |$renderSubClasses
        |""".stripMargin

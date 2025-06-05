@@ -7,10 +7,12 @@ package spa
 package css
 
 trait PhosphorIcons[A]:
-  def tcls( tpe: String, name: String ): A  
+  def tcls( tpe: String, name: String ): A
 
   trait Common:
     protected def cls( name: String ): A
+    
+    // format: off
     val `acorn`: A = cls( "acorn" )
     val `addressBook`: A = cls( "address-book" )
     val `addressBookTabs`: A = cls( "address-book-tabs" )
@@ -1523,28 +1525,22 @@ trait PhosphorIcons[A]:
     val `yarn`: A = cls( "yarn" )
     val `yinYang`: A = cls( "yin-yang" )
     val `youtubeLogo`: A = cls( "youtube-logo" )
+    // format: on
 
   object bold extends Common:
     override protected def cls( name: String ): A = tcls( "bold", name )
 
-
   object regular extends Common:
     override protected def cls( name: String ): A = tcls( "regular", name )
-
 
   object fill extends Common:
     override protected def cls( name: String ): A = tcls( "fill", name )
 
-
   object duotone extends Common:
     override protected def cls( name: String ): A = tcls( "duotone", name )
-
 
   object light extends Common:
     override protected def cls( name: String ): A = tcls( "light", name )
 
-
   object thin extends Common:
     override protected def cls( name: String ): A = tcls( "thin", name )
-
-

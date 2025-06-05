@@ -17,7 +17,7 @@ import protocol.solver.SolverRequest
 class SolverServiceTests extends CatsEffectSuite:
   private val loadModels: IO[Map[ModelVersionId, Model]] =
     for
-      modelIndex <- assets.loadModelIndex[IO]
+      modelIndex            <- assets.loadModelIndex[IO]
       models: Vector[Model] <- modelIndex.versions.toVector.traverse: version =>
                                  assets.loadModel[IO]( version )
     yield models.fproductLeft( _.version.version ).toMap
@@ -34,7 +34,7 @@ class SolverServiceTests extends CatsEffectSuite:
     test( s"Can produce ${item.displayName} in ${model.version.name}" ):
       val requested       = Vector( Countable( item.className, 1d ) )
       val recipeSelection = model.manufacturingRecipes.map( _.className ) ++ model.powerRecipes.map( _.className )
-      val resources =
+      val resources       =
         model.extractedItems
           .map: item =>
             ( item.className, SolverRequest.Resource( 1e9d, 1d ) )

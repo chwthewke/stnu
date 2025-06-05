@@ -53,7 +53,7 @@ object AppServer:
   private def loadModels[F[_]: Async]: F[( ModelIndex, NonEmptyVector[FullModel] )] =
     for
       modelIndex <- assets.loadModelIndex[F]
-      models <- modelIndex.versions.toVector.traverse: version =>
+      models     <- modelIndex.versions.toVector.traverse: version =>
                   ( assets.loadModel[F]( version ), assets.loadIconIndex[F]( version ) )
                     .mapN( FullModel( _, _ ) )
       modelsNev <- models.toNev.liftTo[F]( Error( "No model was loaded - index empty" ) )
@@ -65,7 +65,7 @@ object AppServer:
       lastModifiedMiddleware <- lastModifiedMiddleware[F]
       shutdown               <- Resource.eval( Deferred[F, Unit] )
       ( modelIndex, models ) <- Resource.eval( loadModels[F] )
-      server <- new AppServer(
+      server                 <- new AppServer(
                   config.server,
                   Routes(
                     config.server,

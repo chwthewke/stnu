@@ -10,14 +10,14 @@ object Scalafmt extends AutoPlugin {
     TaskKey[Unit]( "scalafmtGenerateConfig" )
 
   override def projectSettings: Seq[Def.Setting[_]] = Seq(
-    scalafmtOnCompile := !sys.props.contains( "idea.runid" )
+    scalafmtOnCompile := false
   )
 
   override def buildSettings: Seq[Def.Setting[_]] = Seq(
     scalafmtGenerateConfig := {
       IO.write(
         file( ".scalafmt.conf" ),
-        """version = "3.9.3"
+        """version = "3.9.7"
           |runner.dialect = scala3
           |
           |preset = defaultWithAlign
