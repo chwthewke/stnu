@@ -10,3 +10,5 @@ case class Classes( classes: Vector[CssClass] ):
 
 object Classes:
   def apply( classes: CssClass* ): Classes = Classes( classes.toVector )
+  given Conversion[None.type, Classes]:
+    override def apply( x: None.type ): Classes = Classes()

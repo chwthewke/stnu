@@ -2,13 +2,17 @@ package net.chwthewke.stnu
 package spa
 package views
 
+import cats.syntax.all.*
 import tyrian.CSS
 import tyrian.Html
 
+import protocol.persistence.PlanName
 import spa.css.Bulma
 import spa.css.Phosphor
 import spa.plan.PlanModel
 import spa.plan.PlanMsg
+import spa.plan.PlanNameAction
+import spa.plan.PlanNameModel
 
 object PlanView:
   val b: Bulma    = Bulma
@@ -27,7 +31,135 @@ object PlanView:
           mainPlanContent( realEnv, model )
       )
 
+  def planNameOrEditor( model: PlanNameModel, dirty: Boolean ): Html[PlanMsg] =
+
+    def planNameWithEditButton: List[Html[PlanMsg]] =
+      Html.span( b.mb2, Html.style( CSS.display( "inline-block" ) ) )(
+        Html.span(
+          Html.style( CSS.verticalAlign( "baseline" ) ),
+          Option.when( dirty )( b.isItalic )
+        )(
+          model.name.show
+        ),
+        Html.span( Html.style( CSS.verticalAlign( "baseline" ) ), b.ml2 )(
+          Html.button(
+            b.button + b.mr2,
+            Html.onClick( PlanNameAction.EditStart ).map( PlanMsg.PlanName( _ ) )
+          )( Html.i( p.regular.`pencil` )(), Html.text( "Rename" ) ),
+          Html.button(
+            b.button + b.isSuccess + b.mr2,
+            Html.onClick( PlanMsg.SaveRequest( confirm = false ) ),
+            Option.when( !dirty )( Html.disabled )
+          )( Html.i( p.regular.`floppyDisk` )(), Html.text( "Save" ) ),
+          Html.button(
+            b.button + b.isInfo + b.mr2,
+            Html.onClick( PlanNameAction.Revert ).map( PlanMsg.PlanName( _ ) ),
+            Option.when( !dirty || model.saved.isEmpty )( Html.disabled )
+          )( Html.i( p.regular.arrowUUpLeft )(), Html.text( "Revert" ) ),
+          Html.button(
+            b.button + b.isInfo + b.mr2,
+            Html.onClick:
+              if ( dirty )
+                PlanMsg.PlanName( PlanNameAction.Clear )
+              else
+                PlanMsg.ClearPlan
+          )( Html.i( p.regular.`filePlus` )(), Html.text( "New" ) )
+        )
+      )
+        :: Nil
+
+    def planNameEditor( input: InputModel ): List[Html[PlanNameAction]] =
+      Html.div( b.field + b.hasAddons )(
+        Html.div( b.control )(
+          Html
+            .div(
+              b.button + b.isMedium + b.isInfo,
+              Html.style( CSS.height( "var(--bulma-control-height)" ) ),
+              Html.onClick( PlanNameAction.EditCancel )
+            )( Html.i( p.regular.`arrowUUpLeft` )() )
+        ),
+        Html
+          .div( b.control )(
+            Html.input(
+              b.input + b.isMedium,
+              Html.id     := PlanNameModel.editorId,
+              Html.`type` := "text",
+              input.output.map( v => Html.value := v ),
+              Html.onInput( value => PlanNameAction.EditSetValue( value ) )
+            )
+          ),
+        Html
+          .div( b.control )(
+            Html.div(
+              b.button + b.isMedium + b.isSuccess,
+              Html.style( CSS.height( "var(--bulma-control-height)" ) ),
+              Html.onClick( PlanNameAction.EditCommit )
+            )( Html.i( p.regular.check )() )
+          )
+      ) :: Nil
+
+    Html
+      .p( b.title )(
+        model.input.fold( planNameWithEditButton )( ed => planNameEditor( ed ).map( _.map( PlanMsg.PlanName( _ ) ) ) )
+      )
+
+  private def confirmSavePlanModal( name: PlanName ): Html[PlanMsg] =
+    CardModal(
+      Html.text( "Confirm overwrite?" ),
+      PlanMsg.PlanName( PlanNameAction.SaveCancel )
+    )(
+      Html.div(
+        Html.p( Html.text( show"A plan named \"" ), Html.em( name.show ), Html.text( "\" already exists." ) ),
+        Html.p( show"Do you want to overwrite it?" )
+      )
+    )(
+      List(
+        ( b.isSuccess, PlanMsg.SaveRequest( confirm = true ), Html.text( "Overwrite & save" ) ),
+        ( None, PlanMsg.PlanName( PlanNameAction.SaveCancel ), Html.text( "Cancel" ) )
+      )
+    )
+
+  private def confirmRevertPlanModal( name: PlanName ): Html[PlanMsg] =
+    CardModal(
+      Html.text( "Confirm revert?" ),
+      PlanMsg.PlanName( PlanNameAction.RevertCancel )
+    )(
+      Html.div(
+        Html.p(
+          Html.text( show"Are you sure you want to revert \"" ),
+          Html.em( name.show ),
+          Html.text( "\" to its last saved version?" )
+        )
+      )
+    )(
+      List(
+        ( b.isWarning, PlanMsg.RevertPlan, Html.text( "Revert" ) ),
+        ( None, PlanMsg.PlanName( PlanNameAction.RevertCancel ), Html.text( "Cancel" ) )
+      )
+    )
+
+  private def confirmClearPlanModal( name: PlanName ): Html[PlanMsg] =
+    CardModal(
+      Html.text( "Confirm new plan?" ),
+      PlanMsg.PlanName( PlanNameAction.ClearCancel )
+    )(
+      Html.div(
+        Html.p(
+          Html.text( show"Are you sure you want to discard your changes to \"" ),
+          Html.em( name.show ),
+          Html.text( "\" to start a new plan?" )
+        )
+      )
+    )(
+      List(
+        ( b.isWarning, PlanMsg.ClearPlan, Html.text( "Discard & new plan" ) ),
+        ( None, PlanMsg.PlanName( PlanNameAction.ClearCancel ), Html.text( "Cancel" ) )
+      )
+    )
+
   private def mainPlanContent( env: Env, model: PlanModel ): List[Html[PlanMsg]] =
+    // TODO bulma modal background for the request selection modal?
+    //   (I think the modal itself cannot be bulma bc of its desired position)
     Option.when( model.ui.requestSelectionVisible )(
       Html.div(
         Html.styles(
@@ -42,10 +174,13 @@ object PlanView:
         Html.onClick( PlanMsg.ToggleRequestSelection( enable = false ) )
       )()
     ) ++:
+      Option.when( model.name.confirmSaving )( confirmSavePlanModal( model.name.name ) ) ++:
+      Option.when( model.name.confirmNew )( confirmClearPlanModal( model.name.name ) ) ++:
+      Option.when( model.name.confirmRevert )( confirmRevertPlanModal( model.name.name ) ) ++:
       List(
         Html.section( b.hero + b.isPrimary )(
           Html.div( b.heroBody )(
-            Html.p( b.title )( "Factory plan" ),
+            planNameOrEditor( model.name, model.dirty ),
             Html.p( b.subtitle )( "Request products and plan machines and transport" ),
             Html.div( b.box, Html.styles( CSS.position( "relative" ) ) )(
               Html.div( b.field + b.isGrouped + b.isAlignItemsCenter, Html.style( CSS.marginBottom( "0" ) ) )(

@@ -18,11 +18,13 @@ import pureconfig.module.catseffect.syntax.*
 import scala.concurrent.duration.*
 
 import model.ModelIndex
+import persistence.Plans
 import protocol.game.FullModel
 import server.middleware.Cors
 import server.middleware.LastModifiedMiddleware
 import server.middleware.LoggingMiddleware
 import service.game.ModelService
+import service.plans.PlansService
 import service.solver.SolverService
 
 class AppServer[F[_]: Async](
@@ -65,12 +67,14 @@ object AppServer:
       lastModifiedMiddleware <- lastModifiedMiddleware[F]
       shutdown               <- Resource.eval( Deferred[F, Unit] )
       ( modelIndex, models ) <- Resource.eval( loadModels[F] )
+      transactor             <- persistence.Resources.managedTransactor( config.database )
       server                 <- new AppServer(
                   config.server,
                   Routes(
                     config.server,
                     ModelService( modelIndex, models ),
                     SolverService( models.toVector.map( _.game ) ),
+                    PlansService( Plans( transactor ) ),
                     Cors[F],
                     LoggingMiddleware[F]( config.logging ),
                     lastModifiedMiddleware,

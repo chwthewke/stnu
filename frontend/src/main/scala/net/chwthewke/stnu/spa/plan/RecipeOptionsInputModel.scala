@@ -48,3 +48,10 @@ object RecipeOptionsInputModel:
     env.manufacturingRecipesWhere( _.isAlternate )
   private def allConversionRecipes( env: Env ): Set[ClassName[Recipe.Manufacturing]] =
     env.manufacturingRecipesWhere( _.isMatterConversion )
+
+  given Conversion[RecipeOptionsInputModel, pp.RecipeOptions]:
+    override def apply( x: RecipeOptionsInputModel ): pp.RecipeOptions =
+      pp.RecipeOptions( x.hideFicsmas, x.allowedRecipes )
+
+  def from( p: pp.RecipeOptions ): RecipeOptionsInputModel =
+    RecipeOptionsInputModel( p.hideFicsmas, p.allowedRecipes, SearchQuery.init )

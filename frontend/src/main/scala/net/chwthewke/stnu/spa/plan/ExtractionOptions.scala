@@ -64,3 +64,10 @@ object ExtractionOptions:
       Set.empty,
       game.extractedItems.map( item => ( item.className, 4 ) ).toMap
     )
+
+  given Conversion[ExtractionOptions, pp.ExtractionOptions]:
+    override def apply( x: ExtractionOptions ): pp.ExtractionOptions =
+      pp.ExtractionOptions( x.minerClass, x.clockSpeed, x.extractors, x.preferFracking, x.resourceWeightSliders )
+
+  def from( p: pp.ExtractionOptions ): ExtractionOptions =
+    ExtractionOptions( p.minerClass, p.clockSpeed, p.extractors, p.preferFracking, p.resourceWeightSliders )

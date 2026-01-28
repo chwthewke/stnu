@@ -24,3 +24,10 @@ case class PowerOptions(
 object PowerOptions:
   def init( env: Env ): PowerOptions =
     PowerOptions( env.powerGenerators.map( _.className ).toSet )
+
+  given Conversion[PowerOptions, pp.PowerOptions]:
+    override def apply( x: PowerOptions ): pp.PowerOptions =
+      pp.PowerOptions( x.allowedGenerators )
+
+  def from( p: pp.PowerOptions ): PowerOptions =
+    PowerOptions( p.allowedGenerators )

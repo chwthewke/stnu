@@ -74,3 +74,21 @@ object LogisticsOptions:
       env.defaultPipelines.map( _.className ).toNes.toSortedSet,
       useAll = false
     )
+
+  given Conversion[LogisticsOptions, pp.LogisticsOptions]:
+    override def apply( x: LogisticsOptions ): pp.LogisticsOptions =
+      pp.LogisticsOptions(
+        Option.when( !x.useAll )( x.belt ),
+        Option.when( !x.useAll )( x.pipeline ),
+        x.allBelts,
+        x.allPipelines
+      )
+
+  def from( env: Env, p: pp.LogisticsOptions ): LogisticsOptions =
+    LogisticsOptions(
+      p.singleBelt.getOrElse( bestOf( env.conveyorBelts, p.allBelts ) ),
+      p.singlePipeline.getOrElse( bestOf( env.defaultPipelines, p.allPipelines ) ),
+      p.allBelts,
+      p.allPipelines,
+      p.singleBelt.isEmpty || p.singlePipeline.isEmpty
+    )

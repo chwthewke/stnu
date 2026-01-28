@@ -30,14 +30,24 @@ case class ResourceOptionsInputModel(
     )
 
 object ResourceOptionsInputModel:
+  def defaultInputs( defaults: ResourceOptions ): Map[( ExtractorType, ClassName[Item], ResourcePurity ), InputModel] =
+    for
+      ( ex, m ) <- defaults.resourceNodes
+      ( it, d ) <- m
+      ( p, v )  <- ResourcePurity.cases.fproduct( d.get )
+    yield ( ( ex, it, p ), InputModel.withDefault( v.toString ) )
+
   def init( defaults: ResourceOptions ): ResourceOptionsInputModel =
     // NOTE the defaults have an arbitrary high value for water/water pump "resource nodes", which is not
     //   editable. This gives us a very high cap on water when water pump is allowed.
     ResourceOptionsInputModel(
       defaults.resourceNodes,
-      for
-        ( ex, m ) <- defaults.resourceNodes
-        ( it, d ) <- m
-        ( p, v )  <- ResourcePurity.cases.fproduct( d.get )
-      yield ( ( ex, it, p ), InputModel.withDefault( v.toString ) )
+      defaultInputs( defaults )
     )
+
+  given Conversion[ResourceOptionsInputModel, pp.ResourceOptions]:
+    override def apply( x: ResourceOptionsInputModel ): pp.ResourceOptions =
+      pp.ResourceOptions( x.resourceNodes )
+
+  def from( env: Env, p: pp.ResourceOptions ): ResourceOptionsInputModel =
+    ResourceOptionsInputModel( p.resourceNodes, defaultInputs( env.game.defaultResourceOptions ) )

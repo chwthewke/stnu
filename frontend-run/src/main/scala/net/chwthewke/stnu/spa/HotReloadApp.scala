@@ -30,7 +30,7 @@ abstract class HotReloadApp[F[_]: Async, AppMsg, AppModel, Saved, Loaded]
       HotReload.snapshot( HotReloadApp.key, saved, encode )
 
   private def saveSubscription: Sub[F, HotReloadApp.Msg[Nothing, Nothing]] =
-    Sub.every( 1.second, HotReloadApp.key ).as( HotReloadApp.Msg.SaveModel )
+    Sub.every( 10.seconds, HotReloadApp.key ).as( HotReloadApp.Msg.SaveModel )
 
   private def attemptLoading( model: Model ): ( Model, Cmd[F, Msg] ) =
     model.loadedModel

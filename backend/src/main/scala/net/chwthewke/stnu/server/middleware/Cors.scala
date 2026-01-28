@@ -14,7 +14,7 @@ import scala.concurrent.duration.*
 object Cors:
   type T[F[_]] <: HttpMiddleware[F]
 
-  private val allowedMethods: Set[Method] = Set( Method.GET, Method.POST )
+  private val allowedMethods: Set[Method] = Set( Method.GET, Method.POST, Method.DELETE )
 
   private val allowedHeaders: Set[CIString] = Set(
     `Accept-Encoding`.headerInstance,

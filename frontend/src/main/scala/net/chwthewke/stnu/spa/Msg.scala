@@ -4,6 +4,7 @@ package spa
 import model.ModelIndex
 import protocol.game.FullModel
 import spa.browse.BrowseMsg
+import spa.library.LibraryMsg
 import spa.plan.PlanMsg
 
 enum Msg:
@@ -14,3 +15,4 @@ enum Msg:
   case NavigateExternal( href: String )
   case BrowseMessage( payload: BrowseMsg )
   case PlanMessage( payload: PlanMsg )
+  case LibraryMessage( payload: LibraryMsg )

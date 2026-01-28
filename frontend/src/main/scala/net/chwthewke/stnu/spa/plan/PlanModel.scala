@@ -5,14 +5,18 @@ package plan
 import cats.effect.Async
 import cats.syntax.all.*
 import tyrian.Cmd
+import tyrian.Nav
 
 import model.Recipe
+import protocol.persistence.PlanId
+import protocol.persistence.PlanName
 import protocol.solver.SolverRequest
 import spa.prod.ProdModel
 
 case class PlanModel(
     env: Env,
     ui: PlanModel.Ui,
+    name: PlanNameModel,
     recipeOptions: RecipeOptionsInputModel,
     resourceOptions: ResourceOptionsInputModel,
     extractionOptions: ExtractionOptions,
@@ -22,6 +26,9 @@ case class PlanModel(
     solution: Option[SolutionModel]
 ):
   def update[F[_]: Async]( http: Http[F], planMsg: PlanMsg ): ( PlanModel, Cmd[F, PlanMsg] ) = planMsg match
+    case PlanMsg.PlanName( action ) =>
+      val ( nextName, cmd ) = name.update( http, action )
+      copy( name = nextName ) -> cmd
     case PlanMsg.SetResourceDistribution( extractor, item, purity, value ) =>
       copy( resourceOptions = resourceOptions.setResourceDistribution( extractor, item, purity, value ) ) -> Cmd.None
     case PlanMsg.SetExtractionOption( extractionOption ) =>
@@ -37,6 +44,10 @@ case class PlanModel(
       copy( requestSelection = newRequestSelection ) -> cmd
     case PlanMsg.ToggleRequestSelection( enable ) =>
       copy( ui = ui.copy( requestSelectionVisible = enable ) ) -> Cmd.None
+    case PlanMsg.ToggleProductionSummaryExpanded( open ) =>
+      copy( ui = ui.setProductionSummaryExpanded( open ) ) -> Cmd.None
+    case PlanMsg.ToggleProductionRowExpanded( recipe ) =>
+      copy( ui = ui.toggleProductionRowExpanded( recipe ) ) -> Cmd.None
     case PlanMsg.SendSolverRequest =>
       this -> http
         .computeSolution( solverRequest )
@@ -46,10 +57,27 @@ case class PlanModel(
       val ui: PlanModel.Ui    =
         computed.ui.resetProductionRowExpanded( computed.production.rows.map( _.recipe.className ) )
       computed.copy( ui = ui ) -> Cmd.None
-    case PlanMsg.ToggleProductionSummaryExpanded( open ) =>
-      copy( ui = ui.setProductionSummaryExpanded( open ) ) -> Cmd.None
-    case PlanMsg.ToggleProductionRowExpanded( recipe ) =>
-      copy( ui = ui.toggleProductionRowExpanded( recipe ) ) -> Cmd.None
+    case PlanMsg.SaveRequest( confirm ) =>
+      this -> http
+        .save( save, confirm )
+        .map( PlanNameAction.SaveResponse( _, save ) )
+        .map( PlanMsg.PlanName( _ ) )
+    case PlanMsg.PlanLoaded( _, None ) =>
+      this -> Nav.pushUrl( locationWithPlanId( none ).toInternalLocation )
+    case PlanMsg.PlanLoaded( id, Some( plan ) ) =>
+      val ( model, cmd ) = PlanModel.load( env, ui, id, plan )
+      model -> Cmd.Batch( Nav.pushUrl( locationWithPlanId( id.some ).toInternalLocation ), cmd )
+    case PlanMsg.RevertPlan =>
+      name.saved.fold( this -> Cmd.None ):
+        case ( id, saved ) => PlanModel.load( env, ui, id, saved )
+    case PlanMsg.ClearPlan =>
+      PlanModel.init( env, ui ) -> Nav.pushUrl( locationWithPlanId( none ).toInternalLocation )
+
+  def loadPlan[F[_]: Async]( http: Http[F], id: PlanId ): Cmd[F, PlanMsg] =
+    if ( name.saved.exists( _._1 == id ) )
+      Cmd.None
+    else
+      http.loadPlan( id ).map( PlanMsg.PlanLoaded( id, _ ) )
 
   def restore: PlanModel = copy(
     resourceOptions = if ( ui.optionsTab == OptionsTab.ResourceNodes ) resourceOptions.restore else resourceOptions,
@@ -60,7 +88,12 @@ case class PlanModel(
     copy( ui = ui.setOptionsTab( tab ) )
 
   def getLocation: LocationModel.Plan =
-    LocationModel.Plan( Option.when( ui.optionsOpen )( ui.optionsTab ) )
+    LocationModel.Plan( ui.options, name.saved._1F )
+
+  def locationToOpenOptions: LocationModel.Plan                   = getLocation.copy( options = ui.optionsTab.some )
+  def locationToCloseOptions: LocationModel.Plan                  = getLocation.copy( options = none )
+  def locationToOpenOption( tab: OptionsTab ): LocationModel.Plan = getLocation.copy( options = tab.some )
+  def locationWithPlanId( planId: Option[PlanId] ): LocationModel.Plan = getLocation.copy( id = planId )
 
   lazy val solverRequest: SolverRequest =
     SolverRequest(
@@ -94,11 +127,25 @@ case class PlanModel(
     else
       solution.forall( solutionDirty )
 
+  val save: pp.Plan =
+    pp.Plan(
+      name.name,
+      recipeOptions,
+      resourceOptions,
+      extractionOptions,
+      logisticsOptions,
+      powerOptions,
+      requestSelection
+    )
+
+  val dirty: Boolean = name.saved.forall( _._2 != save )
+
 object PlanModel:
-  def init( env: Env, optionsTab: Option[OptionsTab] ): PlanModel =
+  def init( env: Env, ui: Ui = Ui.init ): PlanModel =
     PlanModel(
       env,
-      Ui.init.setOptionsTab( optionsTab ),
+      ui,
+      PlanNameModel.init( PlanName( "New plan" ), saved = None ),
       RecipeOptionsInputModel.init( env ),
       ResourceOptionsInputModel.init( env.game.defaultResourceOptions ),
       ExtractionOptions.init( env.game ),
@@ -108,6 +155,22 @@ object PlanModel:
       none
     )
 
+  def load( env: Env, ui: Ui, planId: PlanId, saved: pp.Plan ): ( PlanModel, Cmd[Nothing, PlanMsg] ) =
+    val model =
+      PlanModel(
+        env = env,
+        ui = ui,
+        name = PlanNameModel.init( saved.name, saved = ( planId, saved ).some ),
+        recipeOptions = RecipeOptionsInputModel.from( saved.recipeOptions ),
+        resourceOptions = ResourceOptionsInputModel.from( env, saved.resourceOptions ),
+        extractionOptions = ExtractionOptions.from( saved.extractionOptions ),
+        logisticsOptions = LogisticsOptions.from( env, saved.logisticsOptions ),
+        powerOptions = PowerOptions.from( saved.powerOptions ),
+        requestSelection = RequestSelectionModel.from( saved.requestSelection ),
+        solution = none
+      )
+    model -> ( if ( model.canCompute ) Cmd.Emit( PlanMsg.SendSolverRequest ) else Cmd.None )
+
   case class Ui(
       optionsOpen: Boolean,
       optionsTab: OptionsTab,
@@ -115,6 +178,8 @@ object PlanModel:
       productionSummaryExpanded: Boolean,
       productionRowExpanded: Option[ClassName[Recipe]]
   ):
+    def options: Option[OptionsTab] = Option.when( optionsOpen )( optionsTab )
+
     def setOptionsTab( optionsTab: Option[OptionsTab] ): Ui =
       copy(
         optionsOpen = optionsTab.isDefined,
@@ -134,7 +199,7 @@ object PlanModel:
 
   object Ui:
     val init: Ui = Ui(
-      optionsOpen = true,
+      optionsOpen = false,
       optionsTab = OptionsTab.Recipes,
       requestSelectionVisible = false,
       productionSummaryExpanded = false,

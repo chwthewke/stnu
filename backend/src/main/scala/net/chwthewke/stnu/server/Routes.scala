@@ -16,12 +16,14 @@ import server.middleware.LastModifiedMiddleware
 import server.middleware.LoggingMiddleware
 import server.pages.Index
 import service.game.ModelService
+import service.plans.PlansService
 import service.solver.SolverService
 
 class Routes[F[_]: Sync](
     private val serverConfig: ServerConfig,
     private val modelApi: ModelService[F],
     private val solverApi: SolverService[F],
+    private val plansApi: PlansService[F],
     private val corsMiddleware: Cors.T[F],
     private val loggingMiddleware: LoggingMiddleware.T[F],
     private val lastModifiedMiddleware: LastModifiedMiddleware.T[F],
@@ -50,7 +52,7 @@ class Routes[F[_]: Sync](
   val routes: HttpRoutes[F] =
     loggingMiddleware(
       systemRoutes
-        <+> corsMiddleware( solverApi.routes )
+        <+> corsMiddleware( solverApi.routes <+> plansApi.routes )
         <+> lastModifiedMiddleware( pageRoutes <+> corsMiddleware( modelApi.routes <+> staticRoutes ) )
     )
 
@@ -59,6 +61,7 @@ object Routes:
       serverConfig: ServerConfig,
       modelApi: ModelService[F],
       solverApi: SolverService[F],
+      plansApi: PlansService[F],
       corsMiddleware: Cors.T[F],
       loggingMiddleware: LoggingMiddleware.T[F],
       lastModifiedMiddleware: LastModifiedMiddleware.T[F],
@@ -68,6 +71,7 @@ object Routes:
       serverConfig,
       modelApi,
       solverApi,
+      plansApi,
       corsMiddleware,
       loggingMiddleware,
       lastModifiedMiddleware,

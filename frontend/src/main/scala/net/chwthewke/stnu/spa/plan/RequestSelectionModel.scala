@@ -73,3 +73,10 @@ object RequestSelectionModel:
   val editorId: String = "request_amount_editor"
 
   def init: RequestSelectionModel = RequestSelectionModel( SortedMap.empty, SearchQuery.init, none )
+
+  given Conversion[RequestSelectionModel, pp.RequestSelection]:
+    override def apply( x: RequestSelectionModel ): pp.RequestSelection =
+      pp.RequestSelection( x.requestedAmounts )
+
+  def from( p: pp.RequestSelection ): RequestSelectionModel =
+    RequestSelectionModel( p.requestedAmounts, SearchQuery.init, none )

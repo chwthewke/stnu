@@ -174,14 +174,14 @@ object BrowseView:
           ) ::
             nbsp ::
             products.map: ci =>
-              RecipeFrag.numberedItem( env, ci, b.px1, Html.onClick( BrowseMsg.SelectItem( ci.item.displayName ) ) )
+              RecipeFrag.numberedIcon( env, ci, b.px1, Html.onClick( BrowseMsg.SelectItem( ci.item.displayName ) ) )
         )
 
     private def displayManufacturingRecipe( env: Env, recipe: Recipe.Manufacturing ) =
       displayRecipe( env, recipe ): products =>
         Html.td( Html.styles( CSS.textAlign( "left" ), CSS.verticalAlign( "middle" ) ) )(
           products.toList.map: ci =>
-            RecipeFrag.numberedItem( env, ci, b.px1, Html.onClick( BrowseMsg.SelectItem( ci.item.displayName ) ) )
+            RecipeFrag.numberedIcon( env, ci, b.px1, Html.onClick( BrowseMsg.SelectItem( ci.item.displayName ) ) )
         )
 
     private def displayRecipe[R <: Recipe, M <: BrowseMsg]( env: Env, recipe: R )(
@@ -204,7 +204,7 @@ object BrowseView:
         Html.td( Html.styles( CSS.textAlign( "right" ), CSS.verticalAlign( "middle" ) ) )(
           Html.span()(
             recipe.ingredients.map: ci =>
-              RecipeFrag.numberedItem( env, ci, b.px1, Html.onClick( BrowseMsg.SelectItem( ci.item.displayName ) ) )
+              RecipeFrag.numberedIcon( env, ci, b.px1, Html.onClick( BrowseMsg.SelectItem( ci.item.displayName ) ) )
           )
         ),
         Html.td( Html.styles( CSS.textAlign( "center" ), CSS.verticalAlign( "middle" ) ) )(

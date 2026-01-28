@@ -20,9 +20,7 @@ object LocalModel:
 
   object Saved:
     def apply[F[_]]( appModel: MainModel.Loaded[F] ): Saved =
-      appModel match
-        case MainModel.Loaded( _, _, _, browsePage, planPage ) =>
-          Saved( LocalBrowseModel.Saved( browsePage ), LocalPlanModel.Saved( planPage ) )
+      Saved( LocalBrowseModel.Saved( appModel.browsePage ), LocalPlanModel.Saved( appModel.planPage ) )
 
     def encode( saved: Saved ): String = saved.asJson.noSpaces
 

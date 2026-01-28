@@ -19,7 +19,8 @@ object MainView:
   private def internalLocationNavItem( isCurrent: Boolean, target: LocationModel ): Html[Msg] =
     Html.a(
       b.navbarItem + Option.when( isCurrent )( b.isActive ),
-      Html.href := target.toInternalLocation
+      Html.href := target.toInternalLocation,
+      Option.when( isCurrent )( Html.onClick( Msg.SetLocation( target ) ) )
     )( target.description )
 
   private def externalLocationNavItem( name: String, uri: Uri ): Html[Nothing] =
@@ -61,8 +62,9 @@ object MainView:
           internalLocationNavItem( location.flatMap( _.asBrowse ).isDefined, LocationModel.Browse ),
           internalLocationNavItem(
             location.flatMap( _.asPlan ).isDefined,
-            planLocation.getOrElse( LocationModel.Plan( none ) )
+            planLocation.getOrElse( LocationModel.Plan( none, none ) )
           ),
+          internalLocationNavItem( location.flatMap( _.asLibrary ).isDefined, LocationModel.Library ),
           externalLocationNavItem( "Wiki", uri"https://satisfactory.wiki.gg/" ),
           externalLocationNavItem( "Map", uri"https://satisfactory-calculator.com/en/interactive-map" )
         ),
@@ -112,8 +114,9 @@ object MainView:
         )
       case MainModel.Loading( _, location ) =>
         withNav( location.some, none, none )()
-      case MainModel.Loaded( _, location, content, browsePage, planPage ) =>
+      case MainModel.Loaded( _, location, content, browsePage, planPage, libraryPage ) =>
         withNav( location.some, planPage.getLocation.some, content.some ):
           location match
             case LocationModel.Browse  => BrowseView( content.env, browsePage ).map( Msg.BrowseMessage( _ ) )
             case _: LocationModel.Plan => PlanView( content.env, planPage ).map( Msg.PlanMessage( _ ) )
+            case LocationModel.Library => LibraryView( libraryPage, planPage.ui ).map( Msg.LibraryMessage( _ ) )

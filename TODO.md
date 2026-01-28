@@ -48,7 +48,8 @@
 - ~~serve static assets~~
 - ~~serve index.html for prod~~
 - ~~fix: solver's item weight should be inversely proportional to cap~~
-- durable storage of plans
+- ~~durable storage of plans~~
+- persistence: store model version of plans!
 
 ## frontend
 - ~~"deep" internal navigation~~
@@ -62,7 +63,6 @@
 - Maybe stop it with the hero in the plan header
 - "My Plans": sort the table
 - Dom.focus not working, try tricks (like including the target in the DOM with display: hidden)?
-- "My plans" + save/load
 
 ## refactorings vs. legacy
 - ~~check circe codecs in tools for actual use~~

@@ -10,10 +10,12 @@ import model.Recipe
 import model.ResourcePurity
 import model.Tier
 import model.Transport
+import protocol.persistence.PlanId
 import protocol.solver.SolverRequest
 import protocol.solver.SolverResponse
 
 enum PlanMsg:
+  case PlanName( action: PlanNameAction )
   case SetResourceDistribution(
       extractorType: ExtractorType,
       item: ClassName[Item],
@@ -26,10 +28,14 @@ enum PlanMsg:
   case SetPowerOption( powerOption: PowerOption )
   case RequestSelection( action: RequestSelectionAction )
   case ToggleRequestSelection( enable: Boolean )
-  case SendSolverRequest
-  case ReceiveSolverResponse( request: SolverRequest, solution: SolverResponse )
   case ToggleProductionRowExpanded( recipe: ClassName[Recipe] )
   case ToggleProductionSummaryExpanded( open: Boolean )
+  case SendSolverRequest
+  case ReceiveSolverResponse( request: SolverRequest, solution: SolverResponse )
+  case SaveRequest( confirm: Boolean )
+  case PlanLoaded( id: PlanId, plan: Option[pp.Plan] )
+  case RevertPlan
+  case ClearPlan
 
 enum ExtractionOption:
   case SetMiner( machine: ClassName[Machine] )
@@ -68,3 +74,15 @@ enum RequestSelectionAction:
   case EditAmountCommit
   case EditAmountDelete
   case EditAmountSetValue( value: String )
+
+enum PlanNameAction:
+  case EditStart
+  case EditCancel
+  case EditCommit
+  case EditSetValue( value: String )
+  case SaveResponse( id: Option[PlanId], saved: pp.Plan )
+  case SaveCancel
+  case Revert
+  case RevertCancel
+  case Clear
+  case ClearCancel

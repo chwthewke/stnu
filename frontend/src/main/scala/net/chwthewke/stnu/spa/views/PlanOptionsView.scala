@@ -43,7 +43,7 @@ object PlanOptionsView:
     Html.div(
       Html.style( CSS.position( "absolute" ) )
     )(
-      Html.a( b.button + b.isInfo, Html.href := LocationModel.Plan( model.ui.optionsTab.some ).toInternalLocation )(
+      Html.a( b.button + b.isInfo, Html.href := model.locationToOpenOptions.toInternalLocation )(
         Html.text( "Options" ),
         nbsp,
         Html.i( p.regular.arrowsOut )()
@@ -54,7 +54,7 @@ object PlanOptionsView:
     Html.div( b.panel + b.mt2 + b.isInfo )(
       Html.div( b.panelHeading + b.p2, Html.style( CSS.display( "flex" ) ) )(
         Html.span( Html.style( CSS.flexGrow( "1" ) ) )( "Options" ),
-        Html.a( b.hasTextInfoDark, Html.href := LocationModel.Plan( none ).toInternalLocation )(
+        Html.a( b.hasTextInfoDark, Html.href := model.locationToCloseOptions.toInternalLocation )(
           Html.i( p.regular.arrowsIn )()
         )
       ) ::
@@ -63,7 +63,7 @@ object PlanOptionsView:
             .map( option =>
               Html.a(
                 Option.when[Attr[Nothing]]( option == model.ui.optionsTab )( b.isActive ),
-                Html.href := LocationModel.Plan( option.some ).toInternalLocation
+                Html.href := model.locationToOpenOption( option ).toInternalLocation
               )( option.description )
             )
         )

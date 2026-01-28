@@ -71,6 +71,9 @@ object QueryCodec:
       _.traverse( xs => xs.headOption.filter( _ => xs.length == 1 ) ),
       _.map( Vector( _ ) )
     )
+  def singleOptWithDefault[A: {QueryParamEncoder, QueryParamDecoder}]( name: String, default: A ): QueryCodec[A] =
+    singleOpt[A]( name ).imap( _.getOrElse( default ), _.some )
+
   def single[A: {QueryParamEncoder, QueryParamDecoder}]( name: String ): QueryCodec[A] =
     fromQueryParamCodec( name ).imapFilter(
       _.flatMap( xs => xs.headOption.filter( _ => xs.length == 1 ) ),

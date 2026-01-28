@@ -5,7 +5,6 @@ package client
 import cats.data.Kleisli
 import cats.effect.Async
 import org.http4s.Method.POST
-import org.http4s.circe.CirceEntityCodec.*
 import org.http4s.client.Client
 
 import protocol.solver.SolverApi

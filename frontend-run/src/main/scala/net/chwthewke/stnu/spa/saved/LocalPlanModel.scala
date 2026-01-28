@@ -7,9 +7,11 @@ import io.circe.derivation.ConfiguredEncoder
 
 import model.Recipe
 import spa.plan.PlanModel
+import spa.plan.PlanNameModel
 
 object LocalPlanModel:
   case class Saved(
+      name: LocalPlanNameModel.Saved,
       recipeOptions: LocalRecipeOptions.Saved,
       resourceOptions: LocalResourceOptions.Saved,
       extractionOptions: LocalExtractionOptions.Saved,
@@ -24,6 +26,7 @@ object LocalPlanModel:
   object Saved:
     def apply( planModel: PlanModel ): Saved =
       Saved(
+        LocalPlanNameModel.Saved( planModel.name ),
         LocalRecipeOptions.Saved( planModel.recipeOptions ),
         LocalResourceOptions.Saved( planModel.resourceOptions ),
         LocalExtractionOptions.Saved( planModel.extractionOptions ),
@@ -36,6 +39,7 @@ object LocalPlanModel:
       )
 
   case class Loaded(
+      name: LocalPlanNameModel.Loaded,
       recipeOptions: LocalRecipeOptions.Loaded,
       resourceOptions: LocalResourceOptions.Loaded,
       extractionOptions: LocalExtractionOptions.Loaded,
@@ -49,6 +53,7 @@ object LocalPlanModel:
     def patch( planModel: PlanModel ): ( PlanModel, Boolean ) =
       (
         planModel.copy(
+          name = name.toPlanNameModel,
           recipeOptions = recipeOptions.toRecipeOptions,
           resourceOptions = resourceOptions.toResourceOptions,
           extractionOptions = extractionOptions.toExtractionOptions,

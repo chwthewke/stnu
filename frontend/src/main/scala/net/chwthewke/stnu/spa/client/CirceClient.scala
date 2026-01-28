@@ -4,10 +4,14 @@ package spa.client
 import cats.data.Kleisli
 import cats.effect.kernel.Async
 import io.circe.Decoder
+import io.circe.Encoder
+import org.http4s.EntityDecoder
+import org.http4s.EntityEncoder
 import org.http4s.Method.GET
 import org.http4s.Request
 import org.http4s.Uri
-import org.http4s.circe.CirceEntityDecoder.*
+import org.http4s.circe.CirceEntityDecoder
+import org.http4s.circe.CirceEntityEncoder
 import org.http4s.client.Client
 import org.http4s.client.dsl.Http4sClientDsl
 
@@ -23,3 +27,9 @@ trait CirceClient[F[_]] extends Http4sClientDsl[F]:
     Kleisli( _.expectOption[A]( GET( uri ) ) )
   def expectOption[A: Decoder]( request: Request[F] ): Kleisli[F, Client[F], Option[A]] =
     Kleisli( _.expectOption[A]( request ) )
+
+  def successful( request: Request[F] ): Kleisli[F, Client[F], Boolean] =
+    Kleisli( _.successful( request ) )
+
+  protected final given [A: Decoder] => EntityDecoder[F, A] = CirceEntityDecoder.circeEntityDecoder[F, A]
+  protected final given [A: Encoder] => EntityEncoder[F, A] = CirceEntityEncoder.circeEntityEncoder[F, A]
