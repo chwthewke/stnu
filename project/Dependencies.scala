@@ -19,13 +19,15 @@ object Dependencies extends AutoPlugin {
     val catsTime: Deps      = libraryDependencies += "org.typelevel" %%% "cats-time"      % "0.5.1"
     val catsParse: Deps     = libraryDependencies += "org.typelevel" %%% "cats-parse"     % "1.1.0"
 
+    val tzdb: Deps = libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0"
+
     val algebra: Deps = libraryDependencies += "org.typelevel" %%% "algebra" % "2.13.0"
 
-    val catsEffectVersion: String = "3.6.1"
+    val catsEffectVersion: String = "3.6.3"
     val catsEffectKernel: Deps    = libraryDependencies += "org.typelevel" %%% "cats-effect-kernel" % catsEffectVersion
     val catsEffect: Deps          = libraryDependencies += "org.typelevel" %%% "cats-effect"        % catsEffectVersion
 
-    val circeVersion: String = "0.14.13"
+    val circeVersion: String = "0.14.15"
     val circe: Deps          = libraryDependencies += "io.circe" %%% "circe-core"   % circeVersion
     val circeParser: Deps    = libraryDependencies += "io.circe" %%% "circe-parser" % circeVersion
 
@@ -35,12 +37,12 @@ object Dependencies extends AutoPlugin {
     )
     val enumeratumCirce: Deps = libraryDependencies += "com.beachape" %%% "enumeratum-circe" % "1.7.5"
 
-    val fs2Core: Deps      = libraryDependencies += "co.fs2"    %%% "fs2-core"            % "3.12.0"
-    val fs2IO: Deps        = libraryDependencies += "co.fs2"    %%% "fs2-io"              % "3.12.0"
+    val fs2Core: Deps      = libraryDependencies += "co.fs2"    %%% "fs2-core"            % "3.12.2"
+    val fs2IO: Deps        = libraryDependencies += "co.fs2"    %%% "fs2-io"              % "3.12.2"
     val fs2DataCirce: Deps = libraryDependencies += "org.gnieh" %%% "fs2-data-json-circe" % "1.11.2"
 
     val pureconfigVersion = "0.17.9"
-    val pureconfig: Deps = libraryDependencies ++= Seq(
+    val pureconfig: Deps  = libraryDependencies ++= Seq(
       "com.github.pureconfig" %%% "pureconfig-core"           % pureconfigVersion,
       "com.github.pureconfig" %%% "pureconfig-cats"           % pureconfigVersion,
       "com.github.pureconfig" %%% "pureconfig-generic-scala3" % pureconfigVersion
@@ -50,7 +52,7 @@ object Dependencies extends AutoPlugin {
       libraryDependencies += "com.github.pureconfig" %%% "pureconfig-enumeratum" % pureconfigVersion
     val pureconfigCatsEffect: Deps =
       libraryDependencies += "com.github.pureconfig" %%% "pureconfig-cats-effect" % pureconfigVersion
-    val pureconfigFs2: Deps = libraryDependencies += "com.github.pureconfig" %%% "pureconfig-fs2" % pureconfigVersion
+    val pureconfigFs2: Deps  = libraryDependencies += "com.github.pureconfig" %%% "pureconfig-fs2" % pureconfigVersion
     val pureconfigIp4s: Deps =
       libraryDependencies += "com.github.pureconfig" %%% "pureconfig-ip4s" % pureconfigVersion
     val pureconfigHttp4s: Deps =
@@ -73,6 +75,26 @@ object Dependencies extends AutoPlugin {
       "ch.qos.logback" % "logback-classic" % "1.5.18",
       "org.typelevel" %% "log4cats-slf4j"  % "2.7.0"
     )
+
+    val doobieVersion = "1.0.0-RC11"
+    val doobie: Deps  =
+      libraryDependencies ++= Seq(
+        "org.tpolecat" %% "doobie-core"     % doobieVersion,
+        "org.tpolecat" %% "doobie-postgres" % doobieVersion,
+        "org.tpolecat" %% "doobie-hikari"   % doobieVersion
+      )
+
+    val doobieCirce: Deps = libraryDependencies += "org.tpolecat" %% "doobie-postgres-circe" % doobieVersion
+
+    val doobieMunit: Deps = libraryDependencies += "org.tpolecat" %% "doobie-munit" % doobieVersion
+
+    val flywayVersion: String = "11.20.3"
+    val flyway: Deps          = libraryDependencies ++= Seq(
+      "org.flywaydb" % "flyway-core"                % flywayVersion,
+      "org.flywaydb" % "flyway-database-postgresql" % flywayVersion
+    )
+
+    val postgresql: Deps = libraryDependencies += "org.postgresql" % "postgresql" % "42.7.9"
 
     val ojAlgo: Deps = libraryDependencies += "org.ojalgo" % "ojalgo" % "55.2.0"
 

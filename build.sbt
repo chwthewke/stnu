@@ -41,6 +41,7 @@ val `stnu-core-cross`: CrossProject =
       algebra,
       circe
     )
+    .platformsSettings( JSPlatform )( tzdb )
     .in( file( "core" ) )
     .enablePlugins( Scalac )
 
@@ -98,13 +99,21 @@ val `stnu-protocol`: Project =
     .settings( aggregateSettings )
     .aggregate( `stnu-protocol-jvm`, `stnu-protocol-js` )
 
+val `stnu-persistence`: Project =
+  project
+    .in( file( "persistence" ) )
+    .settings( sharedSettings )
+    .enablePlugins( Scalac )
+    .settings( doobie, doobieCirce, flyway, postgresql, pureconfig )
+    .dependsOn( `stnu-protocol-jvm` )
+
 val `stnu-backend`: Project = project
   .in( file( "backend" ) )
   .enablePlugins( Scalac )
   .enablePlugins( BuildInfo )
   .settings( buildInfoPackage := "net.chwthewke.stnu.server" )
   .settings( sharedSettings )
-  .dependsOn( `stnu-assets`, `stnu-protocol-jvm` )
+  .dependsOn( `stnu-assets`, `stnu-protocol-jvm`, `stnu-persistence` )
   .settings(
     circeParser,
     http4sCore,
@@ -188,7 +197,7 @@ val `stnu-tests`: Project =
     .in( file( "tests" ) )
     .enablePlugins( Scalac )
     .settings( sharedSettings )
-    .settings( munitScalacheck )
+    .settings( munitScalacheck, doobieMunit )
     .dependsOn(
       `stnu-core-jvm`,
       `stnu-tools`,
@@ -206,6 +215,7 @@ val `stnu-jvm`: Project =
       `stnu-protocol-jvm`,
       `stnu-tools`,
       `stnu-assets`,
+      `stnu-persistence`,
       `stnu-backend`,
       `stnu-laws`,
       `stnu-tests`
@@ -221,6 +231,7 @@ val stnu: Project =
       `stnu-tools`,
       `stnu-assets`,
       `stnu-protocol`,
+      `stnu-persistence`,
       `stnu-backend`,
       `stnu-backend-app`,
       `stnu-backend-run`,
