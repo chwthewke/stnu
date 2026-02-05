@@ -66,7 +66,7 @@ object PlanTable:
           )
         ),
         Html.tbody(
-          ghostRows( production ) ++ extraInputRows( production ) ++ computedRows( production )
+          ghostRows( production ) ++ extraInputRows( production ) ++ computedRows( ui, production )
         )
       )
     )
@@ -95,7 +95,7 @@ object PlanTable:
           ),
           Html.p( "Machines" ),
           Html.div( b.columns + b.hasTextWeightBold + b.isMultiline )(
-            production.rows
+            production.productionRows
               .foldMap( cr => SortedMap( cr.recipe.producedIn -> cr.machineCount ) )
               .toList
               .map:
@@ -138,13 +138,13 @@ object PlanTable:
       )
     )
 
-  private def computedRows( production: ProdModel ): List[Html[PlanMsg]] =
+  private def computedRows( ui: PlanModel.Ui, production: ProdModel ): List[Html[PlanMsg]] =
     production.solution.foldMap:
       case ProdModel.Solution.Failure( err ) => errorRow( err ) :: Nil
       case _: ProdModel.Solution.Result      =>
-        production.rows
+        production.productionRows
           .flatMap: ( process: ClockedRecipe ) =>
-            val expanded: Boolean             = production.expandedRecipe.contains_( process.recipe.className )
+            val expanded: Boolean             = ui.productionRowExpanded.contains_( process.recipe.className )
             val moreRows: List[Html[Nothing]] =
               if ( expanded )
                 expandedRecipeRows( production.env )( production.itemIO, process )
@@ -239,7 +239,7 @@ object PlanTable:
 
   def powerHeaderCell( model: ProdModel ): Html[Nothing] =
     val consumption: Double =
-      model.rows
+      model.productionRows
         .foldMap: cr =>
           cr.power.average
     Html.th(

@@ -30,8 +30,7 @@ case class ProdModel(
     resourceNodes: Map[ExtractorType, Map[ClassName[Item], ResourceDistrib]],
     extractionOptions: ExtractionOptions,
     belts: NonEmptyList[Transport],
-    pipelines: NonEmptyList[Transport],
-    expandedRecipe: Option[ClassName[Recipe]]
+    pipelines: NonEmptyList[Transport]
 ):
   private lazy val result: Option[Solution.Result] = solution.flatMap( _.result )
 
@@ -123,7 +122,7 @@ case class ProdModel(
       .foldMap:
         case ( machine, recipes ) => allowedRecipes( machine, recipes )
 
-  private lazy val productionRows: Vector[ClockedRecipe] =
+  private lazy val manufacturingRows: Vector[ClockedRecipe] =
     result
       .foldMap( _.recipes.toVector )
       .filter( _.isSignificant )
@@ -145,12 +144,12 @@ case class ProdModel(
           feasible ++ next.foldMap( _.recipe.productsList.map( _.item.className ).toSet )
         sort( nextFeasible, rest, acc ++ next )
 
-  lazy val rows: List[ClockedRecipe] =
+  lazy val productionRows: List[ClockedRecipe] =
     val extracted: Set[ClassName[Item]] = extractionRows.foldMap( _.recipe.productsList.map( _.item.className ).toSet )
-    extractionRows ++ sort( extracted, productionRows, Nil )
-    
+    extractionRows ++ sort( extracted, manufacturingRows, Nil )
+
   lazy val itemIO: SortedMap[Item, ItemIO[SrcDest]] = ItemIO.of(
-    rows,
+    productionRows,
     currentRequest.map { case Countable( item, amount ) => ( item, amount ) }.toMap
   )
 

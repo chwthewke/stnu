@@ -13,18 +13,82 @@ import protocol.persistence.PlanName
 import protocol.solver.SolverRequest
 import spa.prod.ProdModel
 
-case class PlanModel(
-    env: Env,
-    ui: PlanModel.Ui,
-    name: PlanNameModel,
-    recipeOptions: RecipeOptionsInputModel,
-    resourceOptions: ResourceOptionsInputModel,
-    extractionOptions: ExtractionOptions,
-    logisticsOptions: LogisticsOptions,
-    powerOptions: PowerOptions,
-    requestSelection: RequestSelectionModel,
-    solution: Option[SolutionModel]
+class PlanModel(
+    val env: Env,
+    val ui: PlanModel.Ui,
+    val name: PlanNameModel,
+    val recipeOptions: RecipeOptionsInputModel,
+    val resourceOptions: ResourceOptionsInputModel,
+    val extractionOptions: ExtractionOptions,
+    val logisticsOptions: LogisticsOptions,
+    val powerOptions: PowerOptions,
+    val requestSelection: RequestSelectionModel,
+    val solution: Option[SolutionModel],
+    val production: ProdModel
 ):
+  import PlanModel.*
+
+  def this(
+      env: Env,
+      ui: PlanModel.Ui,
+      name: PlanNameModel,
+      recipeOptions: RecipeOptionsInputModel,
+      resourceOptions: ResourceOptionsInputModel,
+      extractionOptions: ExtractionOptions,
+      logisticsOptions: LogisticsOptions,
+      powerOptions: PowerOptions,
+      requestSelection: RequestSelectionModel,
+      solution: Option[SolutionModel]
+  ) =
+    this(
+      env,
+      ui,
+      name,
+      recipeOptions,
+      resourceOptions,
+      extractionOptions,
+      logisticsOptions,
+      powerOptions,
+      requestSelection,
+      solution,
+      PlanModel.productionOf( env, resourceOptions, extractionOptions, logisticsOptions, requestSelection, solution )
+    )
+
+  def copy(
+      ui: PlanModel.Ui = this.ui,
+      name: PlanNameModel = this.name,
+      recipeOptions: RecipeOptionsInputModel = this.recipeOptions,
+      resourceOptions: ResourceOptionsInputModel = this.resourceOptions,
+      extractionOptions: ExtractionOptions = this.extractionOptions,
+      logisticsOptions: LogisticsOptions = this.logisticsOptions,
+      powerOptions: PowerOptions = this.powerOptions,
+      requestSelection: RequestSelectionModel = this.requestSelection,
+      solution: Option[SolutionModel] = this.solution
+  ): PlanModel =
+    val newProduction: ProdModel =
+      if (
+        ( resourceOptions ne this.resourceOptions ) ||
+        ( extractionOptions ne this.extractionOptions ) ||
+        ( logisticsOptions ne this.logisticsOptions ) ||
+        ( requestSelection ne this.requestSelection ) ||
+        ( solution ne this.solution )
+      ) productionOf( env, resourceOptions, extractionOptions, logisticsOptions, requestSelection, solution )
+      else production
+
+    new PlanModel(
+      env,
+      ui,
+      name,
+      recipeOptions,
+      resourceOptions,
+      extractionOptions,
+      logisticsOptions,
+      powerOptions,
+      requestSelection,
+      solution,
+      newProduction
+    )
+
   def update[F[_]: Async]( http: Http[F], planMsg: PlanMsg ): ( PlanModel, Cmd[F, PlanMsg] ) = planMsg match
     case PlanMsg.PlanName( action ) =>
       val ( nextName, cmd ) = name.update( http, action )
@@ -55,7 +119,7 @@ case class PlanModel(
     case PlanMsg.ReceiveSolverResponse( solverRequest, solverResponse ) =>
       val computed: PlanModel = copy( solution = SolutionModel( solverRequest, solverResponse ).some )
       val ui: PlanModel.Ui    =
-        computed.ui.resetProductionRowExpanded( computed.production.rows.map( _.recipe.className ) )
+        computed.ui.resetProductionRowExpanded( computed.production.productionRows.map( _.recipe.className ) )
       computed.copy( ui = ui ) -> Cmd.None
     case PlanMsg.SaveRequest( confirm ) =>
       this -> http
@@ -106,18 +170,6 @@ case class PlanModel(
       extractionOptions.resources( env, resourceOptions.resourceNodes )
     )
 
-  lazy val production: ProdModel =
-    ProdModel(
-      env,
-      requestSelection,
-      solution.map( s => ProdModel.Solution( env, s.requested, s.response ) ),
-      resourceOptions.resourceNodes,
-      extractionOptions,
-      logisticsOptions.belts( env ),
-      logisticsOptions.pipelines( env ),
-      ui.productionRowExpanded
-    )
-
   private def solutionDirty( solution: SolutionModel ): Boolean =
     solution.requested != solverRequest
 
@@ -141,8 +193,26 @@ case class PlanModel(
   val dirty: Boolean = name.saved.forall( _._2 != save )
 
 object PlanModel:
+  private def productionOf(
+      env: Env,
+      resourceOptions: ResourceOptionsInputModel,
+      extractionOptions: ExtractionOptions,
+      logisticsOptions: LogisticsOptions,
+      requestSelection: RequestSelectionModel,
+      solution: Option[SolutionModel]
+  ): ProdModel =
+    ProdModel(
+      env,
+      requestSelection,
+      solution.map( s => ProdModel.Solution( env, s.requested, s.response ) ),
+      resourceOptions.resourceNodes,
+      extractionOptions,
+      logisticsOptions.belts( env ),
+      logisticsOptions.pipelines( env )
+    )
+
   def init( env: Env, ui: Ui = Ui.init ): PlanModel =
-    PlanModel(
+    new PlanModel(
       env,
       ui,
       PlanNameModel.init( PlanName( "New plan" ), saved = None ),
@@ -157,7 +227,7 @@ object PlanModel:
 
   def load( env: Env, ui: Ui, planId: PlanId, saved: pp.Plan ): ( PlanModel, Cmd[Nothing, PlanMsg] ) =
     val model =
-      PlanModel(
+      new PlanModel(
         env = env,
         ui = ui,
         name = PlanNameModel.init( saved.name, saved = ( planId, saved ).some ),
