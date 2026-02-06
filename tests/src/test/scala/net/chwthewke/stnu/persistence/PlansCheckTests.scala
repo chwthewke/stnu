@@ -1,6 +1,7 @@
 package net.chwthewke.stnu
 package persistence
 
+import cats.syntax.all.*
 import java.time.Instant
 
 import model.ClockSpeedPreset
@@ -34,7 +35,16 @@ class PlansCheckTests extends PersistenceTests:
     check( Plans.statements.insertPlan( PlanName( "plan" ), Instant.now(), confirm = true ) )
 
   test( "check INSERT plan options" ):
-    check( Plans.statements.insertPlanOptions( PlanId( 1 ), true, ClassName( "machine" ), ClockSpeedPreset.`100%` ) )
+    check(
+      Plans.statements
+        .insertPlanOptions(
+          PlanId( 1 ),
+          true,
+          ClassName( "machine" ),
+          ClockSpeedPreset.`100%`,
+          Vector( 0, 2, 3, 1 ).some
+        )
+    )
 
   test( "check DELETE plan allowed classes" ):
     check( Plans.statements.deletePlanAllowedClasses( PlanId( 1 ) ) )

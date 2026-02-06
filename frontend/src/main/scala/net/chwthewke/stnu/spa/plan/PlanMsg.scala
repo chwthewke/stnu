@@ -30,6 +30,7 @@ enum PlanMsg:
   case ToggleRequestSelection( enable: Boolean )
   case ToggleProductionRowExpanded( recipe: ClassName[Recipe] )
   case ToggleProductionSummaryExpanded( open: Boolean )
+  case MoveProductionRow( index: Int, amount: Int )
   case SendSolverRequest
   case ReceiveSolverResponse( request: SolverRequest, solution: SolverResponse )
   case SaveRequest( confirm: Boolean )

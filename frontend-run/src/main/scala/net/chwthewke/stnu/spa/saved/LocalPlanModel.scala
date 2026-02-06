@@ -5,7 +5,6 @@ package saved
 import io.circe.derivation.ConfiguredDecoder
 import io.circe.derivation.ConfiguredEncoder
 
-import model.Recipe
 import spa.plan.PlanModel
 import spa.plan.PlanNameModel
 
@@ -19,8 +18,7 @@ object LocalPlanModel:
       powerOptions: LocalPowerOptions.Saved,
       requestSelection: LocalRequestSelection.Saved,
       solutionComputed: Boolean,
-      expandedProductionRow: Option[ClassName[Recipe]],
-      expandedProductionSummary: Boolean
+      prodUi: LocalProductionUi.Saved
   ) derives ConfiguredEncoder
 
   object Saved:
@@ -34,8 +32,7 @@ object LocalPlanModel:
         LocalPowerOptions.Saved( planModel.powerOptions ),
         LocalRequestSelection.Saved( planModel.requestSelection ),
         !planModel.canCompute,
-        planModel.ui.productionRowExpanded,
-        planModel.ui.productionSummaryExpanded
+        LocalProductionUi.Saved( planModel.productionUi )
       )
 
   case class Loaded(
@@ -47,8 +44,7 @@ object LocalPlanModel:
       powerOptions: LocalPowerOptions.Loaded,
       requestSelection: LocalRequestSelection.Loaded,
       solutionComputed: Boolean,
-      expandedProductionRow: Option[ClassName[Recipe]],
-      expandedProductionSummary: Boolean
+      prodUi: LocalProductionUi.Loaded
   ) derives ConfiguredDecoder:
     def patch( planModel: PlanModel ): ( PlanModel, Boolean ) =
       (
@@ -60,10 +56,7 @@ object LocalPlanModel:
           logisticsOptions = logisticsOptions.toLogisticsOptions,
           powerOptions = powerOptions.toPowerOptions,
           requestSelection = requestSelection.toRequestSelection,
-          ui = planModel.ui.copy(
-            productionRowExpanded = expandedProductionRow,
-            productionSummaryExpanded = expandedProductionSummary
-          )
+          productionUi = prodUi.toProductionUi
         ),
         solutionComputed
       )

@@ -32,16 +32,16 @@ object PlanTable:
   val b: Bulma    = Bulma
   val p: Phosphor = Phosphor
 
-  def apply( ui: PlanModel.Ui, production: ProdModel ): Html[PlanMsg] =
+  def apply( ui: ProdModel.Ui, production: ProdModel ): Html[PlanMsg] =
     Html.div(
       productionSummary( ui, production ),
       Html.table( b.table + b.isResponsive + b.isFullwidth + b.isHoverable, Html.style( CSS.tableLayout( "fixed" ) ) )(
         Html.colgroup(
-          Html.col( Html.style( CSS.width( "2%" ) ) ),
-          Html.col( Html.style( CSS.width( "10%" ) ) ),
-          Html.col( Html.style( CSS.width( "3%" ) ) ),
-          Html.col( Html.style( CSS.width( "18%" ) ) ),
-          Html.col( Html.style( CSS.width( "32%" ) ) ),
+          Html.col( Html.style( CSS.width( "7%" ) ) ),
+          Html.col( Html.style( CSS.width( "8%" ) ) ),
+          Html.col( Html.style( CSS.width( "4%" ) ) ),
+          Html.col( Html.style( CSS.width( "16%" ) ) ),
+          Html.col( Html.style( CSS.width( "30%" ) ) ),
           Html.col( Html.style( CSS.width( "5%" ) ) ),
           Html.col( Html.style( CSS.width( "10%" ) ) ),
           Html.col( Html.style( CSS.width( "10%" ) ) ),
@@ -80,7 +80,7 @@ object PlanTable:
       Html.text( ci.item.displayName )
     )
 
-  private def productionSummary( ui: PlanModel.Ui, production: ProdModel ): Html[Nothing] =
+  private def productionSummary( ui: ProdModel.Ui, production: ProdModel ): Html[Nothing] =
     Details
       .open( isOpen = ui.productionSummaryExpanded )(
         Html.text( "Summary" ),
@@ -138,18 +138,24 @@ object PlanTable:
       )
     )
 
-  private def computedRows( ui: PlanModel.Ui, production: ProdModel ): List[Html[PlanMsg]] =
+  private def orderedProductionRows( ui: ProdModel.Ui, production: ProdModel ): List[ClockedRecipe] =
+    ui.productionRowOrder.fold( production.productionRows ): order =>
+      val rows = production.productionRows.toVector
+      order.map( i => rows( i ) ).toList
+
+  private def computedRows( ui: ProdModel.Ui, production: ProdModel ): List[Html[PlanMsg]] =
     production.solution.foldMap:
       case ProdModel.Solution.Failure( err ) => errorRow( err ) :: Nil
       case _: ProdModel.Solution.Result      =>
-        production.productionRows
-          .flatMap: ( process: ClockedRecipe ) =>
-            val expanded: Boolean             = ui.productionRowExpanded.contains_( process.recipe.className )
-            val moreRows: List[Html[Nothing]] =
-              if ( expanded )
-                expandedRecipeRows( production.env )( production.itemIO, process )
-              else Nil
-            mainComputedRow( production, process, expanded ) :: moreRows
+        orderedProductionRows( ui, production ).zipWithIndex
+          .flatMap:
+            case ( process: ClockedRecipe, rowIndex: Int ) =>
+              val expanded: Boolean             = ui.productionRowExpanded.contains_( process.recipe.className )
+              val moreRows: List[Html[Nothing]] =
+                if ( expanded )
+                  expandedRecipeRows( production.env )( production.itemIO, process )
+                else Nil
+              mainComputedRow( production, process, rowIndex, expanded ) :: moreRows
 
   private val noBorderCSS: Style           = CSS.borderBottom( "0" )
   private val noBorderStyle: Attr[Nothing] = Html.style( noBorderCSS )
@@ -157,6 +163,7 @@ object PlanTable:
   private def mainComputedRow(
       production: ProdModel,
       process: ClockedRecipe,
+      rowIndex: Int,
       expanded: Boolean
   ): Html[PlanMsg] =
     val borderAttr: Attr[Nothing]      = Option.when( expanded )( noBorderStyle )
@@ -167,13 +174,35 @@ object PlanTable:
       Html.styles( CSS.verticalAlign( "middle" ) )
     )(
       Html.td( borderAttr )(
-        Html.button(
-          b.button + b.isSmall,
-          Html.onClick( PlanMsg.ToggleProductionRowExpanded( process.recipe.className ) )
-        )(
-          Html.i(
-            if ( expanded ) p.regular.caretDown else p.regular.caretRight
-          )()
+        Html.div( b.buttons + b.hasAddons )(
+          Html.button(
+            b.button + b.isSmall,
+            Html.title := "Move row up, shift = x2, ctrl = x5",
+            Html.onClickModified( m =>
+              PlanMsg.MoveProductionRow( rowIndex, -1 * ( if ( m.shift ) 2 else 1 ) * ( if ( m.ctrl ) 5 else 1 ) )
+            )
+          )(
+            Html.i(
+              p.regular.arrowFatUp
+            )()
+          ),
+          Html.button(
+            b.button + b.isSmall,
+            Html.title := "Move row down, shift = 5, ctrl = 10",
+            Html.onClickModified( m =>
+              PlanMsg.MoveProductionRow( rowIndex, ( if ( m.shift ) 2 else 1 ) * ( if ( m.ctrl ) 5 else 1 ) )
+            )
+          )(
+            Html.i( p.regular.arrowFatDown )()
+          ),
+          Html.button(
+            b.button + b.isSmall,
+            Html.onClick( PlanMsg.ToggleProductionRowExpanded( process.recipe.className ) )
+          )(
+            Html.i(
+              if ( expanded ) p.regular.caretDown else p.regular.caretRight
+            )()
+          )
         )
       ) ::
         initCells
@@ -194,7 +223,7 @@ object PlanTable:
             show"${process.clockSpeed} %"
           ),
           powerCell( process, borderAttr ),
-          Html.td( noBorderStyle )( "MW" )
+          Html.td( borderAttr )( "MW" )
         )
     )
   private def selectLogistics(

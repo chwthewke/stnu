@@ -189,3 +189,68 @@ object ProdModel:
   private val frackingLast: Ordering[Machine] =
     def isFracking( m: Machine ): Boolean = m.machineType.extractor.contains( ExtractorType.Fracking )
     Ordering.by( isFracking )
+
+  case class Ui(
+      productionSummaryExpanded: Boolean,
+      productionRowExpanded: Option[ClassName[Recipe]],
+      productionRowOrder: Option[Vector[Int]],
+      validFor: Vector[ClassName[Recipe]]
+  ):
+    // NOTE invariant
+    //  productionRowOrder.forall(_.sorted == validFor.indices)
+
+    def setProductionSummaryExpanded( isOpen: Boolean ): Ui =
+      copy( productionSummaryExpanded = isOpen )
+
+    private def reIndexOrder(
+        order: Vector[Int],
+        oldRecipes: Vector[ClassName[Recipe]],
+        newRecipes: List[ClassName[Recipe]]
+    ): Option[Vector[Int]] =
+      val kept: Vector[Int] =
+        if ( oldRecipes.isEmpty )
+          order.filter( _ < newRecipes.length )
+        else
+          order.mapFilter: ix =>
+            newRecipes.indexOf( oldRecipes( ix ) ) match
+              case -1    => None
+              case newIx => newIx.some
+      Option.when( kept.nonEmpty )( kept ++ newRecipes.indices.filterNot( kept.contains ) )
+
+    def invalidate( newProductionRows: List[ClassName[Recipe]] ): Ui =
+      val newProductionRowExpanded: Option[ClassName[Recipe]] =
+        productionRowExpanded.filter( newProductionRows.contains )
+      val ( newProductionRowOrder: Option[Vector[Int]], newValidFor: Vector[ClassName[Recipe]] ) =
+        if ( newProductionRows.isEmpty ) ( productionRowOrder, validFor )
+        else
+          ( productionRowOrder.flatMap( reIndexOrder( _, validFor, newProductionRows ) ), newProductionRows.toVector )
+
+      copy(
+        productionRowExpanded = newProductionRowExpanded,
+        productionRowOrder = newProductionRowOrder,
+        validFor = newValidFor
+      )
+
+    def toggleProductionRowExpanded( recipe: ClassName[Recipe] ): Ui =
+      copy(productionRowExpanded =
+        if ( productionRowExpanded.contains_( recipe ) ) none
+        else recipe.some
+      )
+
+    def resetProductionRowExpanded( recipes: List[ClassName[Recipe]] ): Ui =
+      copy( productionRowExpanded = productionRowExpanded.filter( recipes.contains_ ) )
+
+    def moveProductionRow( index: Int, amount: Int, count: Int ): Ui =
+      val currentOrder          = productionRowOrder.getOrElse( ( 0 until count ).toVector )
+      val value                 = currentOrder( index )
+      val target                = ( index + amount ).min( count - 1 ).max( 0 )
+      val newProductionRowOrder = currentOrder.patch( index, Nil, 1 ).patch( target, Vector( value ), 0 )
+      copy( productionRowOrder = newProductionRowOrder.some )
+
+  object Ui:
+    val init: Ui = Ui( false, none, none, Vector.empty )
+
+    given Conversion[Ui, pp.ProductionUi]:
+      override def apply( ui: Ui ): pp.ProductionUi = pp.ProductionUi( ui.productionRowOrder )
+
+    def from( ui: pp.ProductionUi ): Ui = Ui( false, none, ui.productionRowOrder, Vector.empty )

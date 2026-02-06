@@ -235,5 +235,5 @@ object PlanView:
           )
         ),
         // TODO tabs here probably
-        PlanTable( model.ui, model.production )
+        PlanTable( model.productionUi, model.production )
       )

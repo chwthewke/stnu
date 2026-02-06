@@ -22,4 +22,7 @@ object pp {
 
   type RequestSelection = protocol.persistence.RequestSelection
   val RequestSelection: protocol.persistence.RequestSelection.type = protocol.persistence.RequestSelection
+
+  type ProductionUi = protocol.persistence.ProductionUi
+  val ProductionUi: protocol.persistence.ProductionUi.type = protocol.persistence.ProductionUi
 }

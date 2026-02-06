@@ -10,6 +10,7 @@ import cats.syntax.all.*
 import doobie.*
 import doobie.implicits.*
 import doobie.postgres.implicits.JavaInstantMeta
+import doobie.postgres.implicits.unliftedUnboxedIntegerArrayType
 import java.time.Instant
 import scala.collection.immutable.SortedMap
 import scala.collection.immutable.SortedSet
@@ -29,6 +30,7 @@ import protocol.persistence.PlanId
 import protocol.persistence.PlanName
 import protocol.persistence.PlanSummary
 import protocol.persistence.PowerOptions
+import protocol.persistence.ProductionUi
 import protocol.persistence.RecipeOptions
 import protocol.persistence.RequestSelection
 import protocol.persistence.ResourceOptions
@@ -60,7 +62,8 @@ object Plans extends PlansPersistenceApi[ConnectionIO]:
         planId,
         plan.recipeOptions.hideFicsmas,
         plan.extractionOptions.minerClass,
-        plan.extractionOptions.clockSpeed
+        plan.extractionOptions.clockSpeed,
+        plan.productionUi.productionRowOrder
       )
       .run
       .void
@@ -125,7 +128,7 @@ object Plans extends PlansPersistenceApi[ConnectionIO]:
 
   override def readPlan( planId: PlanId ): OptionT[ConnectionIO, Plan] =
     OptionT( statements.selectPlanHeader( planId ).option ).semiflatMap:
-      case ( name, hideFicsmas, minerClass, clockSpeedPreset ) =>
+      case ( name, hideFicsmas, minerClass, clockSpeedPreset, productionRowsOrder ) =>
         for
           allowed         <- statements.selectPlanAllowed( planId ).to[Vector]
           resourceNodes   <- statements.selectPlanResourceNodes( planId ).to[Vector]
@@ -136,6 +139,7 @@ object Plans extends PlansPersistenceApi[ConnectionIO]:
           hideFicsmas,
           minerClass,
           clockSpeedPreset,
+          productionRowsOrder,
           allowed,
           resourceNodes,
           resourceOptions,
@@ -174,6 +178,7 @@ object Plans extends PlansPersistenceApi[ConnectionIO]:
       hideFicsmas: Boolean,
       minerClass: ClassName[Machine],
       clockSpeedPreset: ClockSpeedPreset,
+      productionRowsOrder: Option[Vector[Int]],
       allowedTypes: Vector[( AllowedClassType, String, Boolean )],
       resourceNodes: Vector[( ExtractorType, ClassName[Item], ResourcePurity, Int )],
       resourceOptions: Vector[( ClassName[Item], Boolean, Int )],
@@ -212,7 +217,8 @@ object Plans extends PlansPersistenceApi[ConnectionIO]:
       ExtractionOptions( minerClass, clockSpeedPreset, allowed.extractors, preferFracking, weights ),
       allowed.logisticsOptions,
       PowerOptions( allowed.generator ),
-      RequestSelection( requested.to( SortedMap ) )
+      RequestSelection( requested.to( SortedMap ) ),
+      ProductionUi( productionRowsOrder )
     )
 
   object statements:
@@ -229,13 +235,16 @@ object Plans extends PlansPersistenceApi[ConnectionIO]:
            |ORDER BY p."updated" DESC, p."id" DESC
            |""".stripMargin.query
 
-    def selectPlanHeader( planId: PlanId ): Query0[( PlanName, Boolean, ClassName[Machine], ClockSpeedPreset )] =
+    def selectPlanHeader(
+        planId: PlanId
+    ): Query0[( PlanName, Boolean, ClassName[Machine], ClockSpeedPreset, Option[Vector[Int]] )] =
       // language=SQL
       sql"""SELECT
            |    p."name"
            |  , o."hide_ficsmas"
            |  , o."miner_class"
            |  , o."clock_speed_preset"
+           |  , o."production_rows_order"
            |FROM       "plans"        p
            |INNER JOIN "plan_options" o ON p."id" = o."plan_id"
            |WHERE p."id" = $planId
@@ -301,7 +310,8 @@ object Plans extends PlansPersistenceApi[ConnectionIO]:
         planId: PlanId,
         hideFicsmas: Boolean,
         minerClass: ClassName[Machine],
-        clockSpeedPreset: ClockSpeedPreset
+        clockSpeedPreset: ClockSpeedPreset,
+        productionRowsOrder: Option[Vector[Int]]
     ): Update0 =
       // language=SQL
       sql"""INSERT INTO "plan_options"
@@ -309,12 +319,14 @@ object Plans extends PlansPersistenceApi[ConnectionIO]:
            |, "hide_ficsmas"
            |, "miner_class"
            |, "clock_speed_preset"
+           |, "production_rows_order"
            |)
            |VALUES
            |( $planId
            |, $hideFicsmas
            |, $minerClass
            |, $clockSpeedPreset
+           |, $productionRowsOrder
            |)
            |ON CONFLICT ON CONSTRAINT "plan_options_plan_unique"
            |  DO UPDATE SET
@@ -322,6 +334,7 @@ object Plans extends PlansPersistenceApi[ConnectionIO]:
            |    , "hide_ficsmas" = excluded."hide_ficsmas"
            |    , "miner_class" = excluded."miner_class"
            |    , "clock_speed_preset" = excluded."clock_speed_preset"
+           |    , "production_rows_order" = excluded."production_rows_order"
            |""".stripMargin.update
 
     def deletePlanAllowedClasses( planId: PlanId ): Update0 =

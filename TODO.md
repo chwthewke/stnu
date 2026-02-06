@@ -61,8 +61,9 @@
 - ~~"My Plans" + save/load~~
 - ~~Filter request selection by what is feasible~~
 - Maybe stop it with the hero in the plan header
-- "My Plans": sort the table
+- ~~"My Plans": sort the table~~
 - Dom.focus not working, try tricks (like including the target in the DOM with display: hidden)?
+- utility to replace all calls to `List[Attr[Nothing]]( ... )` to force conversions
 
 ## refactorings vs. legacy
 - ~~check circe codecs in tools for actual use~~
