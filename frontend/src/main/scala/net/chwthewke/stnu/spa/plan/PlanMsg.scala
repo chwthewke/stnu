@@ -10,9 +10,14 @@ import model.Recipe
 import model.ResourcePurity
 import model.Tier
 import model.Transport
+import model.prod.Group
 import protocol.persistence.PlanId
+import protocol.persistence.ProcessSplitId
 import protocol.solver.SolverRequest
 import protocol.solver.SolverResponse
+import spa.prod.EndId
+import spa.prod.FlowAction
+import spa.prod.ProdModel
 
 enum PlanMsg:
   case PlanName( action: PlanNameAction )
@@ -26,11 +31,20 @@ enum PlanMsg:
   case SetLogisticsOption( logisticsOption: LogisticsOption )
   case SetRecipeOption( recipeOption: RecipeOption )
   case SetPowerOption( powerOption: PowerOption )
-  case RequestSelection( action: RequestSelectionAction )
+  case Requests( action: RequestsAction )
   case ToggleRequestSelection( enable: Boolean )
-  case ToggleProductionRowExpanded( recipe: ClassName[Recipe] )
+  // TODO extract the "ProdModel.Ui"/"Flows" messages?
+  case ToggleProductionRowExpanded( row: ProcessSplitId )
   case ToggleProductionSummaryExpanded( open: Boolean )
-  case MoveProductionRow( index: Int, amount: Int )
+  case ToggleMarkComplete( row: ProcessSplitId )
+  case MoveProductionRow( rows: Vector[ProdModel.Row], index: ProcessSplitId, amount: Int )
+  case ToggleShowAllFlows( showAll: Boolean )
+  case Flow( action: FlowAction )
+  case SetGroup( endId: EndId, splitId: ProcessSplitId, group: Group )
+  case SwapGroups( from: Group, to: Group )
+  case ToggleGroupSummaryExpanded( group: Group )
+  case ToggleGroupSummaryFlat( group: Group )
+  //
   case SendSolverRequest
   case ReceiveSolverResponse( request: SolverRequest, solution: SolverResponse )
   case SaveRequest( confirm: Boolean )
@@ -66,15 +80,12 @@ enum PowerOption:
   case Reset
   case SetPowerGenerator( generator: ClassName[Machine], enable: Boolean )
 
-enum RequestSelectionAction:
+enum RequestsAction:
+  case Delete( item: ClassName[Item] )
+  case SetAmountValue( item: ClassName[Item], value: String )
   case SearchInput( value: String )
   case SearchReset
-  case RequestItem( item: ClassName[Item] )
-  case EditAmountStart( item: ClassName[Item] )
-  case EditAmountCancel
-  case EditAmountCommit
-  case EditAmountDelete
-  case EditAmountSetValue( value: String )
+  case RequestItem( item: Item )
 
 enum PlanNameAction:
   case EditStart
@@ -83,6 +94,7 @@ enum PlanNameAction:
   case EditSetValue( value: String )
   case SaveResponse( id: Option[PlanId], saved: pp.Plan )
   case SaveCancel
+  case Duplicate
   case Revert
   case RevertCancel
   case Clear

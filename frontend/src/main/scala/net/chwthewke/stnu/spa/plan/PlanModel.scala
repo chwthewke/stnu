@@ -10,6 +10,7 @@ import tyrian.Nav
 import protocol.persistence.PlanId
 import protocol.persistence.PlanName
 import protocol.solver.SolverRequest
+import spa.prod.Flows
 import spa.prod.ProdModel
 
 class PlanModel(
@@ -21,10 +22,11 @@ class PlanModel(
     val extractionOptions: ExtractionOptions,
     val logisticsOptions: LogisticsOptions,
     val powerOptions: PowerOptions,
-    val requestSelection: RequestSelectionModel,
+    val requests: RequestsModel,
     val solution: Option[SolutionModel],
     val production: ProdModel,
-    val productionUi: ProdModel.Ui
+    val productionUi: ProdModel.Ui,
+    val flows: Either[pp.Flows, Flows]
 ):
   import PlanModel.*
 
@@ -36,26 +38,32 @@ class PlanModel(
       extractionOptions: ExtractionOptions = this.extractionOptions,
       logisticsOptions: LogisticsOptions = this.logisticsOptions,
       powerOptions: PowerOptions = this.powerOptions,
-      requestSelection: RequestSelectionModel = this.requestSelection,
+      requests: RequestsModel = this.requests,
       solution: Option[SolutionModel] = this.solution,
-      productionUi: ProdModel.Ui = this.productionUi
+      productionUi: ProdModel.Ui = this.productionUi,
+      flows: Either[pp.Flows, Flows] = this.flows
   ): PlanModel =
     val updateProduction =
       ( resourceOptions ne this.resourceOptions ) ||
         ( extractionOptions ne this.extractionOptions ) ||
         ( logisticsOptions ne this.logisticsOptions ) ||
-        ( requestSelection ne this.requestSelection ) ||
+        ( requests ne this.requests ) ||
         ( solution ne this.solution )
     val newProduction: ProdModel =
       if ( updateProduction )
-        productionOf( env, resourceOptions, extractionOptions, logisticsOptions, requestSelection, solution )
+        productionOf( env, resourceOptions, extractionOptions, logisticsOptions, requests, solution )
       else production
 
-    val newProdctionUi =
+    val ( newFlows: Either[pp.Flows, Flows], newProductionUi: ProdModel.Ui ) =
       if ( updateProduction )
-        productionUi.invalidate( newProduction.productionRows.map( _.recipe.className ) )
+        invalidateProduction( newProduction )( flows, productionUi )
       else
-        productionUi
+        (
+          flows,
+          if ( flows ne this.flows )
+            flows.toOption.foldLeft( productionUi )( _.setFlows( _ ) )
+          else productionUi
+        )
 
     new PlanModel(
       env,
@@ -66,11 +74,23 @@ class PlanModel(
       extractionOptions,
       logisticsOptions,
       powerOptions,
-      requestSelection,
+      requests,
       solution,
       newProduction,
-      newProdctionUi
+      newProductionUi,
+      newFlows
     )
+
+  private def restoreFlows( prod: ProdModel, flows: Either[pp.Flows, Flows] ): Either[pp.Flows, Flows] =
+    if ( prod.solution.isEmpty ) flows.flatMap( Left( _ ) )
+    else flows.fold( Flows.from( prod, _ ), _.setProduction( prod ) ).asRight
+
+  private def invalidateProduction(
+      newProduction: ProdModel
+  )( flows: Either[pp.Flows, Flows], productionUi: ProdModel.Ui ): ( Either[pp.Flows, Flows], ProdModel.Ui ) =
+    val newFlows: Either[pp.Flows, Flows] = restoreFlows( newProduction, flows )
+    val newProductionUi: ProdModel.Ui     = newFlows.fold( _ => productionUi, productionUi.setFlows )
+    ( newFlows, newProductionUi )
 
   def update[F[_]: Async]( http: Http[F], planMsg: PlanMsg ): ( PlanModel, Cmd[F, PlanMsg] ) = planMsg match
     case PlanMsg.PlanName( action ) =>
@@ -86,18 +106,31 @@ class PlanModel(
       copy( recipeOptions = recipeOptions.setOption( env, recipeOption ) ) -> Cmd.None
     case PlanMsg.SetPowerOption( powerOption ) =>
       copy( powerOptions = powerOptions.setOption( env, powerOption ) ) -> Cmd.None
-    case PlanMsg.RequestSelection( action ) =>
-      val ( newRequestSelection, cmd ) = requestSelection.update[F]( action )
-      copy( requestSelection = newRequestSelection ) -> cmd
+    case PlanMsg.Requests( action ) =>
+      copy( requests = requests.update( action ) ) -> Cmd.None
     case PlanMsg.ToggleRequestSelection( enable ) =>
       copy( ui = ui.copy( requestSelectionVisible = enable ) ) -> Cmd.None
     case PlanMsg.ToggleProductionSummaryExpanded( open ) =>
       copy( productionUi = productionUi.setProductionSummaryExpanded( open ) ) -> Cmd.None
+    case PlanMsg.ToggleGroupSummaryExpanded( group ) =>
+      copy( productionUi = productionUi.toggleGroupSummaryExpanded( group ) ) -> Cmd.None
+    case PlanMsg.ToggleGroupSummaryFlat( group ) =>
+      copy( productionUi = productionUi.toggleGroupSummaryFlat( group ) ) -> Cmd.None
     case PlanMsg.ToggleProductionRowExpanded( recipe ) =>
       copy( productionUi = productionUi.toggleProductionRowExpanded( recipe ) ) -> Cmd.None
-    case PlanMsg.MoveProductionRow( index, amount ) =>
-      copy( productionUi = productionUi.moveProductionRow( index, amount, production.productionRows.length ) ) ->
+    case PlanMsg.MoveProductionRow( rows, index, amount ) =>
+      copy( productionUi = productionUi.moveProductionRow( rows )( index, amount ) ) ->
         Cmd.None
+    case PlanMsg.ToggleMarkComplete( recipe ) =>
+      copy( productionUi = productionUi.toggleMarkComplete( recipe ) ) -> Cmd.None
+    case PlanMsg.ToggleShowAllFlows( enable ) =>
+      copy( productionUi = productionUi.setShowAllFlows( enable ) ) -> Cmd.None
+    case PlanMsg.Flow( action ) =>
+      copy( flows = flows.map( _.update( action ) ) ) -> Cmd.None
+    case PlanMsg.SetGroup( endId, splitId, group ) =>
+      copy( flows = flows.map( _.setGroup( endId, splitId, group ) ) ) -> Cmd.None
+    case PlanMsg.SwapGroups( from, to ) =>
+      copy( flows = flows.map( _.swapGroups( from, to ) ) ) -> Cmd.None
     case PlanMsg.SendSolverRequest =>
       this -> http
         .computeSolution( solverRequest )
@@ -127,25 +160,28 @@ class PlanModel(
       http.loadPlan( id ).map( PlanMsg.PlanLoaded( id, _ ) )
 
   def restore: PlanModel = copy(
-    resourceOptions = if ( ui.optionsTab == OptionsTab.ResourceNodes ) resourceOptions.restore else resourceOptions,
-    recipeOptions = if ( ui.optionsTab == OptionsTab.Recipes ) recipeOptions.restore else recipeOptions
+    resourceOptions =
+      if ( ui.options.contains( SidePanel.ResourceNodes ) ) resourceOptions.restore else resourceOptions,
+    recipeOptions = if ( ui.options.contains( SidePanel.Recipes ) ) recipeOptions.restore else recipeOptions,
+    requests = if ( ui.options.contains( SidePanel.Requests ) ) requests.restore else requests
   )
 
-  def setOptionsTab( tab: Option[OptionsTab] ): PlanModel =
-    copy( ui = ui.setOptionsTab( tab ) )
+  def setTab( tab: Option[SidePanel], organizer: Boolean ): PlanModel =
+    copy( ui = ui.setTab( tab, organizer ) )
 
-  def getLocation: LocationModel.Plan =
-    LocationModel.Plan( ui.options, name.saved._1F )
+  def getLocation: LocationModel.Plan = LocationModel.Plan( ui.options, name.saved._1F, organizer = ui.isOrganizer )
 
-  def locationToOpenOptions: LocationModel.Plan                   = getLocation.copy( options = ui.optionsTab.some )
-  def locationToCloseOptions: LocationModel.Plan                  = getLocation.copy( options = none )
-  def locationToOpenOption( tab: OptionsTab ): LocationModel.Plan = getLocation.copy( options = tab.some )
+  def locationToOpenOptions: LocationModel.Plan                  = getLocation.copy( options = ui.hasOptions.some )
+  def locationToCloseOptions: LocationModel.Plan                 = getLocation.copy( options = none )
+  def locationToOpenRequests: LocationModel.Plan                 = getLocation.copy( options = SidePanel.Requests.some )
+  def locationToCloseRequests: LocationModel.Plan                = getLocation.copy( options = none )
+  def locationToOpenOption( tab: SidePanel ): LocationModel.Plan = getLocation.copy( options = tab.some )
   def locationWithPlanId( planId: Option[PlanId] ): LocationModel.Plan = getLocation.copy( id = planId )
 
   lazy val solverRequest: SolverRequest =
     SolverRequest(
       env.game.version.version,
-      requestSelection.requested,
+      requests.requested,
       recipeOptions.allowedRecipes ++
         env.game.powerRecipes
           .filter( rec => rec.products.nonEmpty && powerOptions.allowedGenerators.contains( rec.producedIn.className ) )
@@ -157,7 +193,7 @@ class PlanModel(
     solution.requested != solverRequest
 
   lazy val canCompute: Boolean =
-    if ( requestSelection.requestedAmounts.isEmpty )
+    if ( requests.requested.isEmpty )
       solution.exists( solutionDirty )
     else
       solution.forall( solutionDirty )
@@ -170,7 +206,8 @@ class PlanModel(
       extractionOptions,
       logisticsOptions,
       powerOptions,
-      requestSelection,
+      requests,
+      flows.fold( identity, flows => flows ),
       productionUi
     )
 
@@ -182,7 +219,7 @@ object PlanModel:
       resourceOptions: ResourceOptionsInputModel,
       extractionOptions: ExtractionOptions,
       logisticsOptions: LogisticsOptions,
-      requestSelection: RequestSelectionModel,
+      requestSelection: RequestsModel,
       solution: Option[SolutionModel]
   ): ProdModel =
     ProdModel(
@@ -204,12 +241,13 @@ object PlanModel:
       extractionOptions: ExtractionOptions,
       logisticsOptions: LogisticsOptions,
       powerOptions: PowerOptions,
-      requestSelection: RequestSelectionModel,
+      requests: RequestsModel,
       solution: Option[SolutionModel],
-      productionUi: ProdModel.Ui
+      productionUi: ProdModel.Ui,
+      flows: ProdModel => Either[pp.Flows, Flows]
   ): PlanModel =
     val production: ProdModel =
-      PlanModel.productionOf( env, resourceOptions, extractionOptions, logisticsOptions, requestSelection, solution )
+      PlanModel.productionOf( env, resourceOptions, extractionOptions, logisticsOptions, requests, solution )
     new PlanModel(
       env,
       ui,
@@ -219,10 +257,11 @@ object PlanModel:
       extractionOptions,
       logisticsOptions,
       powerOptions,
-      requestSelection,
+      requests,
       solution,
       production,
-      productionUi
+      productionUi,
+      flows( production )
     )
 
   def init( env: Env, ui: Ui = Ui.init ): PlanModel =
@@ -235,9 +274,10 @@ object PlanModel:
       ExtractionOptions.init( env.game ),
       LogisticsOptions.init( env ),
       PowerOptions.init( env ),
-      RequestSelectionModel.init,
+      RequestsModel.init,
       none,
-      ProdModel.Ui.init
+      ProdModel.Ui.init,
+      Flows.init( _ ).asRight
     )
 
   def load( env: Env, ui: Ui, planId: PlanId, saved: pp.Plan ): ( PlanModel, Cmd[Nothing, PlanMsg] ) =
@@ -247,32 +287,36 @@ object PlanModel:
         ui = ui,
         name = PlanNameModel.init( saved.name, saved = ( planId, saved ).some ),
         recipeOptions = RecipeOptionsInputModel.from( saved.recipeOptions ),
-        resourceOptions = ResourceOptionsInputModel.from( env, saved.resourceOptions ),
+        resourceOptions = ResourceOptionsInputModel.from( env, saved.resourceOptions ).restore,
         extractionOptions = ExtractionOptions.from( saved.extractionOptions ),
         logisticsOptions = LogisticsOptions.from( env, saved.logisticsOptions ),
         powerOptions = PowerOptions.from( saved.powerOptions ),
-        requestSelection = RequestSelectionModel.from( saved.requestSelection ),
+        requests = RequestsModel.from( env, saved.requestSelection ).restore,
         solution = none,
-        productionUi = ProdModel.Ui.from( saved.productionUi )
+        productionUi = ProdModel.Ui.from( saved.flows.prodHash, saved.productionUi ),
+        flows = _ => Left( saved.flows )
       )
     model -> ( if ( model.canCompute ) Cmd.Emit( PlanMsg.SendSolverRequest ) else Cmd.None )
 
   case class Ui(
-      optionsOpen: Boolean,
-      optionsTab: OptionsTab,
-      requestSelectionVisible: Boolean
+      hasOptions: SidePanel & SidePanel.OptionsTab,
+      options: Option[SidePanel],
+      requestSelectionVisible: Boolean,
+      isOrganizer: Boolean
   ):
-    def options: Option[OptionsTab] = Option.when( optionsOpen )( optionsTab )
-
-    def setOptionsTab( optionsTab: Option[OptionsTab] ): Ui =
+    def setTab( optionsTab: Option[SidePanel], organizer: Boolean ): Ui =
       copy(
-        optionsOpen = optionsTab.isDefined,
-        optionsTab = optionsTab.getOrElse( this.optionsTab )
+        hasOptions = optionsTab.flatMap( _.optionsTab ).getOrElse( this.hasOptions ),
+        options = optionsTab,
+        isOrganizer = organizer
       )
+
+    def isRequests: Boolean = options.contains( SidePanel.Requests )
 
   object Ui:
     val init: Ui = Ui(
-      optionsOpen = false,
-      optionsTab = OptionsTab.Recipes,
-      requestSelectionVisible = false
+      hasOptions = SidePanel.Recipes,
+      options = none,
+      requestSelectionVisible = false,
+      isOrganizer = false
     )

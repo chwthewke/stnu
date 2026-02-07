@@ -6,7 +6,6 @@ import io.circe.derivation.ConfiguredDecoder
 import io.circe.derivation.ConfiguredEncoder
 
 import spa.plan.PlanModel
-import spa.plan.PlanNameModel
 
 object LocalPlanModel:
   case class Saved(
@@ -18,7 +17,8 @@ object LocalPlanModel:
       powerOptions: LocalPowerOptions.Saved,
       requestSelection: LocalRequestSelection.Saved,
       solutionComputed: Boolean,
-      prodUi: LocalProductionUi.Saved
+      prodUi: LocalProductionUi.Saved,
+      flows: LocalFlows.Saved
   ) derives ConfiguredEncoder
 
   object Saved:
@@ -30,9 +30,10 @@ object LocalPlanModel:
         LocalExtractionOptions.Saved( planModel.extractionOptions ),
         LocalLogisticsOptions.Saved( planModel.env, planModel.logisticsOptions ),
         LocalPowerOptions.Saved( planModel.powerOptions ),
-        LocalRequestSelection.Saved( planModel.requestSelection ),
+        LocalRequestSelection.Saved( planModel.requests ),
         !planModel.canCompute,
-        LocalProductionUi.Saved( planModel.productionUi )
+        LocalProductionUi.Saved( planModel.productionUi ),
+        LocalFlows.Saved( planModel.flows )
       )
 
   case class Loaded(
@@ -44,7 +45,8 @@ object LocalPlanModel:
       powerOptions: LocalPowerOptions.Loaded,
       requestSelection: LocalRequestSelection.Loaded,
       solutionComputed: Boolean,
-      prodUi: LocalProductionUi.Loaded
+      prodUi: LocalProductionUi.Loaded,
+      flows: LocalFlows.Loaded
   ) derives ConfiguredDecoder:
     def patch( planModel: PlanModel ): ( PlanModel, Boolean ) =
       (
@@ -55,8 +57,9 @@ object LocalPlanModel:
           extractionOptions = extractionOptions.toExtractionOptions,
           logisticsOptions = logisticsOptions.toLogisticsOptions,
           powerOptions = powerOptions.toPowerOptions,
-          requestSelection = requestSelection.toRequestSelection,
-          productionUi = prodUi.toProductionUi
+          requests = requestSelection.toRequests,
+          productionUi = prodUi.toProductionUi,
+          flows = Left( flows.flows )
         ),
         solutionComputed
       )

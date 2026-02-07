@@ -13,7 +13,7 @@ import _root_.munit.catseffect.IOFixture
 import pureconfig.ConfigSource
 import pureconfig.module.catseffect.syntax.*
 
-abstract class PersistenceTests extends CatsEffectSuite with IOChecker:
+trait TransactorFixture extends CatsEffectSuite:
   val truncate: ConnectionIO[Unit] =
     // language=SQL
     sql"""TRUNCATE TABLE "plans"
@@ -30,6 +30,8 @@ abstract class PersistenceTests extends CatsEffectSuite with IOChecker:
 
   val transactorFixture: IOFixture[Transactor[IO]] = ResourceSuiteLocalFixture( "transactor", transactorResource )
 
-  override def transactor: Transactor[IO] = transactorFixture()
+  def transactor: Transactor[IO] = transactorFixture()
 
-  override def munitFixtures: Seq[AnyFixture[?]] = List( transactorFixture )
+  override def munitFixtures: Seq[AnyFixture[?]] = super.munitFixtures :+ transactorFixture
+
+abstract class CheckTests extends CatsEffectSuite with IOChecker with TransactorFixture

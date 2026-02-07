@@ -22,12 +22,15 @@ import model.Recipe
  *   the fractional amount of machines producing the recipe
  * @param clockSpeed
  *   the clock speed of the machines
+ * @param clockSpeedPreset
+ *   the max clock speed
  * @param machineCount
  *   the integer amount of machines
  */
 case class ClockedRecipe(
     recipes: Countable[Double, Recipe],
     clockSpeed: ClockSpeed,
+    clockSpeedPreset: ClockSpeedPreset,
     machineCount: Int
 ) {
 
@@ -57,17 +60,29 @@ case class ClockedRecipe(
   def itemsPerMinute: List[Countable[Double, Item]] =
     ( ingredientsPerMinute.map( _.mapAmount( am => -am ) ) ++ productsPerMinute ).gather
       .mapFilter( _.significant )
+
+  def mapAmount( f: Double => Double ): ClockedRecipe =
+    recipe match
+      case x: Recipe.NonExtraction => ClockedRecipe.roundUp( Countable( x, f( fractionalAmount ) ) )
+      case r: Recipe.Extraction => ClockedRecipe.overclocked( Countable( r, f( fractionalAmount ) ), clockSpeedPreset )
+
+  def times( d: Double ): ClockedRecipe = mapAmount( _ * d )
 }
 
 object ClockedRecipe {
-  def fixed( recipe: Recipe, fractionalAmount: Double, amount: Int ): ClockedRecipe =
-    ClockedRecipe( Countable( recipe, fractionalAmount ), ClockSpeed.ofFraction( fractionalAmount / amount ), amount )
+  def fixed( recipe: Recipe, fractionalAmount: Double, preset: ClockSpeedPreset, amount: Int ): ClockedRecipe =
+    ClockedRecipe(
+      Countable( recipe, fractionalAmount ),
+      ClockSpeed.ofFraction( fractionalAmount / amount ),
+      preset,
+      amount
+    )
 
   def roundUp( recipe: Countable[Double, Recipe.NonExtraction] ): ClockedRecipe =
-    fixed( recipe.item, recipe.amount, recipe.amount.ceil.toInt )
+    fixed( recipe.item, recipe.amount, ClockSpeedPreset.`100%`, recipe.amount.ceil.toInt )
 
   def overclocked( recipe: Countable[Double, Recipe.Extraction], clockSpeedLimit: ClockSpeedPreset ): ClockedRecipe =
     val intAmount: Int = math.ceil( recipe.amount / clockSpeedLimit.value.fraction ).toInt
-    ClockedRecipe.fixed( recipe.item, recipe.amount, intAmount )
+    ClockedRecipe.fixed( recipe.item, recipe.amount, clockSpeedLimit, intAmount )
 
 }

@@ -2,20 +2,28 @@ package net.chwthewke.stnu
 package spa
 package views
 
+import tyrian.Attr
 import tyrian.Elem
 import tyrian.Html
 
 import spa.css.Bulma
 import spa.css.Classes
 
-object CardModal:
+object Modal:
   val b: Bulma = Bulma
 
-  def apply[M]( title: Elem[Nothing], closeMsg: M )( body: Html[M] )(
+  def apply[M]( closeMsg: M, attrs: Attr[M]* )( body: Html[M] ): Html[M] =
+    Html.div( b.modal + b.isActive )(
+      Html.div( b.modalBackground, Html.onClick( closeMsg ) )(),
+      Html.div( ( b.modalContent: Attr[Nothing] ) :: attrs.toList )( body ),
+      Html.button( b.modalClose + b.isLarge, Html.onClick( closeMsg ) )()
+    )
+
+  def card[M]( title: Elem[Nothing], closeMsg: M )( body: Html[M] )(
       buttons: List[( Classes, M, Elem[Nothing] )]
   ): Html[M] =
     Html.div( b.modal + b.isActive )(
-      Html.div( b.modalBackground )(),
+      Html.div( b.modalBackground, Html.onClick( closeMsg ) )(),
       Html.div( b.modalCard )(
         Html
           .header( b.modalCardHead )(

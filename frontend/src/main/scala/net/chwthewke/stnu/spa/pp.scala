@@ -25,4 +25,10 @@ object pp {
 
   type ProductionUi = protocol.persistence.ProductionUi
   val ProductionUi: protocol.persistence.ProductionUi.type = protocol.persistence.ProductionUi
+
+  type EndId = protocol.persistence.EndId
+  val EndId: protocol.persistence.EndId.type = protocol.persistence.EndId
+
+  type Flows = protocol.persistence.Flows
+  val Flows: protocol.persistence.Flows.type = protocol.persistence.Flows
 }

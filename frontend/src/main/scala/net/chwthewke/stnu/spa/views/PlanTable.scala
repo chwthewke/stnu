@@ -3,127 +3,123 @@ package spa
 package views
 
 import cats.data.NonEmptyList
+import cats.data.NonEmptyVector
 import cats.syntax.all.*
+import scala.annotation.tailrec
 import scala.collection.immutable.SortedMap
 import tyrian.Attr
-import tyrian.Attribute
 import tyrian.CSS
 import tyrian.EmptyAttribute
 import tyrian.Html
 import tyrian.Style
 
 import data.Countable
-import model.Form
 import model.Item
-import model.Transport
+import model.prod.FlowEnd
+import model.prod.Group
+import protocol.persistence.ProcessSplitId
 import spa.css.Bulma
+import spa.css.Classes
+import spa.css.CssClass
 import spa.css.Phosphor
-import spa.plan.LogisticsOptions
-import spa.plan.PlanModel
 import spa.plan.PlanMsg
-import spa.plan.RequestSelectionAction
-import spa.plan.RequestSelectionModel
 import spa.prod.ClockedRecipe
-import spa.prod.ItemIO
+import spa.prod.EndId
+import spa.prod.Flows
+import spa.prod.Groups
+import spa.prod.ItemTransport
 import spa.prod.ProdModel
+import spa.prod.Split
 import spa.prod.SrcDest
 
 object PlanTable:
   val b: Bulma    = Bulma
   val p: Phosphor = Phosphor
 
-  def apply( ui: ProdModel.Ui, production: ProdModel ): Html[PlanMsg] =
+  def apply( ui: ProdModel.Ui, flows: Flows ): Html[PlanMsg] =
     Html.div(
-      productionSummary( ui, production ),
-      Html.table( b.table + b.isResponsive + b.isFullwidth + b.isHoverable, Html.style( CSS.tableLayout( "fixed" ) ) )(
-        Html.colgroup(
-          Html.col( Html.style( CSS.width( "7%" ) ) ),
-          Html.col( Html.style( CSS.width( "8%" ) ) ),
-          Html.col( Html.style( CSS.width( "4%" ) ) ),
-          Html.col( Html.style( CSS.width( "16%" ) ) ),
-          Html.col( Html.style( CSS.width( "30%" ) ) ),
-          Html.col( Html.style( CSS.width( "5%" ) ) ),
-          Html.col( Html.style( CSS.width( "10%" ) ) ),
-          Html.col( Html.style( CSS.width( "10%" ) ) ),
-          Html.col( Html.style( CSS.width( "7%" ) ) ),
-          Html.col( Html.style( CSS.width( "3%" ) ) )
-        ),
-        Html.thead(
-          Html.tr(
-            Html.th( b.hasTextCentered, Html.colspan := "3" )( "Amount" ),
-            Html.th( b.hasTextCentered )( "Item" ),
-            Html.th( b.hasTextCentered )( "Recipe" ),
-            Html.th( b.hasTextCentered, Html.colspan := "3" )( "Machines" ), // 30 (5, 15, 10)
-            Html.th( b.hasTextCentered, Html.colspan := "2" )( "Power" ) // 10 (5, 5)
-          ),
-          Html.tr(
-            Html.th( Html.colspan := "5" )(),
-            Html.th( b.hasTextCentered )( "#" ),
-            Html.th( b.hasTextCentered )( "type" ),
-            Html.th( b.hasTextCentered )( "clock" ),
-            powerHeaderCell( production ),
-            Html.th( b.hasTextWeightBold )( "MW" )
-          )
-        ),
-        Html.tbody(
-          ghostRows( production ) ++ extraInputRows( production ) ++ computedRows( ui, production )
-        )
-      )
-    )
-
-  private def numberedItem( env: Env, ci: Countable[Double, Item] ) =
-    Html.span( b.column + b.is2 )(
-      Html.text( Numbers.showDouble3( ci.amount ) ),
-      nbsp,
-      icon.verticalAlign().item( env, ci.item ),
-      nbsp,
-      Html.text( ci.item.displayName )
+      productionSummary( ui, flows.prod ),
+      planTable( ui, flows )
     )
 
   private def productionSummary( ui: ProdModel.Ui, production: ProdModel ): Html[Nothing] =
     Details
       .open( isOpen = ui.productionSummaryExpanded )(
         Html.text( "Summary" ),
-        Html.div( b.mx4 )(
-          Html.p( "Resources" ),
-          Html.div( b.columns + b.hasTextWeightBold + b.isMultiline )(
-            production.extractionRows
-              .foldMap( cr => cr.productsPerMinute )
-              .gather
-              .map: ci =>
-                numberedItem( production.env, ci )
-          ),
-          Html.p( "Machines" ),
-          Html.div( b.columns + b.hasTextWeightBold + b.isMultiline )(
-            production.productionRows
-              .foldMap( cr => SortedMap( cr.recipe.producedIn -> cr.machineCount ) )
-              .toList
-              .map:
-                case ( machine, amount ) =>
-                  Html.span( b.column )(
-                    Html.text( amount.toString ),
-                    nbsp,
-                    icon.verticalAlign().machine( production.env, machine ),
-                    nbsp,
-                    Html.text( machine.displayName )
+        Html.div( b.mx4 + b.columns )(
+          Html.div( b.column + b.isHalf + b.hasTextCentered )(
+            Html.p( b.isSize5 )( "Resources" ),
+            Html.ul()(
+              production.extractionRows
+                .foldMap( cr => cr.productsPerMinute )
+                .gather
+                .map: ci =>
+                  Html.li( b.hasTextWeightBold )(
+                    RecipeFrag.numberedIcon1( production.env, ci, b.mr2 ),
+                    Html.text( ci.item.displayName )
                   )
+            )
           ),
-          Html.p( "Requested" ),
-          Html.div( b.columns + b.hasTextWeightBold + b.isMultiline )(
-            production.currentRequest.toList
-              .sortBy: ci =>
-                ( ci.item.tier, ci.item.displayName )
-              .map: ci =>
-                numberedItem( production.env, ci )
+          Html.div( b.column + b.isHalf + b.hasTextCentered )(
+            Html.p( b.isSize5 )( "Machines" ),
+            Html.ul(
+              production.productionRows
+                .foldMap( cr => SortedMap( cr.recipe.producedIn -> cr.machineCount ) )
+                .toList
+                .map:
+                  case ( machine, amount ) =>
+                    Html.li( b.hasTextWeightBold )(
+                      RecipeFrag.numberedIcon1( production.env, Countable( machine, amount ), b.mr2 ),
+                      Html.text( machine.displayName )
+                    )
+            )
           )
         )
       )
+
+  private def planTable( ui: ProdModel.Ui, flows: Flows ): Html[PlanMsg] =
+    Html.table( b.table + b.isResponsive + b.isFullwidth + b.isHoverable, Html.style( CSS.tableLayout( "fixed" ) ) )(
+      // TODO at some point we're gonna have to do something better then fixed percentages
+      Html.colgroup(
+        Html.col( Html.style( CSS.width( "5%" ) ) ),
+        Html.col( Html.style( CSS.width( "10%" ) ) ),
+        Html.col( Html.style( CSS.width( "8%" ) ) ),
+        Html.col( Html.style( CSS.width( "14%" ) ) ),
+        Html.col( Html.style( CSS.width( "24%" ) ) ),
+        Html.col( Html.style( CSS.width( "5%" ) ) ),
+        Html.col( Html.style( CSS.width( "12%" ) ) ),
+        Html.col( Html.style( CSS.width( "10%" ) ) ),
+        Html.col( Html.style( CSS.width( "7%" ) ) ),
+        Html.col( Html.style( CSS.width( "5%" ) ) )
+      ),
+      Html.thead(
+        Html.tr(
+          Html.th( Html.colspan := "2" )( "Group" ),
+          Html.th( b.hasTextCentered )( "Amount" ),
+          Html.th( b.hasTextCentered )( "Item" ),
+          Html.th( b.hasTextCentered )( "Recipe" ),
+          Html.th( b.hasTextCentered, Html.colspan := "3" )( "Machines" ), // 27 (5, 12, 10)
+          Html.th( b.hasTextCentered, Html.colspan := "2" )( "Power" ) // 12 (7, 5)
+        ),
+        Html.tr(
+          Html.th( Html.colspan := "5" )(),
+          Html.th( b.hasTextCentered )( "#" ),
+          Html.th( b.hasTextCentered )( "type" ),
+          Html.th( b.hasTextCentered )( "clock" ),
+          powerHeaderCell( flows.prod ),
+          Html.th( b.hasTextWeightBold )( "MW" )
+        )
+      ),
+      Html.tbody(
+        ghostRows( flows.prod ) ++ extraInputRows( flows.prod ) ++ computedRows( ui, flows )
+      )
+    )
 
   private val ghostBorderStyle: String = "medium dashed"
 
   // rows for the requested items that were not requested in the last computed plan
   private def ghostRows( production: ProdModel ): List[Html[PlanMsg]] =
-    uncomputedItemsTable( production.env, production.requestSelection, production.dirtyRequestRows )(
+    uncomputedItemsTable( production.env, production.dirtyRequestRows )(
       Html.div( b.notification + b.isInfo )(
         Html.p( "These requests have not yet been computed." ),
         Html.p( Html.text( "Press " ), Html.strong( "Compute" ), Html.text( " to recompute the plan." ) )
@@ -131,142 +127,332 @@ object PlanTable:
     )
 
   private def extraInputRows( production: ProdModel ): List[Html[PlanMsg]] =
-    uncomputedItemsTable( production.env, production.requestSelection, production.otherInputs )(
+    uncomputedItemsTable( production.env, production.otherInputs )(
       Html.div( b.notification + b.isWarning )(
         Html.p( "These inputs are not being produced." ),
         Html.p( Html.text( "Press " ), Html.strong( "Compute" ), Html.text( " to recompute the plan." ) )
       )
     )
 
-  private def orderedProductionRows( ui: ProdModel.Ui, production: ProdModel ): List[ClockedRecipe] =
-    ui.productionRowOrder.fold( production.productionRows ): order =>
-      val rows = production.productionRows.toVector
-      order.map( i => rows( i ) ).toList
+  def groupedOrderedSplits(
+      ui: ProdModel.Ui,
+      flows: Flows
+  ): ( Vector[ProdModel.Row], List[( Group, NonEmptyList[( ProdModel.Row, Int )] )] ) =
+    val rows: List[ProdModel.Row]        = ProdModel.Ui.initRowOrder[List]( flows )
+    val orderedRows: List[ProdModel.Row] =
+      rows.sortBy( row => ( row.group, ui.rowOrder.foldMap( _.indexOf( row.splitId ) ), row.splitId ) )
+    (
+      orderedRows.toVector,
+      orderedRows.zipWithIndex
+        .groupByNel( _._1.group )
+        .toList
+    )
 
-  private def computedRows( ui: ProdModel.Ui, production: ProdModel ): List[Html[PlanMsg]] =
-    production.solution.foldMap:
+  private def tableRowsOf( ui: ProdModel.Ui, flows: Flows, rows: Vector[ProdModel.Row], groups: Groups )(
+      row: ProdModel.Row,
+      rowIndex: Int
+  ): List[Html[PlanMsg]] =
+    val expanded: Boolean             = ui.expandedRows( row.splitId )
+    val complete: Boolean             = ui.completed( row.splitId )
+    val moreRows: List[Html[Nothing]] =
+      if ( expanded )
+        expandedProcessRows( flows, row.splitId )
+      else Nil
+    mainComputedRow( flows.prod, rows, rowIndex, groups, row, expanded, complete ) :: moreRows
+
+  private def computedRows( ui: ProdModel.Ui, flows: Flows ): List[Html[PlanMsg]] =
+    flows.prod.solution.foldMap:
       case ProdModel.Solution.Failure( err ) => errorRow( err ) :: Nil
       case _: ProdModel.Solution.Result      =>
-        orderedProductionRows( ui, production ).zipWithIndex
-          .flatMap:
-            case ( process: ClockedRecipe, rowIndex: Int ) =>
-              val expanded: Boolean             = ui.productionRowExpanded.contains_( process.recipe.className )
-              val moreRows: List[Html[Nothing]] =
-                if ( expanded )
-                  expandedRecipeRows( production.env )( production.itemIO, process )
-                else Nil
-              mainComputedRow( production, process, rowIndex, expanded ) :: moreRows
+        val ( allRows, rowGroups ) = groupedOrderedSplits( ui, flows )
+        val groups: Groups         = Groups.of( flows )
+
+        rowGroups
+          .foldLeft( ( Set.empty[Group], List.empty[Html[PlanMsg]] ) ):
+            case ( ( summarizedGroups, acc ), ( group, rows ) ) =>
+              val toSummarize: List[Group] =
+                @tailrec
+                def loop( acc: List[Group], curr: Group ): List[Group] =
+                  curr.parent.filterNot( summarizedGroups.contains ) match
+                    case None           => curr :: acc
+                    case Some( parent ) => loop( curr :: acc, parent )
+                loop( Nil, group )
+
+              val tableRows: List[Html[PlanMsg]] =
+                toSummarize.flatMap: g =>
+                  groupSummary( ui, flows, groups, g, ui.expandedGroupSummaries( g ) )
+                ++
+                  rows.toList.flatMap:
+                    case ( row, rowIndex ) =>
+                      tableRowsOf( ui, flows, allRows, groups )( row, rowIndex )
+
+              ( summarizedGroups ++ toSummarize, acc ++ tableRows )
+          ._2
 
   private val noBorderCSS: Style           = CSS.borderBottom( "0" )
   private val noBorderStyle: Attr[Nothing] = Html.style( noBorderCSS )
 
   private def mainComputedRow(
       production: ProdModel,
-      process: ClockedRecipe,
+      rows: Vector[ProdModel.Row],
       rowIndex: Int,
-      expanded: Boolean
+      groups: Groups,
+      row: ProdModel.Row,
+      expanded: Boolean,
+      complete: Boolean
   ): Html[PlanMsg] =
-    val borderAttr: Attr[Nothing]      = Option.when( expanded )( noBorderStyle )
+    val process: ClockedRecipe  = row.process.times( row.fraction )
+    val cellAttr: Attr[Nothing] =
+      if ( expanded ) Html.style( noBorderCSS |+| vas() )
+      else Html.style( vas() )
     val initCells: List[Html[PlanMsg]] =
-      amountItemCells( production.env, production.requestSelection, process.mainProduct, borderAttr )
+      amountItemCells( production.env, process.mainProduct, cellAttr )
 
     Html.tr(
-      Html.styles( CSS.verticalAlign( "middle" ) )
-    )(
-      Html.td( borderAttr )(
-        Html.div( b.buttons + b.hasAddons )(
-          Html.button(
-            b.button + b.isSmall,
-            Html.title := "Move row up, shift = x2, ctrl = x5",
-            Html.onClickModified( m =>
-              PlanMsg.MoveProductionRow( rowIndex, -1 * ( if ( m.shift ) 2 else 1 ) * ( if ( m.ctrl ) 5 else 1 ) )
-            )
-          )(
-            Html.i(
-              p.regular.arrowFatUp
-            )()
-          ),
-          Html.button(
-            b.button + b.isSmall,
-            Html.title := "Move row down, shift = 5, ctrl = 10",
-            Html.onClickModified( m =>
-              PlanMsg.MoveProductionRow( rowIndex, ( if ( m.shift ) 2 else 1 ) * ( if ( m.ctrl ) 5 else 1 ) )
-            )
-          )(
-            Html.i( p.regular.arrowFatDown )()
-          ),
-          Html.button(
-            b.button + b.isSmall,
-            Html.onClick( PlanMsg.ToggleProductionRowExpanded( process.recipe.className ) )
-          )(
-            Html.i(
-              if ( expanded ) p.regular.caretDown else p.regular.caretRight
-            )()
-          )
-        )
+      Html.td( cellAttr )(
+        groupRowDropdown( rowIndex, row.end, row.splitId, row.group, groups )
       ) ::
+        Html.td( cellAttr )(
+          Html.div( b.buttons + b.hasAddons, va() )(
+            Elements.miniButtonWithMod( None, "Move row up, shift = x2, ctrl = x5", p.regular.arrowFatUp )( m =>
+              PlanMsg.MoveProductionRow( rows, row.splitId, -m.mod )
+            ),
+            Elements.miniButtonWithMod( None, "Move row down, shift = x2, ctrl = x5", p.regular.arrowFatDown )( m =>
+              PlanMsg.MoveProductionRow( rows, row.splitId, m.mod )
+            ),
+            Elements.miniButton( if ( complete ) b.hasTextSuccess else b.hasTextDark, "mark completed", p.fill.circle )(
+              PlanMsg.ToggleMarkComplete( row.splitId ).some
+            ),
+            Elements.miniButton(
+              None,
+              if ( expanded ) "collapse" else "expand",
+              if ( expanded ) p.regular.caretDown else p.regular.caretRight
+            )( PlanMsg.ToggleProductionRowExpanded( row.splitId ).some )
+          )
+        ) ::
         initCells
         ++ List(
           Html.td(
             Html.title := process.recipe.describe,
-            borderAttr
-          )( process.recipe.displayName ),
-          Html.td( b.isFamilyMonospace + b.hasTextRight, borderAttr )(
+            cellAttr
+          )(
+            process.recipe.displayName +
+              Option.when( row.splitCount > 1 )( s" #${row.splitNumber}/${row.splitCount}" ).orEmpty
+          ),
+          Html.td( b.isFamilyMonospace + b.hasTextRight, cellAttr )(
             process.machineCount.toString
           ),
-          Html.td( borderAttr )(
+          Html.td( cellAttr )(
             icon.verticalAlign().machine( production.env, process.machine ),
             nbsp,
             Html.text( process.machine.displayName )
           ),
-          Html.td( b.isFamilyMonospace + b.hasTextRight, borderAttr )(
+          Html.td( b.isFamilyMonospace + b.hasTextRight, cellAttr )(
             show"${process.clockSpeed} %"
           ),
-          powerCell( process, borderAttr ),
-          Html.td( borderAttr )( "MW" )
+          powerCell( process, cellAttr ),
+          Html.td( cellAttr )( "MW" )
         )
     )
-  private def selectLogistics(
-      env: Env,
-      options: LogisticsOptions,
-      product: Countable[Double, Item]
-  ): Countable[Double, Transport] =
-    def select(
-        allowedChoices: NonEmptyList[Transport],
-        amount: Double
-    ): Countable[Double, Transport] =
-      val choice: Transport = allowedChoices.find( _.perMinute >= amount ).getOrElse( allowedChoices.last )
-      Countable( choice, amount / choice.perMinute )
 
-    product.item.form match
-      case Form.Solid =>
-        select( options.belts( env ), product.amount )
-      case Form.Liquid | Form.Gas =>
-        select( options.pipelines( env ), product.amount )
+  private def groupsGrid( group: Group, endId: EndId, id: ProcessSplitId, groups: Groups ): Html[PlanMsg] =
+    val groupCoords: NonEmptyVector[( Int, Int, Group, Boolean )] = // row, column, path, isNew
+      def loop(
+          rowOffset: Int,
+          columnOffset: Int,
+          prefix: Vector[Int],
+          tail: Groups
+      ): NonEmptyVector[( Int, Int, Group, Boolean )] =
+        def thisGroup: ( Int, Int, Group, Boolean ) = ( rowOffset, columnOffset, Group( prefix ), false )
+        tail match
+          case Groups.Nil =>
+            NonEmptyVector.one( thisGroup ) ++
+              // NOTE disallows sub-group creation below some depth (8)
+              Option.when( columnOffset < 7 )( ( rowOffset, columnOffset + 1, Group( prefix :+ 1 ), true ) ).toVector
+          case Groups.SubGroups( children ) =>
+            val childrenGrid: Vector[( Int, Int, Group, Boolean )] =
+              1.to( children.lastKey + 1 )
+                .toVector
+                .foldLeft( ( 0, Vector.empty[( Int, Int, Group, Boolean )] ) ):
+                  case ( ( childRowOffset, gridAcc ), childNum ) =>
+                    val childOpt: Option[Groups] = children.get( childNum )
+                    val offs: Int                = childOpt.fold( 1 )( _.widthWithNewSiblings )
+                    val childrenElts: Vector[( Int, Int, Group, Boolean )] = childOpt match
+                      case Some( child ) =>
+                        loop( rowOffset + childRowOffset, columnOffset + 1, prefix :+ childNum, child ).toVector
+                      case None =>
+                        Vector( ( rowOffset + childRowOffset, columnOffset + 1, Group( prefix :+ childNum ), true ) )
+                    ( childRowOffset + offs, gridAcc ++ childrenElts )
+                ._2
 
-  def logisticsCells(
-      model: PlanModel,
-      process: ClockedRecipe
-  ): ( Html[Nothing], Html[Nothing] ) =
-    val transportOpt = process.mainProduct.map( selectLogistics( model.env, model.logisticsOptions, _ ) )
+            NonEmptyVector( thisGroup, childrenGrid )
 
-    transportOpt
-      .map: transport =>
-        (
-          Html.td( b.isFamilyMonospace + b.hasTextRight )(
-            Html.text( Numbers.showDouble1( transport.amount ) ),
-            nbsp,
-            Html.text( s"(${transport.amount.ceil.toInt.toString})" )
-          ),
-          Html.td(
-            icon.verticalAlign().transport( model.env, transport.item ),
-            nbsp,
-            Html.text( transport.item.displayName.split( ' ' ).last )
+      loop( 0, 0, Vector.empty, groups )
+
+    gridTable(
+      groupCoords.toVector.map:
+        case ( r, c, g, n ) =>
+          (
+            r,
+            c,
+            FlowElements.groupButton(
+              groups,
+              g,
+              n,
+              PlanMsg.SetGroup( endId, id, g ).some,
+              Option.when( g == group )( b.isDark )
+            )
+          )
+    )
+
+  private def gridTable[A]( elements: Vector[( Int, Int, Html[A] )] ): Html[A] =
+
+    Html.table( b.table )(
+      elements
+        .groupByNev( _._1 )
+        .foldMap: row =>
+          List(
+            Html.tr(
+              row
+                .foldLeft( ( 0, List.empty[Html[A]] ) ):
+                  case ( ( columnOffset, acc ), ( _, col, elt ) ) =>
+                    (
+                      col + 1,
+                      acc ++
+                        Option
+                          .when( col > columnOffset )(
+                            Html.td( b.p1, noBorderStyle, Html.colspan := ( col - columnOffset ).toString )()
+                          ) ++
+                        List( Html.td( b.p1, noBorderStyle )( elt ) )
+                    )
+                ._2
+            )
+          )
+    )
+
+  private def groupDropdown[A](
+      rowIndex: Option[Int],
+      eltId: String,
+      group: Group,
+      groups: Groups
+  )( content: Html[A]* ): Html[A] =
+    val isUp: Boolean                       = rowIndex.exists( _ >= groups.widthWithNewSiblings )
+    val dropdownDirection: Option[CssClass] = Option.when( isUp )( b.isUp )
+    Html.div( b.dropdown + b.isHoverable + dropdownDirection )(
+      Html.div( b.dropdownTrigger )( FlowElements.groupButton( groups, group, newGroup = false, none ) ),
+      Html.div(
+        b.dropdownMenu,
+        Html.role := "menu",
+        Html.id   := eltId,
+        Html.styles(
+          CSS.left( "34px" ),
+          if ( isUp ) CSS.bottom( "-22px" ) else CSS.top( "-22px" ),
+          CSS.maxHeight( "60vh" ),
+          CSS.overflowY( "scroll" )
+        )
+      )(
+        Html.div( b.dropdownContent, Html.style( CSS.border( "solid 1px gray" ) ) )(
+          Html.div( b.dropdownItem )(
+            content*
           )
         )
-      .getOrElse( ( Html.td(), Html.td() ) )
+      )
+    )
 
-  def powerHeaderCell( model: ProdModel ): Html[Nothing] =
+  private def groupRowDropdown(
+      rowIndex: Int,
+      endId: EndId,
+      id: ProcessSplitId,
+      group: Group,
+      groups: Groups
+  ): Html[PlanMsg] =
+    groupDropdown( rowIndex.some, show"group$id", group, groups )( groupsGrid( group, endId, id, groups ) )
+
+  def groupSummary(
+      prodUi: ProdModel.Ui,
+      flows: Flows,
+      groups: Groups,
+      group: Group,
+      expanded: Boolean
+  ): List[Html[PlanMsg]] =
+    val cellAttr: Attr[Nothing] =
+      if ( expanded ) Html.style( noBorderCSS |+| vas() )
+      else Html.style( vas() )
+
+    val flat: Boolean = !prodUi.detailedGroupSummaries( group )
+
+    Html.tr(
+      Html.onClick( PlanMsg.ToggleGroupSummaryExpanded( group ) )
+    )(
+      Html.td( cellAttr )(
+        if ( group == Group.root )
+          FlowElements.groupButton( groups, group, false, none )
+        else
+          summaryGroupDropdown( groups, group )
+      ),
+      Html.td( cellAttr, Html.colspan := "6" )(
+        Html.strong( s"Summary for ${FlowElements.longGroupName( group )}." ),
+        Html.span( b.ml2 + b.isSize7 )( s"Click row to ${if ( expanded ) "collapse" else "expand"}" )
+      ),
+      Html.td( cellAttr, Html.colspan := "3" )(
+        Option.when( expanded )(
+          Html.div( b.buttons + b.areSmall + b.hasAddons + b.isRight )(
+            Html.button(
+              b.button + Option.when( flat )( b.isLink ),
+              Html.onClick( PlanMsg.ToggleGroupSummaryFlat( group ) )
+            )( "flat" ),
+            Html.button(
+              b.button + Option.when( !flat )( b.isLink ),
+              Html.onClick( PlanMsg.ToggleGroupSummaryFlat( group ) )
+            )( "transports" )
+          )
+        )
+      )
+    ) ::
+      Option
+        .when( expanded )(
+          Html.tr(
+            Html.td( Html.colspan := "10" )(
+              GroupSummary(
+                flows,
+                groups,
+                group,
+                flows.groupFlows( group ),
+                flat
+              )
+            )
+          )
+        )
+        .toList
+
+  def summaryGroupDropdown( groups: Groups, group: Group ): Html[PlanMsg] =
+    def sibling( direction: Int ): Option[Group] =
+      group.path.toNev
+        .map( nev => Group( nev.init :+ ( nev.last + direction ) ) )
+        .filter( groups.hasSlot )
+
+    def swapButton( target: Option[Group], icon: Classes ): Html[PlanMsg] =
+      Elements.miniButton(
+        b.isInfo + b.isOutlined,
+        target.foldMap( s => s"Swap with ${FlowElements.longGroupName( s )}" ),
+        icon,
+        Html.disabled( target.isEmpty ),
+        Html.style( FlowElements.groupHueStyle( groups, group ) )
+      )( target.map( PlanMsg.SwapGroups( group, _ ) ) )
+
+    groupDropdown(
+      none,
+      show"groupswap$group",
+      group,
+      groups
+    )(
+      Html.span( b.buttons + b.hasAddons )(
+        swapButton( sibling( -1 ), p.regular.arrowFatUp ),
+        swapButton( sibling( 1 ), p.regular.arrowFatDown )
+      )
+    )
+
+  private def powerHeaderCell( model: ProdModel ): Html[Nothing] =
     val consumption: Double =
       model.productionRows
         .foldMap: cr =>
@@ -276,7 +462,7 @@ object PlanTable:
       b.hasTextRight + b.hasTextWeightBold + b.isFamilyMonospace
     )( f"$consumption%.1f" )
 
-  def powerCell( process: ClockedRecipe, borderAttr: Attr[Nothing] ): Html[Nothing] =
+  private def powerCell( process: ClockedRecipe, borderAttr: Attr[Nothing] ): Html[Nothing] =
     Html.td(
       Html.title := f"${process.power.average}%.6f",
       b.hasTextRight + b.isFamilyMonospace,
@@ -288,13 +474,12 @@ object PlanTable:
 
   private def uncomputedItemsTable(
       env: Env,
-      requestSelection: RequestSelectionModel,
       items: List[Countable[Double, Item]]
   )(
       notification: Html[PlanMsg]
   ): List[Html[PlanMsg]] = {
     items
-      .map( item => amountItemCells( env, requestSelection, Some( item ), EmptyAttribute ) )
+      .map( item => amountItemCells( env, Some( item ), EmptyAttribute ) )
       .zipWithIndex
       .map:
         case ( initCells, idx ) =>
@@ -306,7 +491,7 @@ object PlanTable:
                 List( CSS.borderLeft( ghostBorderStyle ), CSS.borderRight( ghostBorderStyle ) )*
             )
           )(
-            Html.td() ::
+            Html.td( Html.colspan := "2" )() ::
               initCells ++
               Option.when( idx == 0 )(
                 Html.td(
@@ -318,170 +503,132 @@ object PlanTable:
           )
   }
 
-  private def requestAmountEditor( input: InputModel ): Html[PlanMsg] =
-    Html
-      .div( b.field + b.hasAddons + b.hasAddonsRight )(
-        Html.div( b.control )(
-          Html
-            .div(
-              b.button + b.isSmall + b.isDanger,
-              Html.style( CSS.height( "var(--bulma-control-height)" ) ),
-              Html.onClick( RequestSelectionAction.EditAmountDelete )
-            )(
-              Html.i( p.regular.`trash` )()
-            )
-        ),
-        Html.div( b.control )(
-          Html
-            .div(
-              b.button + b.isSmall + b.isInfo,
-              Html.style( CSS.height( "var(--bulma-control-height)" ) ),
-              Html.onClick( RequestSelectionAction.EditAmountCancel )
-            )(
-              Html.i( p.regular.`arrowUUpLeft` )()
-            )
-        ),
-        Html
-          .div( b.control )(
-            Html.input(
-              b.input + b.isSmall,
-              Html.style( CSS.width( "5em" ) ),
-              Html.id     := RequestSelectionModel.editorId,
-              Html.`type` := "text",
-              Attribute( "inputmode", "decimal" ),
-              input.output.map( v => Html.value := v ),
-              Html.onInput( value => RequestSelectionAction.EditAmountSetValue( value ) )
-            )
-          ),
-        Html
-          .div( b.control )(
-            Html.div(
-              b.button + b.isSmall + b.isSuccess,
-              Html.style( CSS.height( "var(--bulma-control-height)" ) ),
-              Html.onClick( RequestSelectionAction.EditAmountCommit )
-            )(
-              Html.i( p.regular.check )()
-            )
-          )
-      )
-      .map( PlanMsg.RequestSelection( _ ) )
-
   private def amountItemCells(
       env: Env,
-      requested: RequestSelectionModel,
       itemOpt: Option[Countable[Double, Item]],
       borderAttr: Attr[Nothing]
   ): List[Html[PlanMsg]] =
-
-    def editButton: Option[Html[PlanMsg]] =
-      itemOpt.flatMap: item =>
-        Option
-          .when( requested.requestedItems( item.item.className ) ):
-            Html
-              .button(
-                b.button + b.ml2 + b.isSmall + b.isPrimary,
-                Html.onClick( RequestSelectionAction.EditAmountStart( item.item.className ) )
-              )( Html.i( p.regular.`pencil` )() )
-              .map( PlanMsg.RequestSelection( _ ) )
-
-    val editAndAmount: List[Html[PlanMsg]] =
-      requested.requestAmountEditor
-        .filter { case ( ed, _ ) => itemOpt.exists( _.item.className == ed ) }
-        .fold(
-          Html.td( b.isFamilyMonospace + b.hasTextRight, borderAttr )(
-            Html.text( Numbers.showDouble3( itemOpt.foldMap( _.amount ) ) )
-          )
-            :: Html.td( b.px0 + b.hasTextCentered, borderAttr )( editButton )
-            :: Nil
-        ):
-          case ( _, input ) =>
-            Html.td( b.px0 + b.hasTextRight, borderAttr, Html.colspan := "2" )(
-              requestAmountEditor( input )
-            ) :: Nil
-
-    editAndAmount :+
+    List(
+      Html.td( b.isFamilyMonospace + b.hasTextRight, borderAttr )(
+        Html.text( Numbers.showDouble3( itemOpt.foldMap( _.amount ) ) )
+      ),
       itemOpt
         .map: item =>
-          Html.td( borderAttr )( icon.verticalAlign().item( env, item.item ), nbsp, Html.text( item.item.displayName ) )
+          Html.td( borderAttr )(
+            icon.verticalAlign().item( env, item.item ),
+            nbsp,
+            Html.text( item.item.displayName )
+          )
         .getOrElse( Html.td() )
+    )
 
-  private def expandedRecipeRows(
-      env: Env
-  )( itemIO: Map[Item, ItemIO[SrcDest]], recipe: ClockedRecipe ): List[Html[Nothing]] =
-    List(
-      Html.tr( Html.style( CSS.borderTop( "0" ) ) )(
-        Html.td( Html.colspan := "4", noBorderStyle )(),
-        Html.td( noBorderStyle )( RecipeFrag.recipeIcons( env )( recipe.recipe ) ),
-        Html.td( Html.colspan := "5", noBorderStyle )()
-      ),
-      Html.tr(
-        Html.td( Html.colspan := "10" )(
-          Html.div( b.columns )(
-            Html.div( b.column + b.is6 )(
-              Html.h4( b.subtitle + b.hasTextCentered )( "Inputs" ),
-              Html.table( b.table, Html.style( CSS.margin( "0 auto" ) ) )(
-                itemsIOTableRows( env, "FROM", _.sources )( itemIO, recipe.ingredientsPerMinute )
-              )
+  def expandedProcess( flows: Flows, splitId: ProcessSplitId ): Html[Nothing] =
+    def itemTransportOfSplit(
+        item: Item,
+        transport: ItemTransport,
+        direction: FlowEnd
+    ): Map[FlowEnd, Map[Item, ( Double, Vector[Countable[Double, Split[SrcDest]]] )]] =
+      transport
+        .get( direction.opposite )
+        .find( _.item.id == splitId )
+        .foldMap: ci =>
+          Map( direction -> Map( item -> ( ci.amount, transport.get( direction ) ) ) )
+
+    // Source -> ingredients
+    // Destination -> products
+    val itemTransports: Map[FlowEnd, Map[Item, ( Double, Vector[Countable[Double, Split[SrcDest]]] )]] =
+      flows.itemFlows.toVector
+        .foldMap:
+          case ( itemClass, transports ) =>
+            flows.prod.env
+              .getItem( itemClass )
+              .foldMap: item =>
+                transports.foldMap: transport =>
+                  FlowEnd.cases.foldMap: direction =>
+                    itemTransportOfSplit( item, transport, direction )
+
+    val ( ingrColW: Int, prodColW: Int ) =
+      val ingredients = itemTransports.get( FlowEnd.Source ).foldMap( _.size )
+      val products    = itemTransports.get( FlowEnd.Destination ).foldMap( _.size )
+      val count       = ingredients + products
+      if ( count == 0 ) ( 6, 6 )
+      else ( math.round( 12d * ingredients / count ).toInt, math.round( 12d * products / count ).toInt )
+
+    def peerTableRows(
+        groups: Groups,
+        item: Item,
+        amount: Double,
+        peers: Vector[Countable[Double, Split[SrcDest]]]
+    ): List[Html[Nothing]] =
+      val borderStyle = Html.styles(
+        CSS.borderBottomColor( "var(--bulma-table-cell-border-color)" ),
+        CSS.borderBottomStyle( "var(--bulma-table-cell-border-style)" ),
+        CSS.borderBottomWidth( "2px" )
+      )
+      List(
+        Html.thead(
+          Html.tr(
+            Html.th( borderStyle )(
+              Html.span( b.isFamilyMonospace + b.hasTextWeightBold )( Numbers.showDouble3( amount ) )
             ),
-            Html.div( b.column + b.is6 )(
-              Html.h4( b.subtitle + b.hasTextCentered )( "Outputs" ),
-              Html.table( b.table, Html.style( CSS.margin( "0 auto" ) ) )(
-                itemsIOTableRows( env, "TO", _.destinations )( itemIO, recipe.productsPerMinute )
+            Html.th( borderStyle, b.hasTextCentered )( icon.verticalAlign().item( flows.prod.env, item ) ),
+            Html.th( borderStyle )( Html.text( item.displayName ) )
+          )
+        ),
+        Html.tbody(
+          peers.toList.map: ci =>
+            Html.tr(
+              Html.td( b.isFamilyMonospace )( Numbers.showDouble3( ci.amount ) ),
+              Html.td( FlowElements.groupButton( groups, ci.item.group, newGroup = false, action = none ) ),
+              Html.td( ci.item.displayName )
+            )
+        )
+      )
+
+    def peerTables( groups: Groups, direction: FlowEnd ): Html[Nothing] =
+      Html.div( b.columns + b.isVcentered + b.isMultiline )(
+        itemTransports
+          .get( direction )
+          .foldMap( _.toList )
+          .map:
+            case ( item, ( amount, peers ) ) =>
+              Html.div( b.column + b.isNarrow )(
+                Html.table( b.table )(
+                  peerTableRows( groups, item, amount, peers )
+                )
               )
+      )
+
+    val groups: Groups = Groups.of( flows )
+
+    Html.tr(
+      Html.td( Html.colspan := "10" )(
+        Html.div( b.columns )(
+          Option.when( ingrColW > 0 )(
+            Html.div( b.column + b.cls( s"is-$ingrColW" ) )(
+              Elements.messageCenteredHeader( b.isSuccess, b.hasTextSuccessDark, Html.text( "Inputs" ) )(
+                peerTables( groups, FlowEnd.Source )
+              )
+            )
+          ),
+          Html.div( b.column + b.cls( s"is-$prodColW" ) )(
+            Elements.messageCenteredHeader( b.isInfo, b.hasTextInfoDark, Html.text( "Products" ) )(
+              peerTables( groups, FlowEnd.Destination )
             )
           )
         )
       )
     )
 
-  private def itemsIOTableRows(
-      env: Env,
-      word: String,
-      direction: ItemIO[SrcDest] => Vector[Countable[Double, SrcDest]]
-  )(
-      itemIO: Map[Item, ItemIO[SrcDest]],
-      items: List[Countable[Double, Item]]
-  ): List[Html[Nothing]] =
-    items
-      .mapFilter: ci =>
-        itemIO.get( ci.item ).tupleLeft( ci )
-      .foldMap:
-        case ( item, itemIO ) =>
-          itemIOTableRows( env, word )( item, direction( itemIO ) )
-
-  private def itemIOTableRows( env: Env, word: String )(
-      item: Countable[Double, Item],
-      peers: Vector[Countable[Double, SrcDest]]
-  ): List[Html[Nothing]] =
-    val borderStyle = Html.styles(
-      CSS.borderBottomColor( "var(--bulma-table-cell-border-color)" ),
-      CSS.borderBottomStyle( "var(--bulma-table-cell-border-style)" ),
-      CSS.borderBottomWidth( "2px" )
-    )
-    List(
-      Html.thead(
-        Html.tr(
-          Html.th( borderStyle )(
-            Html.span( b.isFamilyMonospace + b.hasTextWeightBold )( Numbers.showDouble3( item.amount ) )
-          ),
-          Html.th( borderStyle, b.hasTextCentered )( icon.verticalAlign().item( env, item.item ) ),
-          Html.th( borderStyle )( Html.text( item.item.displayName ) )
+  def expandedProcessRows( flows: Flows, splitId: ProcessSplitId ): List[Html[Nothing]] =
+    flows
+      .getSplit( splitId )
+      .original
+      .process
+      .map: recipe =>
+        Html.tr( Html.style( CSS.borderTop( "0" ) ) )(
+          Html.td( noBorderStyle, Html.colspan := "10", b.isSize5 + b.hasTextCentered )(
+            RecipeFrag.recipeIcons( flows.prod.env )( recipe.recipe )
+          )
         )
-      ),
-      Html.tbody(
-        peers.toList.mapFilter: ci =>
-          val peerNameOpt: Option[String] =
-            ci.item match
-              case SrcDest.Extract( recipe ) => env.getRecipe( recipe ).map( _.displayName )
-              case SrcDest.Step( recipe )    => env.getRecipe( recipe ).map( _.displayName )
-              case SrcDest.Input             => "INPUT".some
-              case SrcDest.Requested         => "REQUESTED".some
-              case SrcDest.Byproduct         => "BYPRODUCT".some
-          peerNameOpt.map: peerName =>
-            Html.tr(
-              Html.td( b.isFamilyMonospace )( Numbers.showDouble3( ci.amount ) ),
-              Html.td( word ),
-              Html.td( peerName )
-            )
-      )
-    )
+    ++: List( expandedProcess( flows, splitId ) )

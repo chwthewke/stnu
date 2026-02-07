@@ -1,5 +1,9 @@
 # TODO
 
+## meta
+
+- move this TODO to a GH project at some point
+
 ## build
 
 ### plugins
@@ -26,6 +30,9 @@
 
 ### data-tools
 
+### CI
+- GH action?
+
 ## features
 - ~~linear programming solver~~
 - ~~fix ficsmas (find the gift extractor)~~
@@ -40,7 +47,8 @@
 ### data-tools
 - ~~load GameData~~
 - ~~load Model & write model **to JSON**~~
-- Why are some recipes with Ionized fuel in T8?
+- ~~Why are some recipes with Ionized fuel in T8?~~
+- move SolutionSampleExporter to a tool, and code-gen the solutions.json
 
 ### backend
 - ~~import resources~~
@@ -50,20 +58,65 @@
 - ~~fix: solver's item weight should be inversely proportional to cap~~
 - ~~durable storage of plans~~
 - persistence: store model version of plans!
+- persistence: filesystem storage module?
 
 ## frontend
 - ~~"deep" internal navigation~~
 - ~~Extraction recipes in table~~
+- Plan Header: use dropdowns to group buttons? 
 - Recipe options: disable alt/matconv toggles if no effect?
 - Recipe options: align the two rows of tier buttons?
 - Resource options: button to reset resource nodes to full amount
 - ~~PlanTable: totals (machines at least, maybe resources)~~
 - ~~"My Plans" + save/load~~
 - ~~Filter request selection by what is feasible~~
-- Maybe stop it with the hero in the plan header
+- ~~Maybe stop it with the hero in the plan header~~
+- ~~Rework request selection (use top space better, remove hero, extract requested out of summary)~~
 - ~~"My Plans": sort the table~~
 - Dom.focus not working, try tricks (like including the target in the DOM with display: hidden)?
 - utility to replace all calls to `List[Attr[Nothing]]( ... )` to force conversions
+- ~~duplicate plan~~
+- compare plans (compare with saved?)
+- plan table: buttons in header to expand/collapse all rows
+- integrate js LP lib to have a frontend Solver, with potential implementations:
+  - https://www.npmjs.com/package/javascript-lp-solver
+  - https://github.com/IanManske/YALPS
+  - https://www.npmjs.com/package/glpk.js
+
+#### fixes
+- ~~Requests panel looks like ass~~
+- ~~"Add request" button no worky in organize view~~
+  - ~~disable it in that view~~
+- Something is wrong with resource caps? (water, FICSMAS gift)
+- Something is also wrong with "hide FICSMAS" in plan
+- ~~new request panel: restore the \<input>s~~
+- ~~revert is weird on local reload~~ OK now?
+
+#### the quest for flows
+
+- ~~action button state (availability) - moves only~~
+- ~~state conversion to persistent~~
+- ~~local state persistence (hot reload)~~
+- ~~action implementation~~
+  - ~~start with moves~~
+  - ~~split~~
+  - ~~merge~~
+  - ~~other actions, tweaks~~
+    - ~~mod (shift) for "bump" (move to new ItemTransport before/after)~~
+    - ~~add equal split with arg. (or change equal split w/ default)~~
+    - ~~split remaining capacity (when other end has less total amount but enough for some of this flow)~~
+- ~~organized plan in PlanTable~~
+- ~~persistence~~
+- ~~groups~~
+- ~~group summary~~
+- ~~replace notification blocks with message?~~
+- ~~show group in flows view~~
+- ~~group grid~~
+  - ~~show current group~~
+  - ~~group swap - or maybe on group summary's group button~~ 
+- undo stack
+- ~~process expanded rows: show group(s) in I/O~~
+  - ~~also refactor away from ItemIO?~~
 
 ## refactorings vs. legacy
 - ~~check circe codecs in tools for actual use~~

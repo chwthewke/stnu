@@ -9,8 +9,11 @@ import cats.effect.MonadCancelThrow
 import cats.syntax.all.*
 import doobie.*
 import doobie.implicits.*
+import doobie.postgres.circe.jsonb.implicits.*
 import doobie.postgres.implicits.JavaInstantMeta
-import doobie.postgres.implicits.unliftedUnboxedIntegerArrayType
+import io.circe.Json
+import io.circe.derivation.ConfiguredCodec
+import io.circe.syntax.*
 import java.time.Instant
 import scala.collection.immutable.SortedMap
 import scala.collection.immutable.SortedSet
@@ -24,12 +27,14 @@ import model.ResourceDistrib
 import model.ResourcePurity
 import model.Transport
 import protocol.persistence.ExtractionOptions
+import protocol.persistence.Flows
 import protocol.persistence.LogisticsOptions
 import protocol.persistence.Plan
 import protocol.persistence.PlanId
 import protocol.persistence.PlanName
 import protocol.persistence.PlanSummary
 import protocol.persistence.PowerOptions
+import protocol.persistence.ProcessSplitId
 import protocol.persistence.ProductionUi
 import protocol.persistence.RecipeOptions
 import protocol.persistence.RequestSelection
@@ -63,7 +68,7 @@ object Plans extends PlansPersistenceApi[ConnectionIO]:
         plan.recipeOptions.hideFicsmas,
         plan.extractionOptions.minerClass,
         plan.extractionOptions.clockSpeed,
-        plan.productionUi.productionRowOrder
+        Organisation( plan.flows, plan.productionUi )
       )
       .run
       .void
@@ -128,7 +133,7 @@ object Plans extends PlansPersistenceApi[ConnectionIO]:
 
   override def readPlan( planId: PlanId ): OptionT[ConnectionIO, Plan] =
     OptionT( statements.selectPlanHeader( planId ).option ).semiflatMap:
-      case ( name, hideFicsmas, minerClass, clockSpeedPreset, productionRowsOrder ) =>
+      case ( name, hideFicsmas, minerClass, clockSpeedPreset, organisation ) =>
         for
           allowed         <- statements.selectPlanAllowed( planId ).to[Vector]
           resourceNodes   <- statements.selectPlanResourceNodes( planId ).to[Vector]
@@ -139,11 +144,11 @@ object Plans extends PlansPersistenceApi[ConnectionIO]:
           hideFicsmas,
           minerClass,
           clockSpeedPreset,
-          productionRowsOrder,
           allowed,
           resourceNodes,
           resourceOptions,
-          requested
+          requested,
+          organisation.getOrElse( Organisation.default )
         )
 
   case class Allowed(
@@ -178,11 +183,11 @@ object Plans extends PlansPersistenceApi[ConnectionIO]:
       hideFicsmas: Boolean,
       minerClass: ClassName[Machine],
       clockSpeedPreset: ClockSpeedPreset,
-      productionRowsOrder: Option[Vector[Int]],
       allowedTypes: Vector[( AllowedClassType, String, Boolean )],
       resourceNodes: Vector[( ExtractorType, ClassName[Item], ResourcePurity, Int )],
       resourceOptions: Vector[( ClassName[Item], Boolean, Int )],
-      requested: Vector[( ClassName[Item], Double )]
+      requested: Vector[( ClassName[Item], Double )],
+      organisation: Organisation
   ): Plan =
     val allowed: Allowed =
       allowedTypes.foldMap:
@@ -218,8 +223,19 @@ object Plans extends PlansPersistenceApi[ConnectionIO]:
       allowed.logisticsOptions,
       PowerOptions( allowed.generator ),
       RequestSelection( requested.to( SortedMap ) ),
-      ProductionUi( productionRowsOrder )
+      organisation.flows,
+      organisation.productionUi
     )
+
+  case class Organisation( flows: Flows, productionUi: ProductionUi ) derives ConfiguredCodec
+  object Organisation:
+    val default: Organisation =
+      Organisation(
+        Flows( 0, ProcessSplitId( 1 ), Vector.empty, Map.empty ),
+        ProductionUi( none, Vector.empty )
+      )
+    given Get[Organisation] = Get[Json].temap( ( j: Json ) => j.as[Organisation].leftMap( _.show ) )
+    given Put[Organisation] = Put[Json].contramap( _.asJson )
 
   object statements:
     val selectPlans: Query0[( PlanId, ( PlanName, Instant ), Option[( ClassName[Item], Double )] )] =
@@ -237,14 +253,14 @@ object Plans extends PlansPersistenceApi[ConnectionIO]:
 
     def selectPlanHeader(
         planId: PlanId
-    ): Query0[( PlanName, Boolean, ClassName[Machine], ClockSpeedPreset, Option[Vector[Int]] )] =
+    ): Query0[( PlanName, Boolean, ClassName[Machine], ClockSpeedPreset, Option[Organisation] )] =
       // language=SQL
       sql"""SELECT
            |    p."name"
            |  , o."hide_ficsmas"
            |  , o."miner_class"
            |  , o."clock_speed_preset"
-           |  , o."production_rows_order"
+           |  , o."organisation"
            |FROM       "plans"        p
            |INNER JOIN "plan_options" o ON p."id" = o."plan_id"
            |WHERE p."id" = $planId
@@ -311,7 +327,7 @@ object Plans extends PlansPersistenceApi[ConnectionIO]:
         hideFicsmas: Boolean,
         minerClass: ClassName[Machine],
         clockSpeedPreset: ClockSpeedPreset,
-        productionRowsOrder: Option[Vector[Int]]
+        organisation: Organisation
     ): Update0 =
       // language=SQL
       sql"""INSERT INTO "plan_options"
@@ -319,22 +335,22 @@ object Plans extends PlansPersistenceApi[ConnectionIO]:
            |, "hide_ficsmas"
            |, "miner_class"
            |, "clock_speed_preset"
-           |, "production_rows_order"
+           |, "organisation"
            |)
            |VALUES
            |( $planId
            |, $hideFicsmas
            |, $minerClass
            |, $clockSpeedPreset
-           |, $productionRowsOrder
+           |, $organisation
            |)
            |ON CONFLICT ON CONSTRAINT "plan_options_plan_unique"
            |  DO UPDATE SET
-           |      "plan_id" = excluded."plan_id"
-           |    , "hide_ficsmas" = excluded."hide_ficsmas"
-           |    , "miner_class" = excluded."miner_class"
+           |      "plan_id"            = excluded."plan_id"
+           |    , "hide_ficsmas"       = excluded."hide_ficsmas"
+           |    , "miner_class"        = excluded."miner_class"
            |    , "clock_speed_preset" = excluded."clock_speed_preset"
-           |    , "production_rows_order" = excluded."production_rows_order"
+           |    , "organisation"       = excluded."organisation"
            |""".stripMargin.update
 
     def deletePlanAllowedClasses( planId: PlanId ): Update0 =

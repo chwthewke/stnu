@@ -35,16 +35,16 @@ object ItemIO:
       recipes.foldMap: recipe =>
         val ingredientsIO: SortedMap[Item, ItemIO[SrcDest]] =
           recipe.ingredientsPerMinute.foldMap: ci =>
-            SortedMap( ci.item -> to( SrcDest.Step( recipe.recipe.className ), ci.amount ) )
+            SortedMap( ci.item -> to( SrcDest.Step( recipe ), ci.amount ) )
         val productsIO: SortedMap[Item, ItemIO[SrcDest]] =
           recipe.productsPerMinute.foldMap: ci =>
-            SortedMap( ci.item -> from( SrcDest.Step( recipe.recipe.className ), ci.amount ) )
+            SortedMap( ci.item -> from( SrcDest.Step( recipe ), ci.amount ) )
         ingredientsIO |+| productsIO
     val externalAmounts: List[Countable[Double, Item]] =
       recipes.foldMap( _.itemsPerMinute ).gather.mapFilter( _.significant )
     val externalIO: SortedMap[Item, ItemIO[SrcDest]] =
       externalAmounts.foldMap: ci =>
-        if ( ci.amount < 0 ) SortedMap( ci.item -> from( SrcDest.Input, ci.amount ) )
+        if ( ci.amount < 0 ) SortedMap( ci.item -> from( SrcDest.Input, -ci.amount ) )
         else
           val reqAmt: Double               = requested.getOrElse( ci.item, 0d )
           val byProductIO: ItemIO[SrcDest] = to( SrcDest.Byproduct, ci.amount - reqAmt )

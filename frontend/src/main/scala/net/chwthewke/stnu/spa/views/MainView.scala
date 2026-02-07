@@ -48,7 +48,7 @@ object MainView:
       planLocation: Option[LocationModel.Plan],
       models: Option[( ModelIndex, ModelVersionId )]
   ): Html[Msg] =
-    Html.nav( b.navbar, Html.role := "navigation" )(
+    Html.nav( b.navbar + b.block, Html.role := "navigation" )(
       Html.div( b.navbarBrand + b.px1 )(
         Html.div(
           Html.h1( b.title + b.is3 )( "Satisfactory Planner" ),
@@ -60,11 +60,11 @@ object MainView:
       Html.div( b.navbarMenu )(
         Html.div( b.navbarStart )(
           internalLocationNavItem( location.flatMap( _.asBrowse ).isDefined, LocationModel.Browse ),
+          internalLocationNavItem( location.flatMap( _.asLibrary ).isDefined, LocationModel.Library ),
           internalLocationNavItem(
             location.flatMap( _.asPlan ).isDefined,
-            planLocation.getOrElse( LocationModel.Plan( none, none ) )
+            planLocation.getOrElse( LocationModel.initPlan )
           ),
-          internalLocationNavItem( location.flatMap( _.asLibrary ).isDefined, LocationModel.Library ),
           externalLocationNavItem( "Wiki", uri"https://satisfactory.wiki.gg/" ),
           externalLocationNavItem( "Map", uri"https://satisfactory-calculator.com/en/interactive-map" )
         ),

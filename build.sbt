@@ -154,7 +154,7 @@ val `stnu-frontend`: Project = project
   .settings( buildInfoPackage := "net.chwthewke.stnu.spa" )
   .settings( sharedSettings )
   .settings( scalaJSLinkerConfig ~= { _.withModuleKind( ModuleKind.ESModule ) } )
-  .settings( tyrian, http4sCore, http4sDom, http4sCirce )
+  .settings( catsFree, monocle, tyrian, http4sCore, http4sDom, http4sCirce )
   .dependsOn( `stnu-protocol-js` )
 
 // NOTE this module is intended for running the frontend from sbt or a terminal
@@ -192,18 +192,50 @@ val `stnu-laws`: Project =
     .settings( munitLaws )
     .dependsOn( `stnu-core-jvm` )
 
+val `stnu-testkit-cross`: CrossProject =
+  crossProject( JSPlatform, JVMPlatform )
+    .crossType( CrossType.Pure )
+    .in( file( "testkit" ) )
+    .enablePlugins( Scalac )
+    .settings( sharedSettings )
+    .settings( name := "stnu-testkit" )
+    .settings( scalacheck )
+    .dependsOn( `stnu-protocol-cross` )
+
+val `stnu-testkit-jvm`: Project = `stnu-testkit-cross`.jvm
+val `stnu-testkit-js`: Project  = `stnu-testkit-cross`.js
+
+val `stnu-testkit`: Project =
+  project
+    .in( file( "testkit/target" ) )
+    .settings( sharedSettings )
+    .settings( aggregateSettings )
+    .aggregate( `stnu-testkit-jvm`, `stnu-testkit-js` )
+
 val `stnu-tests`: Project =
   project
     .in( file( "tests" ) )
     .enablePlugins( Scalac )
     .settings( sharedSettings )
     .settings( munitScalacheck, doobieMunit )
+    .settings( testFrameworks += new TestFramework( "munit.Framework" ) )
     .dependsOn(
       `stnu-core-jvm`,
       `stnu-tools`,
       `stnu-assets`,
-      `stnu-backend`
+      `stnu-backend`,
+      `stnu-testkit-jvm`
     )
+
+val `stnu-js-tests`: Project =
+  project
+    .in( file( "tests-scalajs" ) )
+    .enablePlugins( Scalac )
+    .enablePlugins( ScalaJSPlugin )
+    .settings( sharedSettings )
+    .settings( munitScalacheck, circeParser )
+    .settings( testFrameworks += new TestFramework( "munit.Framework" ) )
+    .dependsOn( `stnu-frontend`, `stnu-testkit-js` )
 
 val `stnu-jvm`: Project =
   project
@@ -238,5 +270,6 @@ val stnu: Project =
       `stnu-frontend`,
       `stnu-frontend-run`,
       `stnu-laws`,
-      `stnu-tests`
+      `stnu-tests`,
+      `stnu-js-tests`
     )

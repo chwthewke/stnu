@@ -18,6 +18,12 @@ case class PlanNameModel(
     confirmRevert: Boolean,
     confirmNew: Boolean
 ):
+  def duplicate: PlanNameModel =
+    copy(
+      name = PlanName( name.name + " (copy)" ),
+      saved = none
+    )
+
   def restore: PlanNameModel = copy( input = input.map( _.restore ) )
 
   def startEdit[F[_]: Async]: ( PlanNameModel, Cmd[F, Nothing] ) =
@@ -47,6 +53,8 @@ case class PlanNameModel(
         copy( confirmSaving = true ) -> Cmd.None
       case PlanNameAction.SaveCancel =>
         copy( confirmSaving = false ) -> Cmd.None
+      case PlanNameAction.Duplicate =>
+        duplicate -> Cmd.None
       case PlanNameAction.Revert =>
         copy( confirmRevert = true ) -> Cmd.None
       case PlanNameAction.RevertCancel =>

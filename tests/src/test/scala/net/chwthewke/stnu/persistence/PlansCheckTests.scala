@@ -5,10 +5,17 @@ import cats.syntax.all.*
 import java.time.Instant
 
 import model.ClockSpeedPreset
+import model.prod.FlowEnd
+import model.prod.Group
+import persistence.Plans.Organisation
+import protocol.persistence.EndId
+import protocol.persistence.Flows
 import protocol.persistence.PlanId
 import protocol.persistence.PlanName
+import protocol.persistence.ProcessSplitId
+import protocol.persistence.ProductionUi
 
-class PlansCheckTests extends PersistenceTests:
+class PlansCheckTests extends CheckTests:
 
   test( "check SELECT plan summaries" ):
     check( Plans.statements.selectPlans )
@@ -35,6 +42,32 @@ class PlansCheckTests extends PersistenceTests:
     check( Plans.statements.insertPlan( PlanName( "plan" ), Instant.now(), confirm = true ) )
 
   test( "check INSERT plan options" ):
+    val organisation =
+      Organisation(
+        Flows(
+          0x18841536,
+          ProcessSplitId( 1 ),
+          Vector(
+            EndId.Process( ClassName( "foo" ) ) -> Vector(
+              ( ProcessSplitId( 1 ), 0.4d, Group( Vector( 2, 1 ) ) ),
+              ( ProcessSplitId( 2 ), 0.6d, Group( Vector.empty ) )
+            )
+          ),
+          Map(
+            ClassName( "bar" ) ->
+              Vector( Vector( ( FlowEnd.Source, ProcessSplitId( 1 ) ), ( FlowEnd.Source, ProcessSplitId( 2 ) ) ) ),
+            ClassName( "baz" ) ->
+              Vector(
+                Vector( ( FlowEnd.Destination, ProcessSplitId( 1 ) ), ( FlowEnd.Destination, ProcessSplitId( 2 ) ) )
+              )
+          )
+        ),
+        ProductionUi(
+          Some( Vector( ProcessSplitId( 2 ), ProcessSplitId( 1 ) ) ),
+          Vector( ProcessSplitId( 2 ) )
+        )
+      )
+
     check(
       Plans.statements
         .insertPlanOptions(
@@ -42,7 +75,7 @@ class PlansCheckTests extends PersistenceTests:
           true,
           ClassName( "machine" ),
           ClockSpeedPreset.`100%`,
-          Vector( 0, 2, 3, 1 ).some
+          organisation
         )
     )
 

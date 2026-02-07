@@ -15,5 +15,5 @@ case class Transport(
 
 object Transport:
   given Show[Transport]     = Show.show( _.displayName )
-  given Order[Transport]    = Order.by( _.perMinute )
+  given Order[Transport]    = Order.by( t => ( t.perMinute, t.className, t.displayName ) )
   given Ordering[Transport] = Order.catsKernelOrderingForOrder

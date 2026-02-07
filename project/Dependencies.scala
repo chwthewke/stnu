@@ -41,6 +41,11 @@ object Dependencies extends AutoPlugin {
     val fs2IO: Deps        = libraryDependencies += "co.fs2"    %%% "fs2-io"              % "3.12.2"
     val fs2DataCirce: Deps = libraryDependencies += "org.gnieh" %%% "fs2-data-json-circe" % "1.11.2"
 
+    val monocle: Deps = libraryDependencies ++= Seq(
+      "dev.optics" %%% "monocle-core"  % "3.3.0",
+      "dev.optics" %%% "monocle-macro" % "3.3.0"
+    )
+
     val pureconfigVersion = "0.17.9"
     val pureconfig: Deps  = libraryDependencies ++= Seq(
       "com.github.pureconfig" %%% "pureconfig-core"           % pureconfigVersion,
@@ -101,12 +106,15 @@ object Dependencies extends AutoPlugin {
     val tyrian: Deps    = libraryDependencies += "io.indigoengine" %%% "tyrian-io"  % "0.13.0"
     val http4sDom: Deps = libraryDependencies += "org.http4s"      %%% "http4s-dom" % "0.2.8"
 
+    val scalacheck: Deps = libraryDependencies ++= Seq(
+      "org.scalacheck"    %%% "scalacheck"      % "1.18.1",
+      "io.chrisdavenport" %%% "cats-scalacheck" % "0.3.2"
+    )
+
     val munitScalacheck: Deps = libraryDependencies ++= Seq(
-      "org.scalameta"     %%% "munit"             % "1.1.0",
-      "org.scalameta"     %%% "munit-scalacheck"  % "1.1.0",
-      "org.typelevel"     %%% "munit-cats-effect" % "2.1.0",
-      "org.scalacheck"    %%% "scalacheck"        % "1.18.1",
-      "io.chrisdavenport" %%% "cats-scalacheck"   % "0.3.2"
+      "org.scalameta" %%% "munit"             % "1.1.0",
+      "org.scalameta" %%% "munit-scalacheck"  % "1.1.0",
+      "org.typelevel" %%% "munit-cats-effect" % "2.1.0"
     )
 
     // munit-discipline has not been rebuilt against (binary-incompatible) munit 1.1.0 yet

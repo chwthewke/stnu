@@ -3,8 +3,10 @@ package spa
 
 import cats.Traverse
 import cats.syntax.all.*
+import mouse.boolean.*
 import org.scalajs.dom.ModifierKeyEvent
 import tyrian.Attr
+import tyrian.CSS
 import tyrian.Elem
 import tyrian.Empty
 import tyrian.EmptyAttribute
@@ -23,6 +25,9 @@ package object views:
 
   val icon: Icons.Icon[Nothing] = Icons.icon
 
+  def vas( value: String = "middle" )               = CSS.verticalAlign( value )
+  def va( value: String = "middle" ): Attr[Nothing] = Html.style( vas( value ) )
+
   // events
 
   opaque type KeyModifier = Byte
@@ -34,16 +39,18 @@ package object views:
     private val ALT: Byte   = 8
 
     def apply( modifierKeys: ModifierKeyEvent ): KeyModifier =
-      ( ( if ( modifierKeys.metaKey ) META else 0 ) |
-        ( if ( modifierKeys.ctrlKey ) CTRL else 0 ) |
-        ( if ( modifierKeys.shiftKey ) SHIFT else 0 ) |
-        ( if ( modifierKeys.altKey ) ALT else 0 ) ).toByte
+      ( modifierKeys.metaKey.valueOrZero( META ) |
+        modifierKeys.ctrlKey.valueOrZero( CTRL ) |
+        modifierKeys.shiftKey.valueOrZero( SHIFT ) |
+        modifierKeys.altKey.valueOrZero( ALT ) ).toByte
 
     extension ( self: KeyModifier )
       def meta: Boolean  = ( self & META ) != 0
       def ctrl: Boolean  = ( self & CTRL ) != 0
       def shift: Boolean = ( self & SHIFT ) != 0
       def alt: Boolean   = ( self & ALT ) != 0
+
+      def mod: Int = ( if ( shift ) 2 else 1 ) * ( if ( ctrl ) 5 else 1 )
 
   extension ( self: Html.type )
     def onClickModified[M]( msg: KeyModifier => M ): Attr[M] =

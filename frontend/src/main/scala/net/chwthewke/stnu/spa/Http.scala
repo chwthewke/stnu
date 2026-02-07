@@ -36,12 +36,8 @@ class Http[F[_]: Async]( val backend: Uri, private val client: Client[F] ) exten
   private val solverApi: SolverApi[F] = new SolverClient[F].mapK( use )
   private val plansApi: PlansApi[F]   = new PlansClient[F].mapK( use )
 
-  private def logError( e: Throwable, prefix: String = "" ): F[Unit] =
-    ( e, prefix ).tailRecM:
-      case ( t, p ) =>
-        Async[F]
-          .delay( console.error( p + t.getMessage ) )
-          .as( Option( e.getCause ).tupleRight( "Caused by: " ).toLeft( () ) )
+  private def logError( e: Throwable ): F[Unit] =
+    Async[F].delay( console.error( e.getMessage ) )
 
   private def run[M]( command: F[M] ): Cmd[F, M] =
     Cmd.Run( command.onError { case NonFatal( e ) => logError( e ) } )

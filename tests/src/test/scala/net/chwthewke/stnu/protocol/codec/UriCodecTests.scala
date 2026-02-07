@@ -99,6 +99,11 @@ class UriCodecTests extends ScalaCheckSuite:
     ( nonEmptyString, Gen.option( nonEmptyString ) ).tupled
   )
 
+  pathCodecProperties( "Composite (optional-const + optional)" )(
+    Gen.const( Empty / SegmentCodec.const( "const" ).optional / Int.optional ),
+    ( Gen.option( () ), Gen.option( arbitrary[Int] ) ).tupled
+  )
+
   case class W( v: String )
   val WS: SegmentCodec[W] = String.imap( W( _ ) )( _.v )
   val genW: Gen[W]        = nonEmptyString.map( W( _ ) )

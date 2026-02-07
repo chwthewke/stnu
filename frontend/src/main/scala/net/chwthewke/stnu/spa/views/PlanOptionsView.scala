@@ -26,7 +26,7 @@ import spa.plan.ExtractionOption
 import spa.plan.ExtractionOptions
 import spa.plan.LogisticsOption
 import spa.plan.LogisticsOptions
-import spa.plan.OptionsTab
+import spa.plan.SidePanel
 import spa.plan.PlanModel
 import spa.plan.PlanMsg
 import spa.plan.PowerOption
@@ -39,19 +39,13 @@ object PlanOptionsView:
   val b: Bulma    = Bulma
   val p: Phosphor = Phosphor
 
-  def collapsedOptionsPanel( model: PlanModel ): Html[PlanMsg] =
-    Html.div(
-      Html.style( CSS.position( "absolute" ) )
-    )(
-      Html.a( b.button + b.isInfo, Html.href := model.locationToOpenOptions.toInternalLocation )(
-        Html.text( "Options" ),
-        nbsp,
-        Html.i( p.regular.arrowsOut )()
-      )
+  def optionsButton( model: PlanModel ): Html[Nothing] =
+    Html.a( b.button + b.isInfo, Html.href := model.locationToOpenOptions.toInternalLocation )(
+      Html.span( b.iconText )( Html.span( "Options" ), Html.span( b.icon )( Html.i( p.regular.arrowsOut )() ) )
     )
 
   def optionsPanel( env: Env, model: PlanModel ): Html[PlanMsg] =
-    Html.div( b.panel + b.mt2 + b.isInfo )(
+    Html.div( b.panel + b.isInfo )(
       Html.div( b.panelHeading + b.p2, Html.style( CSS.display( "flex" ) ) )(
         Html.span( Html.style( CSS.flexGrow( "1" ) ) )( "Options" ),
         Html.a( b.hasTextInfoDark, Html.href := model.locationToCloseOptions.toInternalLocation )(
@@ -59,28 +53,30 @@ object PlanOptionsView:
         )
       ) ::
         Html.p( b.panelTabs )(
-          OptionsTab.values.toList
+          SidePanel.values
+            .filter( _.hasOptions )
+            .toList
             .map( option =>
               Html.a(
-                Option.when[Attr[Nothing]]( option == model.ui.optionsTab )( b.isActive ),
+                Option.when[Attr[Nothing]]( option == model.ui.hasOptions )( b.isActive ),
                 Html.href := model.locationToOpenOption( option ).toInternalLocation
               )( option.description )
             )
         )
         :: Option
-          .when( model.ui.optionsTab == OptionsTab.ResourceNodes )( resourceNodesTab( env, model.resourceOptions ) )
+          .when( model.ui.hasOptions == SidePanel.ResourceNodes )( resourceNodesTab( env, model.resourceOptions ) )
           .combineAll
         ++: Option
-          .when( model.ui.optionsTab == OptionsTab.ResourcePrefs )( resourcePrefsTab( env, model.extractionOptions ) )
+          .when( model.ui.hasOptions == SidePanel.ResourcePrefs )( resourcePrefsTab( env, model.extractionOptions ) )
           .combineAll
         ++: Option
-          .when( model.ui.optionsTab == OptionsTab.Logistics )( logisticsPrefsTab( env, model.logisticsOptions ) )
+          .when( model.ui.hasOptions == SidePanel.Logistics )( logisticsPrefsTab( env, model.logisticsOptions ) )
           .combineAll
         ++: Option
-          .when( model.ui.optionsTab == OptionsTab.Recipes )( recipePrefsTab( env, model.recipeOptions ) )
+          .when( model.ui.hasOptions == SidePanel.Recipes )( recipePrefsTab( env, model.recipeOptions ) )
           .combineAll
         ++: Option
-          .when( model.ui.optionsTab == OptionsTab.Power )( powerPrefsTab( env, model.powerOptions ) )
+          .when( model.ui.hasOptions == SidePanel.Power )( powerPrefsTab( env, model.powerOptions ) )
           .combineAll
     )
 

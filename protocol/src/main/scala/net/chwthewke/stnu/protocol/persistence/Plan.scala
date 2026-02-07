@@ -12,5 +12,6 @@ case class Plan(
     logisticsOptions: LogisticsOptions,
     powerOptions: PowerOptions,
     requestSelection: RequestSelection,
+    flows: Flows,
     productionUi: ProductionUi
 ) derives ConfiguredCodec

@@ -15,7 +15,10 @@ object RenderBulmaClasses:
   ): String =
 
     def classLine( className: String ): String =
-      s"""val ${camelCase( className )}: A = cls( "$className" )"""
+      if ( className.contains( '.' ) )
+        s"""val `${camelCase( className )}`: A = cls( "$className" )"""
+      else
+        s"""val ${camelCase( className )}: A = cls( "$className" )"""
 
     def commentLine( level: Int, content: String ): Seq[String] =
       level match
@@ -323,8 +326,11 @@ object RenderBulmaClasses:
         Classes( "layout" )(
           ( 1 to 32 ).map( n => s"is-col-min-$n": Classes )*
         ),
-        Classes( "gaps" )(
+        Classes( "int gaps" )(
           ( 0 to 8 ).flatMap( n => Seq[Classes]( s"is-gap-$n", s"is-column-gap-$n", s"is-row-gap-$n" ) )*
+        ),
+        Classes( "half-int gaps" )(
+          ( 0 to 7 ).flatMap( n => Seq[Classes]( s"is-gap-$n.5", s"is-column-gap-$n.5", s"is-row-gap-$n.5" ) )*
         ),
         Classes( "Fixed Grid" )(
           "fixed-grid",

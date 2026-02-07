@@ -103,12 +103,12 @@ object MainModel:
         location match
           case LocationModel.Browse =>
             ( model.browsePage.restore.some, none, Cmd.None )
-          case LocationModel.Plan( options, None ) =>
-            ( none, model.planPage.setOptionsTab( options ).restore.some, Cmd.None )
-          case LocationModel.Plan( options, Some( id ) ) =>
+          case LocationModel.Plan( options, None, organizer ) =>
+            ( none, model.planPage.setTab( options, organizer ).restore.some, Cmd.None )
+          case LocationModel.Plan( options, Some( id ), organizer ) =>
             (
               none,
-              model.planPage.setOptionsTab( options ).restore.some,
+              model.planPage.setTab( options, organizer ).restore.some,
               model.planPage.loadPlan( model.http, id ).map( Msg.PlanMessage( _ ) )
             )
           case LocationModel.Library =>

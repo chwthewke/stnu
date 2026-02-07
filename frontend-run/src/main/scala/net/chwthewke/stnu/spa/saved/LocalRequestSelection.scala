@@ -5,26 +5,23 @@ package saved
 import cats.syntax.all.*
 import io.circe.derivation.ConfiguredDecoder
 import io.circe.derivation.ConfiguredEncoder
-import scala.collection.immutable.SortedMap
 
 import model.Item
-import spa.plan.RequestSelectionModel
+import spa.plan.RequestsModel
 
 object LocalRequestSelection:
   case class Saved(
-      items: SortedMap[ClassName[Item], Double]
+      items: List[( Item, Option[String] )],
+      search: Option[String]
   ) derives ConfiguredEncoder
 
   object Saved:
-    def apply( requestSelection: RequestSelectionModel ): Saved =
-      Saved( requestSelection.requestedAmounts )
+    def apply( requests: RequestsModel ): Saved =
+      Saved( requests.requestAmountEditors.map( _.map( fromInputModel ) ), fromSearchQuery( requests.search ) )
 
   case class Loaded(
-      items: SortedMap[ClassName[Item], Double]
+      items: List[( Item, Option[String] )],
+      search: Option[String]
   ) derives ConfiguredDecoder:
-    def toRequestSelection: RequestSelectionModel =
-      RequestSelectionModel(
-        items,
-        SearchQuery.init,
-        none
-      )
+    def toRequests: RequestsModel =
+      RequestsModel( items.map( _.map( toInputModel ) ), toSearchQuery( search ) )

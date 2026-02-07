@@ -30,7 +30,7 @@ object LibraryView:
   )
 
   def confirmDeleteModal( plan: PlanSummary ): Html[LibraryMsg] =
-    CardModal(
+    Modal.card(
       Html.text( "Confirm delete?" ),
       LibraryMsg.CloseDeletePlan
     )(
@@ -65,7 +65,9 @@ object LibraryView:
           plans.toList.map( plan =>
             Html.tr(
               Html.td(
-                Html.a( Html.href := LocationModel.Plan( planUi.options, plan.planId.some ).toInternalLocation )(
+                Html.a(
+                  Html.href := LocationModel.Plan( planUi.options, plan.planId.some ).toInternalLocation
+                )(
                   plan.name.show
                 )
               ),

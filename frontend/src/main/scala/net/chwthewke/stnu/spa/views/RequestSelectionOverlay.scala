@@ -21,7 +21,7 @@ import spa.css.Bulma
 import spa.css.Phosphor
 import spa.plan.PlanModel
 import spa.plan.PlanMsg
-import spa.plan.RequestSelectionAction
+import spa.plan.RequestsAction
 
 object RequestSelectionOverlay:
   val b: Bulma    = Bulma
@@ -78,7 +78,7 @@ object RequestSelectionOverlay:
         Html.div( Html.style( CSS.display( "flex" ) ) )(
           Html.div( b.control )(
             Html.button(
-              b.button + b.isDanger + b.isMedium,
+              b.button + b.isMedium,
               Html.onClick( PlanMsg.ToggleRequestSelection( enable = false ) )
             )(
               Html.i( p.bold.x )()
@@ -87,10 +87,10 @@ object RequestSelectionOverlay:
           nbsp,
           Html.div( Html.style( CSS.flexGrow( "1" ) ) )(
             WordsSearch(
-              model.requestSelection.search,
-              value => RequestSelectionAction.SearchInput( value ),
-              RequestSelectionAction.SearchReset
-            ).map( PlanMsg.RequestSelection( _ ) )
+              model.requests.search,
+              value => RequestsAction.SearchInput( value ),
+              RequestsAction.SearchReset
+            ).map( PlanMsg.Requests( _ ) )
           )
         ),
         Html
@@ -98,23 +98,35 @@ object RequestSelectionOverlay:
             itemsByTier
               .foldMap( _.toNonEmptyList.toList )
               .fproduct: item =>
-                model.requestSelection.search.terms.matches[Id]( item.displayName )
+                model.requests.search.terms.matches[Id]( item.displayName )
                   && feasibleItems.contains( item.className )
               .map:
                 case ( item, active ) =>
+                  val selected      = model.requests.requestedItems.contains( item.className )
                   val buttonClasses = if ( active ) b.button + b.isLight else b.button + b.isDark + b.isStatic
                   Html
                     .button(
                       buttonClasses,
                       Html.styles( CSS.display( "inline-block" ), CSS.padding( "0.375rem 0.375rem 0 0.375rem" ) ),
-                      Html.onClick( RequestSelectionAction.RequestItem( item.className ) )
+                      Html.onClick( RequestsAction.RequestItem( item ) )
                     )(
                       icon
                         .withSize( b.is32x32 )
                         .withDropShadow( stdDev = "2px", color = "black" )
-                        .item( env, item )
+                        .item( env, item ),
+                      Option.when( selected )(
+                        Html.i(
+                          b.hasTextSuccess + p.fill.checkFat,
+                          Html.styles(
+                            CSS.position( "absolute" ),
+                            CSS.right( "0px" ),
+                            CSS.bottom( "0px" ),
+                            CSS.zIndex( "10" )
+                          )
+                        )()
+                      )
                     )
           )
-          .map( PlanMsg.RequestSelection( _ ) )
+          .map( PlanMsg.Requests( _ ) )
       )
     )
