@@ -7,4 +7,4 @@ import cats.effect.IOApp
 
 object Main extends IOApp:
   override def run( args: List[String] ): IO[ExitCode] =
-    AppServer.resource[IO].use( _ => IO.pure( ExitCode.Success ) )
+    AppServer.resource[IO]( args ).use( _ => IO.pure( ExitCode.Success ) )

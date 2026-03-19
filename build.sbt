@@ -81,7 +81,7 @@ val `stnu-assets`: Project = project
 
 val `stnu-protocol-cross`: CrossProject =
   crossProject( JSPlatform, JVMPlatform )
-    .crossType( CrossType.Pure )
+    .crossType( CrossType.Full )
     .in( file( "protocol" ) )
     .enablePlugins( Scalac )
     .settings( sharedSettings )
@@ -107,13 +107,21 @@ val `stnu-persistence`: Project =
     .settings( doobie, doobieCirce, flyway, postgresql, pureconfig )
     .dependsOn( `stnu-protocol-jvm` )
 
+val `stnu-persistence-fs`: Project =
+  project
+    .in( file( "persistence-fs" ) )
+    .settings( sharedSettings )
+    .enablePlugins( Scalac )
+    .settings( pureconfig, pureconfigFs2, scodec )
+    .dependsOn( `stnu-protocol-jvm` )
+
 val `stnu-backend`: Project = project
   .in( file( "backend" ) )
   .enablePlugins( Scalac )
   .enablePlugins( BuildInfo )
   .settings( buildInfoPackage := "net.chwthewke.stnu.server" )
   .settings( sharedSettings )
-  .dependsOn( `stnu-assets`, `stnu-protocol-jvm`, `stnu-persistence` )
+  .dependsOn( `stnu-assets`, `stnu-protocol-jvm`, `stnu-persistence`, `stnu-persistence-fs` )
   .settings(
     circeParser,
     http4sCore,
@@ -248,6 +256,7 @@ val `stnu-jvm`: Project =
       `stnu-tools`,
       `stnu-assets`,
       `stnu-persistence`,
+      `stnu-persistence-fs`,
       `stnu-backend`,
       `stnu-laws`,
       `stnu-tests`
@@ -264,6 +273,7 @@ val stnu: Project =
       `stnu-assets`,
       `stnu-protocol`,
       `stnu-persistence`,
+      `stnu-persistence-fs`,
       `stnu-backend`,
       `stnu-backend-app`,
       `stnu-backend-run`,

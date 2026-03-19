@@ -41,6 +41,13 @@ object Dependencies extends AutoPlugin {
     val fs2IO: Deps        = libraryDependencies += "co.fs2"    %%% "fs2-io"              % "3.12.2"
     val fs2DataCirce: Deps = libraryDependencies += "org.gnieh" %%% "fs2-data-json-circe" % "1.11.2"
 
+    val scodec: Deps = libraryDependencies ++= Seq(
+      "org.scodec" %%% "scodec-bits"   % "1.2.4",
+      "org.scodec" %%% "scodec-core"   % "2.3.3",
+      "org.scodec" %%% "scodec-cats"   % "1.2.0",
+      "org.scodec" %%% "scodec-stream" % "3.0.2"
+    )
+
     val monocle: Deps = libraryDependencies ++= Seq(
       "dev.optics" %%% "monocle-core"  % "3.3.0",
       "dev.optics" %%% "monocle-macro" % "3.3.0"

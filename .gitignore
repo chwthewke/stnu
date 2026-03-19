@@ -7,6 +7,7 @@ target/
 .idea
 .idea_modules
 .project
+.run/
 .classpath
 .settings
 .scalafmt.conf

@@ -8,6 +8,7 @@ import cats.effect.Deferred
 import cats.effect.Resource
 import cats.effect.kernel.DeferredSource
 import cats.syntax.all.*
+import fs2.io.file.Path
 import fs2.io.net.Network
 import java.time.temporal.ChronoUnit
 import org.http4s.HttpRoutes
@@ -18,6 +19,8 @@ import pureconfig.module.catseffect.syntax.*
 import scala.concurrent.duration.*
 
 import model.ModelIndex
+import net.chwthewke.stnu.persistence.FsPlans
+import net.chwthewke.stnu.persistence.PlansPersistenceApi
 import persistence.Plans
 import protocol.game.FullModel
 import server.middleware.Cors
@@ -61,14 +64,25 @@ object AppServer:
       modelsNev <- models.toNev.liftTo[F]( Error( "No model was loaded - index empty" ) )
     yield ( modelIndex, modelsNev )
 
-  def resource[F[_]: Async]: Resource[F, Unit] =
+  private def storage[F[_]: Async](
+      args: List[String],
+      config: persistence.Config
+  ): Resource[F, PlansPersistenceApi[F]] =
+    OptionT
+      .fromOption[Resource[F, *]]( args.headOption )
+      .cataF(
+        persistence.Resources.managedTransactor( config ).map( Plans( _ ) ),
+        dir => Resource.eval( FsPlans.init[F]( Path( dir ) ) )
+      )
+
+  def resource[F[_]: Async]( args: List[String] ): Resource[F, Unit] =
     for
       config                 <- Resource.eval( ConfigSource.default.loadF[F, AppConfig]() )
       lastModifiedMiddleware <- lastModifiedMiddleware[F]
       shutdown               <- Resource.eval( Deferred[F, Unit] )
       ( modelIndex, models ) <- Resource.eval( loadModels[F] )
       modelHash              <- Resource.eval( assets.loadModelHash[F] )
-      transactor             <- persistence.Resources.managedTransactor( config.database )
+      plans                  <- storage( args, config.database )
       server                 <- new AppServer(
                   config.server,
                   Routes(
@@ -76,7 +90,7 @@ object AppServer:
                     modelHash,
                     ModelService( modelIndex, models ),
                     SolverService( models.toVector.map( _.game ) ),
-                    PlansService( Plans( transactor ) ),
+                    PlansService( plans ),
                     Cors[F],
                     LoggingMiddleware[F]( config.logging ),
                     lastModifiedMiddleware,
