@@ -10,6 +10,7 @@ enum FlowAction:
   case StartSplitSrcDest( pos: SrcDestPos )
   case SplitSrcDest( pos: SrcDestPos, splitType: SplitType )
   case SplitEqualSetCount( count: Int )
+  case SplitByMachineSetCount( count: Int )
   case StartMergeSrcDest( pos: SrcDestPos )
   case MergeSrcDest( pos: SrcDestPos, mergeType: MergeType )
   case AbortScrDestOp
@@ -17,6 +18,8 @@ enum FlowAction:
 enum SplitType:
   case Even
   case Equal( default: Option[Int] )
+  case EqualFixed( default: Option[Int] )
+  case MachineCount( counts: Option[Int] )
   case Remainder
   case Max
   case MaxAll
@@ -26,6 +29,8 @@ enum SplitType:
     this match
       case Even              => "Even"
       case Equal( _ )        => "Equal"
+      case EqualFixed( _ )   => "EqualFixed"
+      case MachineCount( _ ) => "MachineCount"
       case Remainder         => "Remainder"
       case Max               => "Max"
       case MaxAll            => "MaxAll"

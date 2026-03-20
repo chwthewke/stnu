@@ -407,13 +407,13 @@ object FlowsView:
         icon( preview )
       )
 
-  def intActionParamSelector( current: Int ): Html[FlowAction] =
+  def intActionParamSelector( param: IntActionParam ): Html[FlowAction] =
     Html.div( b.dropdown + b.isHoverable )(
       Html.div( b.dropdownTrigger )(
         Html.span( b.buttons + b.hasAddons )(
           Html.span(),
           Html.button( b.button )(
-            Html.span( current.toString ),
+            Html.span( param.current.toString ),
             Html.span( b.icon + b.isSmall + b.hasTextLink )(
               Html.i( p.regular.caretDown )()
             )
@@ -422,10 +422,10 @@ object FlowsView:
       ),
       Html.div( b.dropdownMenu )(
         Html.div( b.dropdownContent )(
-          ( 2 to 10 ).toList.map: n =>
-            Html.div( b.dropdownItem, Html.onClick( FlowAction.SplitEqualSetCount( n ) ) )(
+          ( param.min to param.max ).toList.map: n =>
+            Html.div( b.dropdownItem, Html.onClick( param.action( n ) ) )(
               Html.span( n.toString ),
-              Option.when( current == n )(
+              Option.when( param.current == n )(
                 Html.span( b.icon + b.isSmall + b.hasTextSuccess )(
                   Html.i( p.fill.checkFat )()
                 )
@@ -435,15 +435,22 @@ object FlowsView:
       )
     )
 
+  case class IntActionParam(
+      current: Int,
+      min: Int,
+      max: Int,
+      action: Int => FlowAction
+  )
+
   private def splitActionButton(
       flows: Flows,
       splitType: SplitType,
       pos: SrcDestPos,
-      count: Option[Int]
+      actionParam: Option[IntActionParam]
   )( text: String, classes: Classes, help: String ): Html[FlowAction] =
     actionButton( text, classes, help )(
       FlowAction.SplitSrcDest( pos, splitType ),
-      count.map( intActionParamSelector ),
+      actionParam.map( intActionParamSelector ),
       previewResult(
         PreviewResultIcon.SuccessUnlessOverflow,
         flows.prod.env,
@@ -451,6 +458,11 @@ object FlowsView:
         flows.previewSplit( pos, splitType )
       )
     )
+
+  private def equalSplitActionParam( current: Int ): IntActionParam =
+    IntActionParam( current, 2, 10, FlowAction.SplitEqualSetCount( _ ) )
+  private def byMachineActionParam( current: Int, max: Int ): IntActionParam =
+    IntActionParam( current, 1, max, FlowAction.SplitByMachineSetCount( _ ) )
 
   private def splitSrcDestModal(
       flows: Flows,
@@ -467,10 +479,36 @@ object FlowsView:
             s"spread the ${Numbers.showDouble3( action.srcDest.amount )} " +
               s"${action.pos.item.displayName} with equal headroom/overflow"
           ),
-          splitActionButton( flows, action.equal, action.pos, action.equalSplitCount )(
+          splitActionButton(
+            flows,
+            action.equal,
+            action.pos,
+            action.equalSplitCount.map( equalSplitActionParam )
+          )(
             "Equally",
             b.isInfo,
             s"spread the ${Numbers.showDouble3( action.srcDest.amount )} ${action.pos.item.displayName} equally"
+          ),
+          splitActionButton(
+            flows,
+            action.equalFixed,
+            action.pos,
+            action.equalSplitCount.map( equalSplitActionParam )
+          )(
+            "Equally (fixed)",
+            b.isInfo,
+            s"spread the ${Numbers.showDouble3( action.srcDest.amount )} ${action.pos.item.displayName} " +
+              s"almost equally (without changing the number and clock speed of machines)"
+          ),
+          splitActionButton(
+            flows,
+            action.byMachineCount,
+            action.pos,
+            action.machineCount.map( byMachineActionParam.tupled )
+          )(
+            "By machine count",
+            b.isInfo,
+            s"split a number of machines, keeping the same clock speed."
           ),
           splitActionButton( flows, action.remainder, action.pos, none )(
             "Remainder",

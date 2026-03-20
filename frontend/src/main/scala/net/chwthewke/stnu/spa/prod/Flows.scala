@@ -103,6 +103,7 @@ case class Flows(
       case FlowAction.StartMergeSrcDest( pos )         => copy( ui = ui.setActionModal( mergeActionModal( pos ) ) )
       case FlowAction.MoveSrcDest( pos, amount, bump ) => move( pos, amount, bump )
       case FlowAction.SplitEqualSetCount( count )      => setSplitEqualCount( count )
+      case FlowAction.SplitByMachineSetCount( count )  => setSplitByMachineCount( count )
       case FlowAction.SplitSrcDest( pos, splitType )   => split( pos, splitType ).copy( ui = ui.closeActionModal )
       case FlowAction.MergeSrcDest( pos, mergeType )   => merge( pos, mergeType ).copy( ui = ui.closeActionModal )
 
@@ -184,6 +185,13 @@ case class Flows(
         case sa: ActionModal.SplitAction => sa.copy( equalSplitCount = count.some )
         case other                       => other
 
+  private def setSplitByMachineCount( count: Int ): Flows =
+    this
+      .focus( _.ui.actionModal.some )
+      .modify:
+        case sa: ActionModal.SplitAction => sa.copy( machineCount = sa.machineCount.map( t => ( count, t._2 ) ) )
+        case other                       => other
+
   private def previewEvenSplit(
       from: Countable[Double, Split[SrcDest]],
       transportCount: Int,
@@ -224,6 +232,22 @@ case class Flows(
       case SplitType.Equal( countOpt ) =>
         countOpt.map: count =>
           List.fill( count )( 1d / count )
+      case SplitType.EqualFixed( countOpt ) =>
+        ( pos.getSplit( itemFlows ), countOpt ).flatMapN: ( split, count ) =>
+          split.item.value.process.map: process =>
+            val machineCount: Int = process.machineCount
+            List
+              .fill( count )( machineCount / count )
+              .zipAll( List.fill( machineCount % count )( 1 ), 0, 0 )
+              .map { case ( q, r ) => q + r }
+              .filter( _ > 0 )
+              .map { c => c.toDouble / machineCount }
+      case SplitType.MachineCount( countsOpt ) =>
+        ( pos.getSplit( itemFlows ), countsOpt ).flatMapN: ( split, count ) =>
+          split.item.value.process.map: process =>
+            val machineCount: Int = process.machineCount
+            val fraction: Double  = count.toDouble / machineCount
+            List( fraction, 1d - fraction )
       case SplitType.Remainder =>
         ( pos.getSplit( itemFlows ), pos.getLocal( itemFlows ) ).flatMapN: ( from, in ) =>
           def amount( direction: FlowEnd ): Double = in.get( direction ).foldMap( _.amount )

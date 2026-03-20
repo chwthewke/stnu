@@ -2,6 +2,8 @@ package net.chwthewke.stnu
 package spa
 package prod
 
+import cats.syntax.all.*
+
 import data.Countable
 import model.Transport
 
@@ -13,16 +15,19 @@ object ActionModal:
       srcDest: Countable[Double, Split[SrcDest]],
       local: ItemTransport,
       oppositePeers: List[Countable[Double, Split[SrcDest]]],
-      equalSplitCount: Option[Int]
+      equalSplitCount: Option[Int],
+      machineCount: Option[( Int, Int )] // curr, max
   ) extends ActionModal:
     def transport: Transport = local.transport.item
 
-    def equal: SplitType                   = SplitType.Equal( equalSplitCount )
-    def even: SplitType                    = SplitType.Even
-    def remainder: SplitType               = SplitType.Remainder
-    def max: SplitType                     = SplitType.Max
-    def maxAll: SplitType                  = SplitType.MaxAll
-    def opposite: List[SplitType.Opposite] = oppositePeers.map( SplitType.Opposite( _ ) )
+    def equal: SplitType                       = SplitType.Equal( equalSplitCount )
+    def equalFixed: SplitType                  = SplitType.EqualFixed( equalSplitCount )
+    def byMachineCount: SplitType.MachineCount = SplitType.MachineCount( machineCount._1F )
+    def even: SplitType                        = SplitType.Even
+    def remainder: SplitType                   = SplitType.Remainder
+    def max: SplitType                         = SplitType.Max
+    def maxAll: SplitType                      = SplitType.MaxAll
+    def opposite: List[SplitType.Opposite]     = oppositePeers.map( SplitType.Opposite( _ ) )
 
   // TODO could move some logic from Flows to here (from both *actionModal() & previewSplit/previewMerge)
   // also there might be some duplication in FlowViews.*srcDestModal
@@ -33,14 +38,16 @@ object ActionModal:
         local: ItemTransport,
         oppositePeers: List[Countable[Double, Split[SrcDest]]]
     ): SplitAction =
-      val amount = srcDest.amount
-      val unit   = local.transport.item.perMinute
+      val amount: Double    = srcDest.amount
+      val unit: Int         = local.transport.item.perMinute
+      val machineCount: Int = srcDest.item.value.process.foldMap( _.machineCount )
       SplitAction(
         pos,
         srcDest,
         local,
         oppositePeers,
-        Option.when( amount > unit )( ( amount / unit.toDouble ).ceil.toInt )
+        Option.when( amount > unit )( ( amount / unit.toDouble ).ceil.toInt ),
+        Option.when( machineCount > 1 )( ( 1, machineCount / 2 ) )
       )
 
   case class MergeAction(
