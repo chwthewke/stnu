@@ -21,6 +21,7 @@ import service.solver.SolverService
 
 class Routes[F[_]: Sync](
     private val serverConfig: ServerConfig,
+    private val modelHash: String,
     private val modelApi: ModelService[F],
     private val solverApi: SolverService[F],
     private val plansApi: PlansService[F],
@@ -45,7 +46,7 @@ class Routes[F[_]: Sync](
       Ok( Index.page )
     case GET -> Root / "js" / "launcher.js" =>
       Ok(
-        Index.launcherScript( serverConfig.frontendFlags ),
+        Index.launcherScript( serverConfig.frontendFlags + ( "cacheId" -> modelHash ) ),
         `Content-Type`( MediaType.application.javascript, Charset.`UTF-8` )
       )
 
@@ -53,12 +54,14 @@ class Routes[F[_]: Sync](
     loggingMiddleware(
       systemRoutes
         <+> corsMiddleware( solverApi.routes <+> plansApi.routes )
-        <+> lastModifiedMiddleware( pageRoutes <+> corsMiddleware( modelApi.routes <+> staticRoutes ) )
+        <+> pageRoutes
+        <+> lastModifiedMiddleware( corsMiddleware( modelApi.routes <+> staticRoutes ) )
     )
 
 object Routes:
   def apply[F[_]: Sync](
       serverConfig: ServerConfig,
+      modelHash: String,
       modelApi: ModelService[F],
       solverApi: SolverService[F],
       plansApi: PlansService[F],
@@ -69,6 +72,7 @@ object Routes:
   ): HttpRoutes[F] =
     new Routes(
       serverConfig,
+      modelHash,
       modelApi,
       solverApi,
       plansApi,

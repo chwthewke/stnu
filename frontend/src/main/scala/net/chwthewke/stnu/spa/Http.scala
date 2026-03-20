@@ -2,10 +2,11 @@ package net.chwthewke.stnu
 package spa
 
 import cats.data.Kleisli
+import cats.data.ValidatedNel
 import cats.effect.Async
-import cats.effect.Resource
+import cats.effect.MonadCancelThrow
 import cats.syntax.all.*
-import cats.~>
+import org.http4s.Request
 import org.http4s.Uri
 import org.http4s.client.Client
 import org.http4s.client.Middleware
@@ -27,14 +28,14 @@ import spa.client.ModelClient
 import spa.client.PlansClient
 import spa.client.SolverClient
 
-class Http[F[_]: Async]( val backend: Uri, private val client: Client[F] ) extends Links:
+class Http[F[_]: Async]( private val flags: Http.Flags, private val client: Client[F] ) extends Links:
 
-  private val use: Kleisli[F, Client[F], *] ~> F =
-    Resource.pure( client ).useKleisliK
+  def backend: Uri = flags.backend
 
-  private val modelApi: ModelApi[F]   = new ModelClient[F].mapK( use )
-  private val solverApi: SolverApi[F] = new SolverClient[F].mapK( use )
-  private val plansApi: PlansApi[F]   = new PlansClient[F].mapK( use )
+  private val modelApi: ModelApi[F] =
+    new ModelClient[F].mapK( Kleisli.applyK( Http.cacheIdMiddleware( flags.cacheId )( client ) ) )
+  private val solverApi: SolverApi[F] = new SolverClient[F].mapK( Kleisli.applyK( client ) )
+  private val plansApi: PlansApi[F]   = new PlansClient[F].mapK( Kleisli.applyK( client ) )
 
   private def logError( e: Throwable ): F[Unit] =
     Async[F].delay( console.error( e.getMessage ) )
@@ -64,9 +65,26 @@ class Http[F[_]: Async]( val backend: Uri, private val client: Client[F] ) exten
     run( plansApi.deletePlan( planId ) )
 
 object Http:
-  def init[F[_]: Async]( backend: Uri ): Http[F] =
-    new Http( backend, middleware[F]( backend )( FetchClientBuilder[F].create ) )
+  case class Flags( backend: Uri, cacheId: String )
+  object Flags:
+    def of( map: Map[String, String] ): Either[String, Flags] =
+      def get( k: String ): ValidatedNel[String, String] = map.get( k ).toValidNel( s"Missing flag '$k'" )
+      (
+        get( "backend" ).andThen( Uri.fromString( _ ).leftMap( _.message ).toValidatedNel ),
+        get( "cacheId" )
+      ).mapN( Flags( _, _ ) )
+        .leftMap( _.mkString_( ", " ) )
+        .toEither
+
+  def init[F[_]: Async]( flags: Flags ): Http[F] =
+    new Http( flags, middleware[F]( flags.backend )( FetchClientBuilder[F].create ) )
+
+  case class ModRequest[F[_]: MonadCancelThrow]( f: Request[F] => Request[F] ) extends ( Client[F] => Client[F] ):
+    override def apply( client: Client[F] ): Client[F] = Client[F]( req => client.run( f( req ) ) )
 
   private def middleware[F[_]: Async]( backend: Uri ): Middleware[F] = client =>
     val slashed: Uri = backend.withPath( backend.path.addEndsWithSlash )
     Client[F]( req => client.run( req.withUri( slashed.resolve( req.uri ) ) ) )
+
+  private def cacheIdMiddleware[F[_]: MonadCancelThrow]( cacheId: String ): Middleware[F] =
+    ModRequest( req => req.withUri( req.uri.withQueryParam( "v", cacheId ) ) )

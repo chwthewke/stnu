@@ -4,7 +4,6 @@ package spa
 import cats.effect.Async
 import cats.effect.Sync
 import cats.syntax.all.*
-import org.http4s.Uri
 import org.scalajs.dom
 import tyrian.Cmd
 
@@ -34,10 +33,8 @@ object MainModel:
   def error[F[_]]( message: String ): ( MainModel[F], Cmd[F, Nothing] ) = ( Error( message ), Cmd.None )
 
   def init[F[_]: Async]( flags: Map[String, String] ): ( MainModel[F], Cmd[F, Msg] ) =
-    flags
-      .get( "backend" )
-      .toRight( "Missing flag 'backend'" )
-      .flatMap( Uri.fromString( _ ).leftMap( _.message ) )
+    Http.Flags
+      .of( flags )
       .map( Http.init[F]( _ ) )
       .fold(
         error,

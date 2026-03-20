@@ -82,6 +82,10 @@
   - https://www.npmjs.com/package/javascript-lp-solver
   - https://github.com/IanManske/YALPS
   - https://www.npmjs.com/package/glpk.js
+- ~~cache-busting~~
+- recipe row: estimate building footprint
+  - with options for clearance/etc.
+  - simple footprint per (leaf?) group (Dijsktra)
 
 #### fixes
 - ~~Requests panel looks like ass~~

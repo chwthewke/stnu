@@ -67,11 +67,13 @@ object AppServer:
       lastModifiedMiddleware <- lastModifiedMiddleware[F]
       shutdown               <- Resource.eval( Deferred[F, Unit] )
       ( modelIndex, models ) <- Resource.eval( loadModels[F] )
+      modelHash              <- Resource.eval( assets.loadModelHash[F] )
       transactor             <- persistence.Resources.managedTransactor( config.database )
       server                 <- new AppServer(
                   config.server,
                   Routes(
                     config.server,
+                    modelHash,
                     ModelService( modelIndex, models ),
                     SolverService( models.toVector.map( _.game ) ),
                     PlansService( Plans( transactor ) ),

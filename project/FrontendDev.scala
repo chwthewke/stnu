@@ -1,3 +1,4 @@
+import java.util.UUID
 import org.scalajs.sbtplugin.ScalaJSPlugin
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.*
 import sbt.*
@@ -19,11 +20,12 @@ object FrontendDev extends AutoPlugin {
     val importFrom: String = s"./${relPath.toString.replace( '\\', '/' )}/main.js"
 
     val target: File     = targetDir / "launch.js"
+    val cacheId: String        = UUID.randomUUID().toString
     val contents: String =
       s"""// GENERATED FILE, DO NOT EDIT!
          |import { DevTyrianApp } from "$importFrom";
          |
-         |DevTyrianApp.launch("app", { "backend": "http://localhost:7869" })
+         |DevTyrianApp.launch("app", { "backend": "http://localhost:7869", "cacheId": "$cacheId" })
          |""".stripMargin
 
     val noModifications =
