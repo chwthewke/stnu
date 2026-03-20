@@ -83,7 +83,7 @@
   - https://github.com/IanManske/YALPS
   - https://www.npmjs.com/package/glpk.js
 - ~~cache-busting~~
-- recipe row: estimate building footprint
+- ~~recipe row: estimate building footprint~~
   - with options for clearance/etc.
   - simple footprint per (leaf?) group (Dijsktra)
 

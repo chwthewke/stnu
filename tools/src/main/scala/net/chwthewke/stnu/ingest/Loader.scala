@@ -6,13 +6,12 @@ import cats.effect.Resource
 import cats.effect.std.AtomicCell
 import cats.syntax.all.*
 import fs2.io.readClassLoaderResource
-import io.circe.Decoder
 import io.circe.Json
 import pureconfig.ConfigSource
 import pureconfig.module.catseffect.syntax.*
 
+import game.ExtraGameDataConfig
 import game.GameData
-import game.MapConfig
 import game.ModelInit
 import model.Model
 
@@ -20,7 +19,7 @@ class Loader[F[_]: Async]( val version: DataVersionStorage )(
     private val docsCell: AtomicCell[F, Option[Json]],
     private val gameDataCell: AtomicCell[F, Option[GameData]],
     private val modelCell: AtomicCell[F, Option[Model]],
-    private val mapConfigCell: AtomicCell[F, Option[MapConfig]]
+    private val mapConfigCell: AtomicCell[F, Option[ExtraGameDataConfig]]
 ):
   private def getCache[A]( cell: AtomicCell[F, Option[A]] )( read: F[A] ): F[A] =
     cell.evalModify:
@@ -35,9 +34,9 @@ class Loader[F[_]: Async]( val version: DataVersionStorage )(
     getCache( gameDataCell ):
       docs.flatMap( _.as[Vector[GameData]].map( _.combineAll ).liftTo[F] )
 
-  val mapConfig: F[MapConfig] =
+  val mapConfig: F[ExtraGameDataConfig] =
     getCache( mapConfigCell ):
-      Loader.mapConf( version ).loadF[F, MapConfig]()
+      Loader.mapConf( version ).loadF[F, ExtraGameDataConfig]()
 
   def model: F[Model] =
     getCache( modelCell ):
@@ -52,7 +51,7 @@ object Loader:
         AtomicCell[F].of( docs ),
         AtomicCell[F].of( none[GameData] ),
         AtomicCell[F].of( none[Model] ),
-        AtomicCell[F].of( none[MapConfig] )
+        AtomicCell[F].of( none[ExtraGameDataConfig] )
       ).mapN( new Loader[F]( version )( _, _, _, _ ) )
 
   private def mapConf( storage: DataVersionStorage ): ConfigSource =

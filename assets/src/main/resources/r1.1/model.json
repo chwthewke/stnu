@@ -116,9 +116,6 @@
           "pureNodes" : 0
         }
       }
-    },
-    "resourceWeights" : {
-      
     }
   },
   "extractedItems" : [
@@ -4321,6 +4318,10 @@
     {
       "className" : "Build_AssemblerMk1_C",
       "displayName" : "Assembler",
+      "footprint" : {
+        "length" : 2000,
+        "width" : 1000
+      },
       "machineType" : "Manufacturer",
       "powerConsumption" : 15.0,
       "powerConsumptionExponent" : 1.321929,
@@ -4329,6 +4330,10 @@
     {
       "className" : "Build_Blender_C",
       "displayName" : "Blender",
+      "footprint" : {
+        "length" : 2400,
+        "width" : 1800
+      },
       "machineType" : "Manufacturer",
       "powerConsumption" : 75.0,
       "powerConsumptionExponent" : 1.321929,
@@ -4337,6 +4342,10 @@
     {
       "className" : "Build_ConstructorMk1_C",
       "displayName" : "Constructor",
+      "footprint" : {
+        "length" : 1600,
+        "width" : 800
+      },
       "machineType" : "Manufacturer",
       "powerConsumption" : 4.0,
       "powerConsumptionExponent" : 1.321929,
@@ -4345,6 +4354,10 @@
     {
       "className" : "Build_Converter_C",
       "displayName" : "Converter",
+      "footprint" : {
+        "length" : 2400,
+        "width" : 1600
+      },
       "machineType" : "VariableManufacturer",
       "powerConsumption" : 0.1,
       "powerConsumptionExponent" : 1.321929,
@@ -4353,6 +4366,10 @@
     {
       "className" : "Build_FoundryMk1_C",
       "displayName" : "Foundry",
+      "footprint" : {
+        "length" : 1600,
+        "width" : 1000
+      },
       "machineType" : "Manufacturer",
       "powerConsumption" : 16.0,
       "powerConsumptionExponent" : 1.321929,
@@ -4361,6 +4378,7 @@
     {
       "className" : "Build_FrackingExtractor_C",
       "displayName" : "Resource Well Extractor",
+      "footprint" : null,
       "machineType" : "Fracking",
       "powerConsumption" : 0.0,
       "powerConsumptionExponent" : 1.321929,
@@ -4369,6 +4387,7 @@
     {
       "className" : "Build_GeneratorBiomass_Automated_C",
       "displayName" : "Biomass Burner",
+      "footprint" : null,
       "machineType" : "PowerGenerator",
       "powerConsumption" : 0.0,
       "powerConsumptionExponent" : 1.6,
@@ -4377,6 +4396,10 @@
     {
       "className" : "Build_GeneratorCoal_C",
       "displayName" : "Coal-Powered Generator",
+      "footprint" : {
+        "length" : 3000,
+        "width" : 1000
+      },
       "machineType" : "PowerGenerator",
       "powerConsumption" : 0.0,
       "powerConsumptionExponent" : 1.6,
@@ -4385,6 +4408,10 @@
     {
       "className" : "Build_GeneratorFuel_C",
       "displayName" : "Fuel-Powered Generator",
+      "footprint" : {
+        "length" : 2400,
+        "width" : 2000
+      },
       "machineType" : "PowerGenerator",
       "powerConsumption" : 0.0,
       "powerConsumptionExponent" : 1.6,
@@ -4393,6 +4420,10 @@
     {
       "className" : "Build_GeneratorNuclear_C",
       "displayName" : "Nuclear Power Plant",
+      "footprint" : {
+        "length" : 4600,
+        "width" : 3600
+      },
       "machineType" : "PowerGenerator",
       "powerConsumption" : 0.0,
       "powerConsumptionExponent" : 1.6,
@@ -4401,6 +4432,10 @@
     {
       "className" : "Build_HadronCollider_C",
       "displayName" : "Particle Accelerator",
+      "footprint" : {
+        "length" : 3200,
+        "width" : 3700
+      },
       "machineType" : "VariableManufacturer",
       "powerConsumption" : 0.1,
       "powerConsumptionExponent" : 1.321929,
@@ -4409,6 +4444,10 @@
     {
       "className" : "Build_ManufacturerMk1_C",
       "displayName" : "Manufacturer",
+      "footprint" : {
+        "length" : 2400,
+        "width" : 1800
+      },
       "machineType" : "Manufacturer",
       "powerConsumption" : 55.0,
       "powerConsumptionExponent" : 1.321929,
@@ -4417,6 +4456,7 @@
     {
       "className" : "Build_MinerMk1_C",
       "displayName" : "Miner Mk.1",
+      "footprint" : null,
       "machineType" : "Miner",
       "powerConsumption" : 5.0,
       "powerConsumptionExponent" : 1.321929,
@@ -4425,6 +4465,7 @@
     {
       "className" : "Build_MinerMk2_C",
       "displayName" : "Miner Mk.2",
+      "footprint" : null,
       "machineType" : "Miner",
       "powerConsumption" : 15.0,
       "powerConsumptionExponent" : 1.321929,
@@ -4433,6 +4474,7 @@
     {
       "className" : "Build_MinerMk3_C",
       "displayName" : "Miner Mk.3",
+      "footprint" : null,
       "machineType" : "Miner",
       "powerConsumption" : 45.0,
       "powerConsumptionExponent" : 1.321929,
@@ -4441,6 +4483,7 @@
     {
       "className" : "Build_OilPump_C",
       "displayName" : "Oil Extractor",
+      "footprint" : null,
       "machineType" : "OilPump",
       "powerConsumption" : 40.0,
       "powerConsumptionExponent" : 1.321929,
@@ -4449,6 +4492,10 @@
     {
       "className" : "Build_OilRefinery_C",
       "displayName" : "Refinery",
+      "footprint" : {
+        "length" : 2800,
+        "width" : 1000
+      },
       "machineType" : "Manufacturer",
       "powerConsumption" : 30.0,
       "powerConsumptionExponent" : 1.321929,
@@ -4457,6 +4504,10 @@
     {
       "className" : "Build_Packager_C",
       "displayName" : "Packager",
+      "footprint" : {
+        "length" : 1600,
+        "width" : 800
+      },
       "machineType" : "Manufacturer",
       "powerConsumption" : 10.0,
       "powerConsumptionExponent" : 1.321929,
@@ -4465,6 +4516,10 @@
     {
       "className" : "Build_QuantumEncoder_C",
       "displayName" : "Quantum Encoder",
+      "footprint" : {
+        "length" : 5600,
+        "width" : 2200
+      },
       "machineType" : "VariableManufacturer",
       "powerConsumption" : 0.1,
       "powerConsumptionExponent" : 1.321929,
@@ -4473,6 +4528,10 @@
     {
       "className" : "Build_SmelterMk1_C",
       "displayName" : "Smelter",
+      "footprint" : {
+        "length" : 1400,
+        "width" : 500
+      },
       "machineType" : "Manufacturer",
       "powerConsumption" : 4.0,
       "powerConsumptionExponent" : 1.321929,
@@ -4481,6 +4540,10 @@
     {
       "className" : "Build_TreeGiftProducer_C",
       "displayName" : "FICSMAS Gift Tree",
+      "footprint" : {
+        "length" : 1200,
+        "width" : 800
+      },
       "machineType" : "FicsmasTree",
       "powerConsumption" : 0.0,
       "powerConsumptionExponent" : 1.0,
@@ -4489,6 +4552,7 @@
     {
       "className" : "Build_WaterPump_C",
       "displayName" : "Water Extractor",
+      "footprint" : null,
       "machineType" : "WaterPump",
       "powerConsumption" : 20.0,
       "powerConsumptionExponent" : 1.321929,

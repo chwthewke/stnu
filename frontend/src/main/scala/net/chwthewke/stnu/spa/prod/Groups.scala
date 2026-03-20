@@ -35,6 +35,18 @@ enum Groups:
     case SubGroups( children ) => children.lastKey + 1
 
   @tailrec
+  final def get( path: Vector[Int] ): Option[Groups] =
+    path.toNev match
+      case None            => this.some
+      case Some( pathNev ) =>
+        this match
+          case Groups.Nil                   => none
+          case Groups.SubGroups( children ) =>
+            children.get( path.head ) match
+              case Some( child ) => child.get( path.tail )
+              case None          => none
+
+  @tailrec
   final def hasSlot( group: Group ): Boolean =
     group.path.toNev match
       case None        => true

@@ -9,12 +9,19 @@ import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto.deriveReader
 
 import model.ExtractorType
+import model.Footprint
 import model.Item
+import model.Machine
 import model.ResourceDistrib
 
-case class MapConfig( resourceNodes: Map[ExtractorType, Map[ClassName[Item], ResourceDistrib]] ) derives Show
+case class ExtraGameDataConfig(
+    resourceNodes: Map[ExtractorType, Map[ClassName[Item], ResourceDistrib]],
+    buildingFootprints: Map[ClassName[Machine], Footprint]
+) derives Show
 
-object MapConfig:
+object ExtraGameDataConfig:
+  private given ConfigReader[Footprint] = deriveReader[Footprint]
+
   private given ConfigReader[ResourceDistrib] =
     ConfigReader[Vector[Int]]
       .emap( counts =>
@@ -37,8 +44,8 @@ object MapConfig:
         .map( _.toMap )
     )
 
-  private given crmca[A: ConfigReader]: ConfigReader[Map[ClassName[Item], A]] =
+  private given crmca[C, A: ConfigReader]: ConfigReader[Map[ClassName[C], A]] =
     ConfigReader[Map[String, A]].map( _.map:
       case ( k, v ) => ( ClassName( k ), v ) )
 
-  given ConfigReader[MapConfig] = deriveReader[MapConfig]
+  given ConfigReader[ExtraGameDataConfig] = deriveReader[ExtraGameDataConfig]

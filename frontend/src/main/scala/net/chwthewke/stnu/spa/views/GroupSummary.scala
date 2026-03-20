@@ -2,11 +2,13 @@ package net.chwthewke.stnu
 package spa
 package views
 
+import cats.Semigroup
 import cats.data.NonEmptyVector
 import cats.syntax.all.*
 import tyrian.Html
 
 import data.Countable
+import model.Footprint
 import model.Item
 import model.Machine
 import model.prod.FlowEnd
@@ -19,10 +21,17 @@ import spa.prod.GroupTransport
 import spa.prod.Groups
 import spa.prod.LocalGroupEnd
 import spa.prod.RemoteGroupEnd
+import spa.prod.footprints
 
 object GroupSummary:
   val b: Bulma    = Bulma
   val p: Phosphor = Phosphor
+
+  def apply( flows: Flows, groups: Groups, group: Group, groupFlows: GroupFlows, flat: Boolean ): Html[Nothing] =
+    Html.div(
+      importExports( flows, groups, group, groupFlows, flat ),
+      machinesSummary( flows, groups, group )
+    )
 
   private def getEndFlows[A]( byEnd: Map[FlowEnd, Map[Item, A]], flowEnd: FlowEnd )(
       f: A => NonEmptyVector[GroupTransport]
@@ -39,13 +48,7 @@ object GroupSummary:
     else
       getEndFlows( groupFlows.flows, flowEnd )( identity )
 
-  def apply( flows: Flows, groups: Groups, group: Group, groupFlows: GroupFlows, flat: Boolean ): Html[Nothing] =
-    Html.div(
-      importExports( flows, groups, group, groupFlows, flat ),
-      machinesSummary( flows, group )
-    )
-
-  def importExports(
+  private def importExports(
       flows: Flows,
       groups: Groups,
       group: Group,
@@ -68,7 +71,7 @@ object GroupSummary:
       )
     )
 
-  def endGroupFlows(
+  private def endGroupFlows(
       flows: Flows,
       groups: Groups,
       groupFlows: GroupFlows,
@@ -82,7 +85,7 @@ object GroupSummary:
             groupTransports( flows, groups, flowEnd, item, transports, flat )
     )
 
-  def groupTransports(
+  private def groupTransports(
       flows: Flows,
       groups: Groups,
       flowEnd: FlowEnd,
@@ -108,7 +111,7 @@ object GroupSummary:
           }
     )
 
-  def groupTransport(
+  private def groupTransport(
       flows: Flows,
       groups: Groups,
       flowEnd: FlowEnd,
@@ -181,31 +184,79 @@ object GroupSummary:
       )
     )
 
-  def machinesSummary( flows: Flows, group: Group ): Html[Nothing] =
-    val machineCounts: List[( Machine, Int )] =
-      flows.endSplits
-        .unorderedFoldMap:
-          _.splits.toVector
-            .collect:
-              case ( splitId, ( fraction, splitGroup ) ) if splitGroup == group =>
-                ( flows.getSplit( splitId ), fraction )
-            .foldMap:
-              case ( split, fraction ) =>
-                split.original.process.foldMap( cr => Map( cr.recipe.producedIn -> cr.times( fraction ).machineCount ) )
-        .toList
-        .sortBy:
-          case ( machine, _ ) => ( machine.tier, machine.displayName )
+  private def getMachineCounts( flows: Flows, group: Group ): List[( Machine, Int )] =
+    flows.endSplits
+      .unorderedFoldMap:
+        _.splits.toVector
+          .collect:
+            case ( splitId, ( fraction, splitGroup ) ) if splitGroup == group =>
+              ( flows.getSplit( splitId ), fraction )
+          .foldMap:
+            case ( split, fraction ) =>
+              split.original.process.foldMap( cr => Map( cr.recipe.producedIn -> cr.times( fraction ).machineCount ) )
+      .toList
+      .sortBy:
+        case ( machine, _ ) => ( machine.tier, machine.displayName )
+
+  private def blockFootprint[B: Semigroup]( wrap: Footprint => B )( machineCounts: List[( Machine, Int )] ): Option[B] =
+    machineCounts
+      .foldMap:
+        case ( machine, count ) =>
+          machine.footprint
+            .flatMap: footprint =>
+              Option.when( count > 0 )( wrap( footprint ).combineN( count ) )
+
+  // NOTE
+  //   - for leaf groups, computes the footprint as if it were a single row of machines
+  //   - for non-leaf groups which have only leaf children, computes the footprint by putting the children's
+  //      rows (plus one row for this group's machines if any) next to each other
+  private def groupFootprint(
+      flows: Flows,
+      groups: Groups,
+      group: Group,
+      machineCounts: List[( Machine, Int )]
+  ): Option[Footprint] =
+    groups
+      .get( group.path )
+      .flatMap:
+        case Groups.Nil =>
+          // leaf group -> row footprint
+          blockFootprint( footprints.Row( _ ) )( machineCounts ).map( _.footprint )
+        case subgroups @ Groups.SubGroups( children ) if subgroups.depth == 2 =>
+          // all children are leaf groups -> floor footprint
+          val byRowMachineCounts: List[List[( Machine, Int )]] =
+            machineCounts ::
+              children.keySet.foldMap( n => List( getMachineCounts( flows, Group( group.path :+ n ) ) ) )
+          byRowMachineCounts
+            .map( mc => blockFootprint( footprints.Row( _ ) )( mc ).map( _.footprint ) )
+            .flattenOption
+            .foldMap( rowFootprint => footprints.Floor( rowFootprint ).some )
+            .map( _.footprint )
+        case _ => none
+
+  private def machinesSummary( flows: Flows, groups: Groups, group: Group ): Html[Nothing] =
+    val machineCounts: List[( Machine, Int )] = getMachineCounts( flows, group )
+
+    val simpleFootprint: Option[Html[Nothing]] =
+      groupFootprint( flows, groups, group, machineCounts )
+        .map: footprint =>
+          Elements.messageCenteredHeader( b.isPrimary, b.hasTextPrimaryDark, Html.text( "Simple footprint" ) )(
+            FootprintElements.text( footprint )
+          )
 
     Html.div( b.hasTextCentered + b.container + b.mb5 )(
       Html.h2( b.title + b.isSize4 + b.hasTextCentered )(
         s"Machines in ${FlowElements.longGroupName( group )}"
       ),
-      Html.div( b.grid + b.isGap8 )(
-        machineCounts.map:
-          case ( machine, count ) =>
-            Html.div( b.cell )(
-              RecipeFrag.numberedIcon( flows.prod.env, Countable( machine, count ), None ),
-              Html.span( b.ml2 )( machine.displayName )
-            )
-      )
+      Html.div( b.block )(
+        Html.div( b.grid + b.isGap8 )(
+          machineCounts.map:
+            case ( machine, count ) =>
+              Html.div( b.cell )(
+                RecipeFrag.numberedIcon( flows.prod.env, Countable( machine, count ), None ),
+                Html.span( b.ml2 )( machine.displayName )
+              )
+        )
+      ),
+      simpleFootprint
     )

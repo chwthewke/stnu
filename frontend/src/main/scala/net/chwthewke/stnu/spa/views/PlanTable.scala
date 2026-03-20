@@ -14,6 +14,7 @@ import tyrian.Html
 import tyrian.Style
 
 import data.Countable
+import model.Footprint
 import model.Item
 import model.prod.FlowEnd
 import model.prod.Group
@@ -156,7 +157,7 @@ object PlanTable:
     val complete: Boolean             = ui.completed( row.splitId )
     val moreRows: List[Html[Nothing]] =
       if ( expanded )
-        expandedProcessRows( flows, row.splitId )
+        expandedProcessRows( flows, row.splitId, row.process )
       else Nil
     mainComputedRow( flows.prod, rows, rowIndex, groups, row, expanded, complete ) :: moreRows
 
@@ -620,15 +621,40 @@ object PlanTable:
       )
     )
 
-  def expandedProcessRows( flows: Flows, splitId: ProcessSplitId ): List[Html[Nothing]] =
-    flows
-      .getSplit( splitId )
-      .original
-      .process
-      .map: recipe =>
-        Html.tr( Html.style( CSS.borderTop( "0" ) ) )(
-          Html.td( noBorderStyle, Html.colspan := "10", b.isSize5 + b.hasTextCentered )(
-            RecipeFrag.recipeIcons( flows.prod.env )( recipe.recipe )
+  def processRecipe( env: Env, process: ClockedRecipe ): Html[Nothing] =
+    Html.tr(
+      Html.td( noBorderStyle, Html.colspan := "10", b.isSize5 + b.hasTextCentered )(
+        RecipeFrag.recipeIcons( env )( process.recipe )
+      )
+    )
+
+  def processFootprint( process: ClockedRecipe ): Option[Html[Nothing]] =
+    process.recipe.producedIn.footprint.map: footprint =>
+      def estimateFootprint( machineRows: Int ): Footprint =
+        val width: Int  = footprint.width * ( 1 + ( process.machineCount - 1 ) / machineRows )
+        val length: Int = ( footprint.length + 800 ) * machineRows - 800
+        Footprint( length, width )
+      val estimates: List[( Int, Footprint )] =
+        1.to( process.machineCount.min( 4 ) ).toList.fproduct( estimateFootprint )
+
+      Html.tr(
+        Html.td( noBorderStyle, Html.colspan := "10", b.hasTextCentered )(
+          Elements.messageCenteredHeader( b.isPrimary, b.hasTextPrimaryDark, Html.text( "Footprint estimates" ) )(
+            Html.table( b.table + b.isFullwidth )(
+              Html.thead(
+                estimates._1F.map: n =>
+                  Html.th( b.hasTextCentered )( s"$n row${Option.when( n > 1 )( "s" ).orEmpty}" )
+              ),
+              Html.tbody(
+                estimates._2F.map: footprint =>
+                  Html.td( b.hasTextCentered )( FootprintElements.text( footprint ) )
+              )
+            )
           )
         )
-    ++: List( expandedProcess( flows, splitId ) )
+      )
+
+  def expandedProcessRows( flows: Flows, splitId: ProcessSplitId, process: ClockedRecipe ): List[Html[Nothing]] =
+    processRecipe( flows.prod.env, process )
+      :: processFootprint( process )
+      ++: List( expandedProcess( flows, splitId ) )

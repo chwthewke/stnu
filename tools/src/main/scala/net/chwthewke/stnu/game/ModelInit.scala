@@ -49,14 +49,14 @@ object ModelInit:
         .get( className )
         .toValidNel( show"No such item class: $className" )
 
-  def apply( version: ModelVersion, data: GameData, mapConfig: MapConfig ): ValidatedNel[String, Model] =
+  def apply( version: ModelVersion, data: GameData, config: ExtraGameDataConfig ): ValidatedNel[String, Model] =
     val classification = MilestoneAnalyzer.apply( data )
     extractItems( data, classification.items ).andThen: modelItems =>
 
       val extractorExtractionRecipes: ValidatedNel[String, Vector[( ( Item, Machine ), ExtractionRecipes )]] =
         data.extractors
           .traverse: ex =>
-            extractorMachine( classification.extractors, ex ).tupleLeft( ex )
+            extractorMachine( config, classification.extractors, ex ).tupleLeft( ex )
           .andThen( getExtractionRecipes( data, modelItems, _ ) )
           .andThen:
             _.traverse:
@@ -64,7 +64,7 @@ object ModelInit:
                 ExtractionRecipes.ByPurity( byPurity ).map( ( ( item, machine ), _ ) )
 
       val simpleProducersExtraction: ValidatedNel[String, Vector[( ( Item, Machine ), ExtractionRecipes )]] =
-        data.simpleProducers.traverseFilter( simpleProducerExtraction( modelItems, _ ) )
+        data.simpleProducers.traverseFilter( simpleProducerExtraction( config, modelItems, _ ) )
 
       val extractionRecipes: ValidatedNel[String, SortedMap[( Item, Machine ), ExtractionRecipes]] =
         (
@@ -79,6 +79,7 @@ object ModelInit:
           .traverseFilter(
             validateManufacturingRecipe(
               data,
+              config,
               modelItems,
               classification.recipeCategories,
               classification.manufacturers,
@@ -87,10 +88,10 @@ object ModelInit:
           )
 
       val powerRecipes: ValidatedNel[String, Vector[Recipe.PowerGeneration]] =
-        extractPowerRecipes( data, modelItems, classification.powerGenerators )
+        extractPowerRecipes( data, config, modelItems, classification.powerGenerators )
 
       val defaultResourceOptions: ValidatedNel[String, ResourceOptions] =
-        initResourceOptions( data.items, mapConfig ).toValidatedNel
+        initResourceOptions( data.items, config ).toValidatedNel
 
       (
         extractionRecipes,
@@ -135,7 +136,7 @@ object ModelInit:
 
   def initResourceOptions(
       modelItems: Map[ClassName[GameItem], GameItem],
-      config: MapConfig
+      config: ExtraGameDataConfig
   ): Either[String, ResourceOptions] =
     config.resourceNodes
       .traverse:
@@ -255,6 +256,7 @@ object ModelInit:
           ( data.getItem( resource ), modelItems.get( resource.translate ) ).mapN( ( _, _, extractor, machine ) )
 
   def extractorMachine(
+      config: ExtraGameDataConfig,
       classification: Map[ClassName[Extractor], Tier],
       extractor: Extractor
   ): ValidatedNel[String, Machine] =
@@ -266,18 +268,20 @@ object ModelInit:
         .get( extractor.className )
         .toValidNel( s"No known classification for class ${extractor.className}, type ${extractor.extractorTypeName}" )
     )
-      .mapN( ( exType, tier ) =>
+      .mapN: ( exType, tier ) =>
+        val className: ClassName[Machine] = extractor.className.translate
         Machine(
-          extractor.className.translate,
+          className,
           extractor.displayName,
           MachineType( exType ),
           tier,
           extractor.powerConsumption,
-          extractor.powerConsumptionExponent
+          extractor.powerConsumptionExponent,
+          config.buildingFootprints.get( className )
         )
-      )
 
   def simpleProducerExtraction(
+      config: ExtraGameDataConfig,
       modelItems: ModelItems,
       simpleProducer: SimpleProducer
   ): ValidatedNel[String, Option[( ( Item, Machine ), ExtractionRecipes )]] =
@@ -299,7 +303,8 @@ object ModelInit:
                 MachineType( extractorType ),
                 Tier( 0 ),
                 0d,
-                1d
+                1d,
+                config.buildingFootprints.get( machineClass )
               )
 
             (
@@ -336,9 +341,10 @@ object ModelInit:
       Power.Fixed( extractor.powerConsumption )
     )
 
-  def manufacturerMachine( manufacturer: Manufacturer, tier: Tier ): Machine =
+  def manufacturerMachine( config: ExtraGameDataConfig, manufacturer: Manufacturer, tier: Tier ): Machine =
+    val machineClass: ClassName[Machine] = manufacturer.className.translate
     Machine(
-      manufacturer.className.translate,
+      machineClass,
       manufacturer.displayName,
       MachineType(
         if ( manufacturer.isCollider ) ManufacturerType.VariableManufacturer
@@ -346,11 +352,13 @@ object ModelInit:
       ),
       tier,
       manufacturer.powerConsumption,
-      manufacturer.powerConsumptionExponent
+      manufacturer.powerConsumptionExponent,
+      config.buildingFootprints.get( machineClass )
     )
 
   def validateManufacturer(
       data: GameData,
+      config: ExtraGameDataConfig,
       classification: Map[ClassName[Manufacturer], Tier],
       className: ClassName[Manufacturer]
   ): ValidatedNel[String, Machine] =
@@ -362,7 +370,7 @@ object ModelInit:
         .get( className )
         .toValidNel( show"Not classified: manufacturer $className" )
     )
-      .mapN( manufacturerMachine )
+      .mapN( manufacturerMachine( config, _, _ ) )
 
   def recipePower( recipe: GameRecipe, manufacturer: Machine ): Power =
     if ( manufacturer.machineType.manufacturer.contains( ManufacturerType.VariableManufacturer ) )
@@ -372,6 +380,7 @@ object ModelInit:
 
   def validateManufacturingRecipe(
       data: GameData,
+      config: ExtraGameDataConfig,
       modelItems: ModelItems,
       classification: Map[ClassName[GameRecipe], RecipeCategory],
       machineClassification: Map[ClassName[Manufacturer], Tier],
@@ -393,7 +402,7 @@ object ModelInit:
             .toValidNel(
               show"Recipe ${recipe.displayName} [${recipe.className}] is produced in multiple manufacturers"
             )
-            .andThen( validateManufacturer( data, machineClassification, _ ) ),
+            .andThen( validateManufacturer( data, config, machineClassification, _ ) ),
           validateRecipeItems( data, modelItems, recipe.ingredients ),
           validateRecipeItems( data, modelItems, recipe.products )
         ).mapN( ( cat, producer, ingredients, products ) =>
@@ -412,6 +421,7 @@ object ModelInit:
 
   def extractPowerRecipes(
       gameData: GameData,
+      config: ExtraGameDataConfig,
       modelItems: ModelItems,
       classification: Map[ClassName[PowerGenerator], Tier]
   ): ValidatedNel[String, Vector[Recipe.PowerGeneration]] =
@@ -431,6 +441,7 @@ object ModelInit:
           val Frac( fAm, durMs ) = powerGenMW / ( 1000 *: fuelValueMJ )
           def sAm: Double        = fAm * f.fuelValue * generator.supplementalToPowerRatio / 1000
 
+          val generatorClass: ClassName[Machine] = generator.className.translate
           Recipe.PowerGeneration(
             ClassName( s"${generator.className.name}__${f.className.name}" ),
             show"${f.displayName} in ${generator.displayName}",
@@ -439,12 +450,13 @@ object ModelInit:
             bp.map( _.mapAmount( fAm.toDouble * _ ) ).toList,
             durMs.milliseconds,
             Machine(
-              generator.className.translate,
+              generatorClass,
               generator.displayName,
               MachineType( PowerGeneratorType ),
               t,
               0d,
-              generator.powerConsumptionExponent
+              generator.powerConsumptionExponent,
+              config.buildingFootprints.get( generatorClass )
             ),
             Power.Fixed( -generator.powerProduction )
           )

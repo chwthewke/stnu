@@ -13,16 +13,19 @@ case class Machine(
     machineType: MachineType,
     tier: Tier,
     powerConsumption: Double,
-    powerConsumptionExponent: Double
+    powerConsumptionExponent: Double,
+    footprint: Option[Footprint]
 ) derives ConfiguredDecoder,
       ConfiguredEncoder
 
 object Machine:
   given Show[Machine] = Show.show:
-    case Machine( className, displayName, machineType, tier, powerConsumption, powerConsumptionExponent ) =>
+    case Machine( className, displayName, machineType, tier, powerConsumption, powerConsumptionExponent, footprint ) =>
       show"""$displayName # $className
             |$machineType Tier $tier
-            |Power: ${f"$powerConsumption%.0f MW"} (exp: ${f"$powerConsumptionExponent%.4f"})""".stripMargin
+            |Power: ${f"$powerConsumption%.0f MW"} (exp: ${f"$powerConsumptionExponent%.4f"})
+            |Footprint: ${footprint.fold( "-" )( _.show )}
+            |""".stripMargin
 
   given Order[Machine]    = Order.by( _.className )
   given Ordering[Machine] = Order.catsKernelOrderingForOrder
