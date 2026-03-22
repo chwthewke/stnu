@@ -22,7 +22,7 @@ final case class Countable[+N, +A]( item: A, amount: N ) derives Order:
   def withAmount[M]( a: M ): Countable[M, A]     = copy( amount = a )
 
 object Countable:
-  val Tolerance: Double = 1e-6
+  val Tolerance: Double = 1e-8
 
   extension [F[x] <: Iterable[x], N, A]( self: F[Countable[N, A]] )
     def gather( using N: Numeric[N], F: Factory[Countable[N, A], F[Countable[N, A]]] ): F[Countable[N, A]] =

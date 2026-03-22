@@ -78,11 +78,17 @@ object ClockedRecipe {
       amount
     )
 
+  // NOTE corrects amount that very slightly exceed the capacity of a machine as precision errors
+  private def amountCorrection( amount: Double ): Double =
+    val floor: Double = amount.floor
+    if ( amount - floor < Countable.Tolerance ) floor else amount
+
   def roundUp( recipe: Countable[Double, Recipe.NonExtraction] ): ClockedRecipe =
-    fixed( recipe.item, recipe.amount, ClockSpeedPreset.`100%`, recipe.amount.ceil.toInt )
+    val realAmount: Double = amountCorrection( recipe.amount )
+    fixed( recipe.item, realAmount, ClockSpeedPreset.`100%`, realAmount.ceil.toInt )
 
   def overclocked( recipe: Countable[Double, Recipe.Extraction], clockSpeedLimit: ClockSpeedPreset ): ClockedRecipe =
-    val intAmount: Int = math.ceil( recipe.amount / clockSpeedLimit.value.fraction ).toInt
+    val intAmount: Int = math.ceil( amountCorrection( recipe.amount / clockSpeedLimit.value.fraction ) ).toInt
     ClockedRecipe.fixed( recipe.item, recipe.amount, clockSpeedLimit, intAmount )
 
 }
