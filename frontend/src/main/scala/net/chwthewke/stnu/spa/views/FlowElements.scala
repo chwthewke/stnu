@@ -22,9 +22,9 @@ object FlowElements:
     Html.h3(
       b.subtitle + b.hasTextCentered + b.isSize6
     )(
-      RecipeFrag.numberedIconTag( env, flowTransport.transport ),
+      RecipeFrag.numberedIconTag( env, flowTransport.transportAmount ),
       Html.span( va(), b.ml2 )(
-        s"${flowTransport.transport.item.displayName}" + index.foldMap( ix => s" #${ix + 1}" )
+        s"${flowTransport.transport.displayName}" + index.foldMap( ix => s" #${ix + 1}" )
       ),
       Option.when( warnings && flowTransport.overflow )(
         Html.i( p.fill.warning + b.hasTextWarning + b.ml2, va() )()

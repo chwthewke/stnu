@@ -63,7 +63,7 @@ class FlowsTests extends ScalaCheckSuite with GameFixture with FlowsProperties:
       initial <-
         flowsGen
           .suchThat: flows =>
-            flows.itemFlows.values.exists( _.exists( it => it.sources.length > 1 || it.destinations.length > 1 ) )
+            flows.itemTransports.values.exists( _.exists( it => it.sources.length > 1 || it.destinations.length > 1 ) )
       move <- moveFrom( initial )
     yield AfterOps.single( initial, move )
 

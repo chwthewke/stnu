@@ -41,7 +41,7 @@ trait FlowsProperties:
       x.prodHash == y.prodHash
         && x.nextId == y.nextId
         && x.endSplits =~ y.endSplits
-        && x.itemFlowRefs == y.itemFlowRefs
+        && x.itemFlows == y.itemFlows
 
   trait Gathering:
     given approxVectorCountable[A]: Approx[Vector[Countable[Double, A]]] = new Approx:
@@ -83,7 +83,7 @@ trait FlowsProperties:
 
   private def splitIdsOf( flows: Flows ): SortedSet[ProcessSplitId] =
     flows.endSplits.unorderedFoldMap( _.splits.keySet ) ++
-      flows.itemFlowRefs.unorderedFoldMap( _.foldMap( _.ends.unorderedFoldMap( _.toVector.to( SortedSet ) ) ) )
+      flows.itemFlows.unorderedFoldMap( _.transports.foldMap( _.ends.unorderedFoldMap( _.toVector.to( SortedSet ) ) ) )
 
   def endsBySplitIdHasAllSplitIds( flows: Flows ): Unit =
     splitIdsOf( flows ).foreach: splitId =>
@@ -95,7 +95,7 @@ trait FlowsProperties:
 
   def endSplitsHasAllSplitsInItemFlows( flows: Flows ): Unit =
     val endIdAndNumbers: Set[( EndId, Int )] =
-      flows.itemFlows.unorderedFoldMap:
+      flows.itemTransports.unorderedFoldMap:
         _.foldMap: it =>
           ( it.sources.map( cs => ( cs.item.end, cs.item.split ) ) ++
             it.destinations.map( cs => ( cs.item.end, cs.item.split ) ) ).toSet
@@ -121,7 +121,7 @@ trait FlowsProperties:
 
   def itemFlowsAreNonEmpty( flows: Flows ): Unit =
     assert(
-      flows.itemFlows.forall: t =>
+      flows.itemTransports.forall: t =>
         val ( item, flow ) = clue( t )
         flow.nonEmpty &&
         flow.forall( it =>
@@ -132,7 +132,7 @@ trait FlowsProperties:
 
   def sourceFlowsArePositive( flows: Flows ): Unit =
     assert(
-      flows.itemFlows.forall: t =>
+      flows.itemTransports.forall: t =>
         val ( item, flows ) = clue( t )
         flows.forall: it =>
           it.sources.forall: flow =>
@@ -141,7 +141,7 @@ trait FlowsProperties:
 
   def destinationFlowsArePositive( flows: Flows ): Unit =
     assert(
-      flows.itemFlows.forall: t =>
+      flows.itemTransports.forall: t =>
         val ( item, flows ) = clue( t )
         flows.forall: it =>
           it.destinations.forall: flow =>
@@ -150,7 +150,7 @@ trait FlowsProperties:
 
   def itemFlowsAreBalanced( flows: Flows ): Unit =
     assert(
-      flows.itemFlows.forall: t =>
+      flows.itemTransports.forall: t =>
         val ( item, flow ) = clue( t )
         flow.forall( sub => clue( sub.sources ).foldMap( _.amount ) =~ clue( sub.destinations ).foldMap( _.amount ) )
     )
@@ -176,14 +176,14 @@ trait FlowsProperties:
     itemIO( flows.prod ).toVector
       .map:
         case ( item, itemIO ) =>
-          ( item, itemIO, flows.itemFlows.get( item.className ) )
+          ( item, itemIO, flows.itemTransports.get( item.className ) )
       .foreach: t =>
         val ( item, itemIO, itemTransportOpt ) = t
 
         assert( itemTransportOpt.exists( tr => withClue( reduceToItemIO( tr ) ) =~ withClue( itemIO ) ) )
 
   def itemFlowSourcesMatchProduction( flows: Flows ): Unit =
-    flows.itemFlows.foreach:
+    flows.itemTransports.foreach:
       case ( item, transports ) =>
         transports.toVector.foreach: transport =>
           transport.sources
@@ -200,7 +200,7 @@ trait FlowsProperties:
                     fail( "missing product", clues( item, process ) )
 
   def itemFlowDestinationMatchConsumption( flows: Flows ): Unit =
-    flows.itemFlows.foreach:
+    flows.itemTransports.foreach:
       case ( item, transports ) =>
         transports.toVector.foreach: transport =>
           transport.destinations
@@ -234,9 +234,9 @@ trait FlowsProperties:
 
     val itemFlowsEnds: Vector[( ClassName[Item], ClassName[Recipe], Int, Double )] =
       ( for
-        ( itemClass, itemTransports ) <- flows.itemFlows.iterator
+        ( itemClass, itemTransports ) <- flows.itemTransports.iterator
         itemTransport                 <- itemTransports.iterator
-        source                        <- itemTransport.get( flowEnd ).iterator
+        source                        <- itemTransport.getMachineFlows( flowEnd ).iterator
         process                       <- source.item.original.process.iterator
       yield ( itemClass, process.recipe.className, source.item.split, source.amount ) ).toVector
 
@@ -250,23 +250,23 @@ trait FlowsProperties:
 
   def flowsPoses( flows: Flows ): Vector[SrcDestPos] =
     ( for
-      ( itemClass, itemTransports ) <- flows.itemFlows.iterator
+      ( itemClass, itemTransports ) <- flows.itemTransports.iterator
       item                          <- flows.prod.env.getItem( itemClass ).iterator
       ( itemTransport, index )      <- itemTransports.iterator.zipWithIndex
       flowEnd                       <- FlowEnd.cases.iterator
-      subIndex                      <- itemTransport.get( flowEnd ).indices.iterator
+      subIndex                      <- itemTransport.getMachineFlows( flowEnd ).indices.iterator
     yield SrcDestPos( item, flowEnd, index, subIndex ) ).toVector
 
   def splitTypes( flows: Flows, pos: SrcDestPos ): Vector[SplitType] =
     Vector( SplitType.Even, SplitType.Remainder, SplitType.Max, SplitType.MaxAll )
     ++ pos
-      .getOppositeSplits( flows.itemFlows )
+      .getOppositeSplits( flows.itemTransports )
       .map: oppositeFlowEnd =>
         SplitType.Opposite( oppositeFlowEnd )
-    ++ ( pos.getLocal( flows.itemFlows ), pos.getSplit( flows.itemFlows ) )
+    ++ ( pos.getLocal( flows.itemTransports ), pos.getSplit( flows.itemTransports ) )
       .mapN: ( itemTransport, split ) =>
         val amount = split.amount
-        val unit   = itemTransport.transport.item.perMinute
+        val unit   = itemTransport.transport.perMinute
         SplitType.Equal( Option.when( amount > unit )( ( amount / unit.toDouble ).ceil.toInt ) )
 
   def previewSplitResultConservesAmount( flows: Flows ): Unit =

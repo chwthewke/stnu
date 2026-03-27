@@ -11,4 +11,6 @@ enum FlowEnd:
       case Source      => Destination
       case Destination => Source
 
-object FlowEnd extends Enum[FlowEnd] with CatsEnum[FlowEnd] with CirceEnum[FlowEnd]
+object FlowEnd extends Enum[FlowEnd] with CatsEnum[FlowEnd] with CirceEnum[FlowEnd]:
+  val source: FlowEnd      = Source
+  val destination: FlowEnd = Destination

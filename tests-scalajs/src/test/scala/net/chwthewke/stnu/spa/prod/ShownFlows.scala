@@ -40,7 +40,7 @@ case class ShownFlows( self: Flows ):
       .mkString( "\n      " )
 
   private def showItemTransport( itemTransport: ItemTransport ): String =
-    f"""  - ${itemTransport.transport.amount}%.3f ${itemTransport.transport.item.className}
+    f"""  - ${itemTransport.transportAmount.amount}%.3f ${itemTransport.transport.className}
        |    FROM
        |      ${showSrcDests( itemTransport.sources, "<-" )}
        |    TO
@@ -57,14 +57,18 @@ case class ShownFlows( self: Flows ):
       .mkString_( "\n      " )
 
   private def showItemTransportRef( itemTransport: ItemTransportRef ): String =
-    f"""  - FROM
+    s"""  - FROM
        |      ${showRefEnd( itemTransport.ends.get( FlowEnd.Source ) )}
        |    TO
        |      ${showRefEnd( itemTransport.ends.get( FlowEnd.Destination ) )}""".stripMargin
 
-  private def showItemFlowRef( kv: ( ClassName[Item], NonEmptyVector[ItemTransportRef] ) ): String =
+  private def showTransportSplit( transportSplit: TransportSplit ): String =
+    f"  + ${transportSplit.from + 1}  -(${transportSplit.amount}%.3f)-> #${transportSplit.to + 1}"
+
+  private def showItemFlowRef( kv: ( ClassName[Item], ItemFlows ) ): String =
     s"""  ${kv._1}
-       |${kv._2.map( showItemTransportRef ).mkString_( "\n" )}""".stripMargin
+       |${kv._2.transports.map( showItemTransportRef ).mkString_( "\n" )}
+       |${kv._2.transportSplits.map( showTransportSplit ).mkString_( "\n" )}""".stripMargin
 
   private def showProdRecipes: String =
     self.prod.productionRows
@@ -84,7 +88,7 @@ case class ShownFlows( self: Flows ):
        |By Split id
        |${self.endsBySplitId.to( SortedMap ).map( showEndSplit ).mkString( "\n" )}
        |Transports (ref)
-       |${self.itemFlowRefs.to( SortedMap ).map( showItemFlowRef ).mkString( "\n" )}
+       |${self.itemFlows.to( SortedMap ).map( showItemFlowRef ).mkString( "\n" )}
        |Transports
-       |${self.itemFlows.to( SortedMap ).map( showItemFlow ).mkString( "\n" )}
+       |${self.itemTransports.to( SortedMap ).map( showItemFlow ).mkString( "\n" )}
        |""".stripMargin

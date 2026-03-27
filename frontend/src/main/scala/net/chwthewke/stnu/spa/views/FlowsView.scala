@@ -5,6 +5,7 @@ package views
 import cats.data.NonEmptyList
 import cats.data.NonEmptyVector
 import cats.syntax.all.*
+import tyrian.Attr
 import tyrian.CSS
 import tyrian.Elem
 import tyrian.Html
@@ -39,7 +40,7 @@ object FlowsView:
   def openButton( model: PlanModel ): Elem[Nothing] =
     model.flows.toOption.map: flows =>
       val ( hasOverflow, hasUnbalanced ) =
-        flows.itemFlows.values.foldLeft( ( false, false ) ):
+        flows.itemTransports.values.foldLeft( ( false, false ) ):
           case ( ( overflow, unbalanced ), transports ) =>
             ( overflow || transports.exists( _.overflow ), unbalanced || transports.exists( !_.balanced ) )
 
@@ -93,7 +94,7 @@ object FlowsView:
 
     val itemFlows: List[( Item, NonEmptyVector[ItemTransport] )] =
       flows.foldMap:
-        _.itemFlows.toList
+        _.itemTransports.toList
           .mapFilter:
             case ( itemClass, itemTransports ) =>
               model.env.getItem( itemClass ).tupleRight( itemTransports )
@@ -215,6 +216,14 @@ object FlowsView:
     )
   }
 
+  private def overflowWarningCell( hasOverflow: Boolean ): Html[Nothing] =
+    Html.td(
+      if ( hasOverflow )
+        Html.i( va(), p.fill.warning + b.hasTextWarning )()
+      else
+        Html.i( Html.style( CSS.paddingRight( "16px" ) ) )()
+    )
+
   private def flowRow(
       flows: Flows,
       groups: Groups,
@@ -228,12 +237,7 @@ object FlowsView:
     val env = flows.prod.env
     Html
       .tr(
-        Html.td(
-          if ( srcDest.amount > transport.perMinute * ( 1d + Countable.Tolerance ) )
-            Html.i( va(), p.fill.warning + b.hasTextWarning )()
-          else
-            Html.i( Html.style( CSS.paddingRight( "16px" ) ) )()
-        ),
+        overflowWarningCell( srcDest.amount > transport.perMinute * ( 1d + Countable.Tolerance ) ),
         Html.td(
           Html
             .span( b.buttons + b.hasAddons )( flowActionButtons( flows, item, direction, transport, index, subIndex ) )
@@ -248,17 +252,108 @@ object FlowsView:
       )
       .map( PlanMsg.Flow( _ ) )
 
+  private def transportSplitRow(
+      item: ClassName[Item],
+      amount: Double,
+      transport: Transport,
+      index: Int,
+      direction: FlowEnd,
+      peer: Transport,
+      peerIndex: Int,
+      splitIndex: Int
+  ): Html[PlanMsg] =
+    val directionText: String = direction match
+      case FlowEnd.Source      => "from"
+      case FlowEnd.Destination => "to"
+
+    Html
+      .tr(
+        overflowWarningCell( amount > transport.perMinute * ( 1d + Countable.Tolerance ) ),
+        Html.td(
+          Elements.miniButton( b.isDanger + b.isOutlined, "Delete split", p.regular.`trash` )(
+            FlowAction.DeleteTransportSplit( item, index, direction, splitIndex ).some
+          )
+        ),
+        Html.td( b.hasTextRight )( Html.strong( Numbers.showDouble3( amount ) ) ),
+        Html.td(),
+        Html.td( Html.em( s"$directionText ${peer.displayName} #${peerIndex + 1}" ) ),
+        Html.td(),
+        Html.td()
+      )
+      .map( PlanMsg.Flow( _ ) )
+
   private def flowTable(
       flows: Flows,
       groups: Groups,
       item: Item,
       direction: FlowEnd,
-      transport: Transport,
+      itemTransport: ItemTransport,
+      index: Int
+  ): Html[PlanMsg] = {
+    val machineRows: List[Html[PlanMsg]] =
+      itemTransport
+        .getMachineFlows( direction )
+        .toList
+        .zipWithIndex
+        .map:
+          case ( srcDest, ix ) =>
+            flowRow( flows, groups, item, direction, itemTransport.transport, index, ix, srcDest )
+
+    val transportSplitRows: List[Html[PlanMsg]] =
+      itemTransport.transportSplits
+        .get( direction )
+        .orEmpty
+        .toList
+        .zipWithIndex
+        .mapFilter:
+          case ( Countable( target, amount ), splitIndex ) =>
+            flows.itemTransports
+              .get( item.className )
+              .flatMap( _.get( target ) )
+              .map: peer =>
+                transportSplitRow(
+                  item.className,
+                  amount,
+                  itemTransport.transport,
+                  index,
+                  direction,
+                  peer.transport,
+                  target,
+                  splitIndex
+                )
+
+    Html.table( b.table + b.isFullwidth )(
+      Html.tbody(
+        machineRows ++ transportSplitRows
+      )
+    )
+  }
+
+  private def splitTransportButton(
+      flows: Flows,
+      item: Item,
       index: Int,
-      srcDests: Vector[Countable[Double, Split[SrcDest]]]
+      flowEnd: FlowEnd
   ): Html[PlanMsg] =
-    Html.table( b.table + b.isFullwidth )( Html.tbody( srcDests.toList.zipWithIndex.map:
-      case ( srcDest, ix ) => flowRow( flows, groups, item, direction, transport, index, ix, srcDest ) ) )
+    val actionOrHidden: Attr[FlowAction] =
+      flows
+        .previewSplitTransport( item.className, index, flowEnd )
+        .fold[Attr[FlowAction]]( Html.style( CSS.visibility( "hidden" ) ) ):
+          case ( amount, targets ) =>
+            Html.onClick(
+              FlowAction
+                .StartSplitTransport(
+                  ActionModal.SplitTransportAction( item.className, index, flowEnd, amount, targets )
+                )
+            )
+
+    Html
+      .button( b.button + b.isPrimary + b.isSmall, actionOrHidden )(
+        flowEnd match
+          case FlowEnd.Source      => s"Split from..."
+          case FlowEnd.Destination => s"Merge into..."
+      )
+      .map( PlanMsg.Flow( _ ) )
 
   private def displayItemTransport(
       flows: Flows,
@@ -269,32 +364,22 @@ object FlowsView:
   ): Html[PlanMsg] =
     val env: Env = flows.prod.env
     Html.div( b.box )(
-      FlowElements.transportHeader( env, itemTransport, index.some, warnings = true ),
+      Html.div( b.isFlex + b.isFlexWrapNowrap + b.isJustifyContentCenter )(
+        Html.span( splitTransportButton( flows, item, index, FlowEnd.Source ) ),
+        Html.span( b.isFlexGrow1 )(),
+        FlowElements.transportHeader( env, itemTransport, index.some, warnings = true ),
+        Html.span( b.isFlexGrow1 )(),
+        Html.span( splitTransportButton( flows, item, index, FlowEnd.Destination ) )
+      ),
       Html.div( b.columns )(
         Html.div( b.column )(
           Html.p( b.notification + b.isSuccess + b.isDark )(
-            flowTable(
-              flows,
-              groups,
-              item,
-              FlowEnd.Source,
-              itemTransport.transport.item,
-              index,
-              itemTransport.sources
-            )
+            flowTable( flows, groups, item, FlowEnd.Source, itemTransport, index )
           )
         ),
         Html.div( b.column )(
           Html.p( b.notification + b.isInfo + b.isDark )(
-            flowTable(
-              flows,
-              groups,
-              item,
-              FlowEnd.Destination,
-              itemTransport.transport.item,
-              index,
-              itemTransport.destinations
-            )
+            flowTable( flows, groups, item, FlowEnd.Destination, itemTransport, index )
           )
         )
       )
@@ -322,8 +407,9 @@ object FlowsView:
 
   private def modal( flows: Flows ): Option[Html[PlanMsg]] =
     flows.ui.actionModal.map:
-      case am: ActionModal.SplitAction => splitSrcDestModal( flows, am )
-      case am: ActionModal.MergeAction => mergeSrcDestModal( flows, am )
+      case am: ActionModal.SplitAction          => splitSrcDestModal( flows, am )
+      case am: ActionModal.MergeAction          => mergeSrcDestModal( flows, am )
+      case am: ActionModal.SplitTransportAction => splitTransportModal( flows, am )
 
   private def splitModalHeading(
       env: Env,
@@ -470,7 +556,7 @@ object FlowsView:
   ): Html[PlanMsg] =
     val env: Env = flows.prod.env
     Modal
-      .apply( FlowAction.AbortScrDestOp )(
+      .apply( FlowAction.AbortModalFlowOp )(
         Html.div( b.box )(
           splitModalHeading( env, action.pos, action.srcDest ),
           splitActionButton( flows, action.even, action.pos, none )(
@@ -556,7 +642,7 @@ object FlowsView:
   ): Html[PlanMsg] =
     val env: Env = flows.prod.env
     Modal
-      .apply( FlowAction.AbortScrDestOp )(
+      .apply( FlowAction.AbortModalFlowOp )(
         Html.div( b.box )(
           mergeModalHeading( env, action.pos, action.srcDest ),
           mergeActionButton( flows, action.local, action.pos )(
@@ -579,6 +665,64 @@ object FlowsView:
                 ""
               )
           )
+        )
+      )
+      .map( PlanMsg.Flow( _ ) )
+
+  def splitTransportModalTargetButton(
+      flows: Flows,
+      action: ActionModal.SplitTransportAction,
+      target: Int
+  ): Option[Html[FlowAction]] =
+    flows.itemTransports
+      .get( action.item )
+      .flatMap( _.get( target ) )
+      .map: itemTransport =>
+        val transportName: String           = itemTransport.transport.displayName
+        val transportAmounts: Html[Nothing] =
+          val ( text, amount ) =
+            action.flowEnd match
+              case FlowEnd.Source      => ( "deficit of", itemTransport.destinationAmount - itemTransport.sourceAmount )
+              case FlowEnd.Destination => ( "excess of", itemTransport.sourceAmount - itemTransport.destinationAmount )
+          Html.span( b.ml2, va( "baseline" ) )(
+            Html.text( s"with a $text" ),
+            RecipeFrag.numberedIcon3( flows.prod.env, Countable( action.item, amount ), b.ml2, va( "baseline" ) )
+          )
+
+        Html.div( b.field )(
+          Html.div( b.control )(
+            Html.button(
+              b.button + b.isLink,
+              va( "baseline" ),
+              Html.onClick(
+                FlowAction.SplitTransport( action.item, action.index, action.flowEnd, target, action.amount )
+              )
+            )( s"Transport $transportName #${target + 1}" ),
+            transportAmounts
+          )
+        )
+
+  private def splitTransportModal(
+      flows: Flows,
+      action: ActionModal.SplitTransportAction
+  ): Html[PlanMsg] =
+    val actionName: String = action.flowEnd match
+      case FlowEnd.Source      => "Split"
+      case FlowEnd.Destination => "Merge"
+
+    val actionPrep: String = action.flowEnd match
+      case FlowEnd.Source      => "to"
+      case FlowEnd.Destination => "from"
+
+    Modal
+      .apply( FlowAction.AbortModalFlowOp )(
+        Html.div( b.box )(
+          Html.h3( b.subtitle )(
+            Html.span( va() )( actionName ),
+            RecipeFrag.numberedIcon3( flows.prod.env, Countable( action.item, action.amount ), b.mx2 ),
+            Html.span( va() )( actionPrep )
+          ) ::
+            action.targets.toList.mapFilter( splitTransportModalTargetButton( flows, action, _ ) )
         )
       )
       .map( PlanMsg.Flow( _ ) )

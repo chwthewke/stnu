@@ -2,10 +2,13 @@ package net.chwthewke.stnu
 package spa
 package prod
 
+import cats.data.NonEmptyList
 import cats.syntax.all.*
 
 import data.Countable
+import model.Item
 import model.Transport
+import model.prod.FlowEnd
 
 sealed trait ActionModal
 
@@ -18,7 +21,7 @@ object ActionModal:
       equalSplitCount: Option[Int],
       machineCount: Option[( Int, Int )] // curr, max
   ) extends ActionModal:
-    def transport: Transport = local.transport.item
+    def transport: Transport = local.transport
 
     def equal: SplitType                       = SplitType.Equal( equalSplitCount )
     def equalFixed: SplitType                  = SplitType.EqualFixed( equalSplitCount )
@@ -42,7 +45,7 @@ object ActionModal:
         oppositePeers: List[Countable[Double, Split[SrcDest]]]
     ): SplitAction =
       val amount: Double    = srcDest.amount
-      val unit: Int         = local.transport.item.perMinute
+      val unit: Int         = local.transport.perMinute
       val machineCount: Int = srcDest.item.value.process.foldMap( _.machineCount )
       SplitAction(
         pos,
@@ -67,3 +70,11 @@ object ActionModal:
           peer.item.original == srcDest.item.original &&
             peer.item.split != srcDest.item.split
         .map( MergeType.Adjacent( _ ) )
+
+  case class SplitTransportAction(
+      item: ClassName[Item],
+      index: Int,
+      flowEnd: FlowEnd,
+      amount: Double,
+      targets: NonEmptyList[Int]
+  ) extends ActionModal

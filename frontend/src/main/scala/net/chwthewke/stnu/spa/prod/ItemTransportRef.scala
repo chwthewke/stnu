@@ -9,7 +9,6 @@ import mouse.option.*
 import data.Countable
 import model.Item
 import model.Recipe
-import model.Transport
 import model.prod.FlowEnd
 import model.prod.Group
 import protocol.persistence.ProcessSplitId
@@ -18,10 +17,12 @@ case class ItemTransportRef( ends: Map[FlowEnd, NonEmptyVector[ProcessSplitId]] 
   def toItemTransport(
       prod: ProdModel,
       item: Item,
+      index: Int,
       prodRecipes: Map[ClassName[Recipe], ClockedRecipe],
       endsBySplitId: Map[ProcessSplitId, ( Double, Group, EndId )],
       endSplits: Map[EndId, ProcessSplits],
-      splitsById: Map[ProcessSplitId, Split[SrcDest]]
+      splitsById: Map[ProcessSplitId, Split[SrcDest]],
+      transportSplitRefs: Vector[TransportSplit]
   ): ItemTransport =
 
     def srcOf( srcDest: SrcDest, endId: EndId ): Option[( Double, SrcDest.Src )] =
@@ -66,7 +67,12 @@ case class ItemTransportRef( ends: Map[FlowEnd, NonEmptyVector[ProcessSplitId]] 
     val destinationFlows: Vector[Countable[Double, Split[SrcDest.Dest]]] =
       endFlows( FlowEnd.Destination )( destOf )
 
-    val transport: Countable[Double, Transport] =
-      prod.selectTransport( item, sourceFlows.foldMap( _.amount ).max( destinationFlows.foldMap( _.amount ) ) )
+    val transportSplits: Map[FlowEnd, Vector[Countable[Double, Int]]] =
+      transportSplitRefs
+        .foldMap:
+          case TransportSplit( amount, from, to ) =>
+            Option.when( from == index )( Map( FlowEnd.destination -> Vector( Countable( to, amount ) ) ) )
+              |+| Option.when( to == index )( Map( FlowEnd.source -> Vector( Countable( from, amount ) ) ) )
+        .orEmpty
 
-    ItemTransport( transport, sourceFlows, destinationFlows )
+    ItemTransport( prod, item, sourceFlows, destinationFlows, transportSplits )

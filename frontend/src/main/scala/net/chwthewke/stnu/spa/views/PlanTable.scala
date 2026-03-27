@@ -532,15 +532,15 @@ object PlanTable:
         direction: FlowEnd
     ): Map[FlowEnd, Map[Item, ( Double, Vector[Countable[Double, Split[SrcDest]]] )]] =
       transport
-        .get( direction.opposite )
+        .getMachineFlows( direction.opposite )
         .find( _.item.id == splitId )
         .foldMap: ci =>
-          Map( direction -> Map( item -> ( ci.amount, transport.get( direction ) ) ) )
+          Map( direction -> Map( item -> ( ci.amount, transport.getMachineFlows( direction ) ) ) )
 
     // Source -> ingredients
     // Destination -> products
     val itemTransports: Map[FlowEnd, Map[Item, ( Double, Vector[Countable[Double, Split[SrcDest]]] )]] =
-      flows.itemFlows.toVector
+      flows.itemTransports.toVector
         .foldMap:
           case ( itemClass, transports ) =>
             flows.prod.env

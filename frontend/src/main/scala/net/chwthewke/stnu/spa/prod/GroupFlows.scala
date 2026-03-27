@@ -38,7 +38,7 @@ case class GroupFlows(
 object GroupFlows:
   def apply( flows: Flows, group: Group ): GroupFlows =
     val groupItemFlows: Map[FlowEnd, Map[Item, NonEmptyVector[GroupItemFlows]]] =
-      ( flows.itemFlows: Iterable[( ClassName[Item], NonEmptyVector[ItemTransport] )] )
+      ( flows.itemTransports: Iterable[( ClassName[Item], NonEmptyVector[ItemTransport] )] )
         .foldMap:
           case ( itemClass, transports ) =>
             flows.prod.env
@@ -71,7 +71,7 @@ object GroupFlows:
         remote.toVector.map { case ( remoteEnd, amount ) => Countable( remoteEnd, amount ) }.toNev
       ).mapN: ( localEnds, remoteEnds ) =>
         GroupTransport(
-          flows.prod.selectTransport( item, localEnds.foldMap( _.amount ) ),
+          flows.prod.selectTransport( item, localEnds.foldMap( _.amount ) ).item,
           localEnds,
           localAdjacentGroups,
           remoteEnds
@@ -107,7 +107,7 @@ object GroupFlows:
     def importExportFlows( direction: FlowEnd ): GroupItemFlows =
       val directionFlowsByGroup: SortedMap[GroupEnd, Double] =
         transport
-          .get( direction )
+          .getMachineFlows( direction )
           .foldMap: cs =>
             val groupEnd: GroupEnd = groupEndOf( flows, group, cs.item )
             SortedMap( groupEnd -> cs.amount )
@@ -122,7 +122,7 @@ object GroupFlows:
 
       val eligibleRemoteEndFlows: SortedMap[RemoteGroupEnd, Double] =
         transport
-          .get( direction.opposite )
+          .getMachineFlows( direction.opposite )
           .foldMap: cs =>
             val groupEnd: GroupEnd                  = groupEndOf( flows, group, cs.item )
             val destination: Option[RemoteGroupEnd] =

@@ -3,6 +3,8 @@ package spa
 package prod
 
 import data.Countable
+import model.Item
+import model.prod.FlowEnd
 
 enum FlowAction:
   case Reset
@@ -13,7 +15,10 @@ enum FlowAction:
   case SplitByMachineSetCount( count: Int )
   case StartMergeSrcDest( pos: SrcDestPos )
   case MergeSrcDest( pos: SrcDestPos, mergeType: MergeType )
-  case AbortScrDestOp
+  case StartSplitTransport( modal: ActionModal.SplitTransportAction )
+  case SplitTransport( item: ClassName[Item], index: Int, flowEnd: FlowEnd, target: Int, amount: Double )
+  case DeleteTransportSplit( item: ClassName[Item], transportIndex: Int, flowEnd: FlowEnd, splitIndex: Int )
+  case AbortModalFlowOp
 
 enum SplitType:
   case Even
