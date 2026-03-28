@@ -13,6 +13,24 @@ enum Groups:
   case Nil
   case SubGroups( children: SortedMap[Int, Groups] ) // TODO actually a NonEmptyMap?
 
+  def closeTo( group: Group ): Groups =
+    def loop( prefix: Vector[Int], subGroups: Groups ): Groups =
+      val isClose: Boolean =
+        group.path.startsWith( prefix ) ||
+          prefix.startsWith( group.path ) && prefix.length <= group.path.length + 1
+
+      if ( !isClose ) Nil
+      else
+        subGroups match
+          case Nil                   => Nil
+          case SubGroups( children ) =>
+            SubGroups(
+              children.map:
+                case ( i, child ) => ( i, loop( prefix :+ i, child ) )
+            )
+
+    loop( Vector.empty, this )
+
   def width: Int = this match
     case Nil                   => 1
     case SubGroups( children ) => children.foldMap( _.width )

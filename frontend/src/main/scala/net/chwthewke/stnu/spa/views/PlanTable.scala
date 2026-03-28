@@ -367,7 +367,9 @@ object PlanTable:
       group: Group,
       groups: Groups
   ): Html[PlanMsg] =
-    groupDropdown( rowIndex.some, show"group$id", group, groups )( groupsGrid( group, endId, id, groups ) )
+    groupDropdown( rowIndex.some, show"group$id", group, groups )(
+      groupsGrid( group, endId, id, groups.closeTo( group ) )
+    )
 
   def groupSummary(
       prodUi: ProdModel.Ui,
