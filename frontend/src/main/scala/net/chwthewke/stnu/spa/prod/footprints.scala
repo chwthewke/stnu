@@ -32,3 +32,15 @@ object footprints:
     given Semigroup[Floor]:
       override def combine( x: Floor, y: Floor ): Floor =
         Footprint( x.length + y.length + 800, x.width.max( y.width ) )
+
+  opaque type Building = Footprint
+
+  object Building:
+    inline def apply( footprint: Footprint ): Building = footprint
+
+    extension ( self: Building ) def footprint: Footprint = self
+
+    given Show[Building] = Show[Footprint]
+    given Semigroup[Building]:
+      override def combine( x: Building, y: Building ): Building =
+        Footprint( x.length.max( y.length ), x.width.max( y.width ) )

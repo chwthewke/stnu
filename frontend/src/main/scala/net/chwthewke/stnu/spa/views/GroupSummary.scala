@@ -222,17 +222,24 @@ object GroupSummary:
         case Groups.Nil =>
           // leaf group -> row footprint
           blockFootprint( footprints.Row( _ ) )( machineCounts ).map( _.footprint )
-        case subgroups @ Groups.SubGroups( children ) if subgroups.depth == 2 =>
-          // all children are leaf groups -> floor footprint
-          val byRowMachineCounts: List[List[( Machine, Int )]] =
-            machineCounts ::
-              children.keySet.foldMap( n => List( getMachineCounts( flows, Group( group.path :+ n ) ) ) )
-          byRowMachineCounts
-            .map( mc => blockFootprint( footprints.Row( _ ) )( mc ).map( _.footprint ) )
-            .flattenOption
-            .foldMap( rowFootprint => footprints.Floor( rowFootprint ).some )
-            .map( _.footprint )
-        case _ => none
+        case subgroups @ Groups.SubGroups( children ) =>
+          def childrenFootprints: List[Footprint] =
+            children
+              .flatMap:
+                case ( i, child ) =>
+                  groupFootprint(
+                    flows,
+                    groups,
+                    Group( group.path :+ i ),
+                    getMachineCounts( flows, Group( group.path :+ i ) )
+                  )
+              .toList
+          if ( subgroups.depth == 2 )
+            childrenFootprints.foldMap( footprints.Floor( _ ).some ).map( _.footprint )
+          else if ( subgroups.depth == 3 )
+            childrenFootprints.foldMap( footprints.Building( _ ).some ).map( _.footprint )
+          else
+            none
 
   private def machinesSummary( flows: Flows, groups: Groups, group: Group ): Html[Nothing] =
     val machineCounts: List[( Machine, Int )] = getMachineCounts( flows, group )
