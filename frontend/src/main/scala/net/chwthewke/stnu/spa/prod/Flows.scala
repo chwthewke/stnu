@@ -172,7 +172,8 @@ case class Flows(
     ( pos.getSplit( itemFlows ), pos.getTransport( itemFlows ) ).tupled.exists:
       case ( from, transport ) =>
         from.amount > transport.perMinute ||
-        pos.getOppositeSplits( itemFlows ).exists( _.amount < from.amount - Countable.Tolerance )
+        pos.getOppositeSplits( itemFlows ).exists( _.amount < from.amount - Countable.Tolerance ) ||
+        from.item.value.process.exists( _.machineCount > 1 )
 
   private[prod] def splitActionModal( pos: SrcDestPos ): Option[ActionModal.SplitAction] =
     ( pos.getSplit( itemFlows ), pos.getLocal( itemFlows ) )
@@ -252,7 +253,7 @@ case class Flows(
         ( pos.getSplit( itemFlows ), pos.getLocal( itemFlows ) ).flatMapN: ( from, in ) =>
           def amount( direction: FlowEnd ): Double = in.get( direction ).foldMap( _.amount )
           val remainder: Double = ( amount( pos.direction ) - amount( pos.direction.opposite ) ) / from.amount
-          Option.when( remainder > 0 && remainder < 1 ):
+          Option.when( remainder > Countable.Tolerance && remainder < 1 - Countable.Tolerance ):
             List( 1d - remainder, remainder )
       case SplitType.Max =>
         ( pos.getSplit( itemFlows ), pos.getTransport( itemFlows ) )

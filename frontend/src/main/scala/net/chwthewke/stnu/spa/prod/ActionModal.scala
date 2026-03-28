@@ -27,7 +27,10 @@ object ActionModal:
     def remainder: SplitType                   = SplitType.Remainder
     def max: SplitType                         = SplitType.Max
     def maxAll: SplitType                      = SplitType.MaxAll
-    def opposite: List[SplitType.Opposite]     = oppositePeers.map( SplitType.Opposite( _ ) )
+    def opposite: List[SplitType.Opposite]     =
+      if ( oppositePeers.length > 1 )
+        oppositePeers.map( SplitType.Opposite( _ ) )
+      else Nil
 
   // TODO could move some logic from Flows to here (from both *actionModal() & previewSplit/previewMerge)
   // also there might be some duplication in FlowViews.*srcDestModal
