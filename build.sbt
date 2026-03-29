@@ -99,14 +99,6 @@ val `stnu-protocol`: Project =
     .settings( aggregateSettings )
     .aggregate( `stnu-protocol-jvm`, `stnu-protocol-js` )
 
-val `stnu-persistence`: Project =
-  project
-    .in( file( "persistence" ) )
-    .settings( sharedSettings )
-    .enablePlugins( Scalac )
-    .settings( doobie, doobieCirce, flyway, postgresql, pureconfig )
-    .dependsOn( `stnu-protocol-jvm` )
-
 val `stnu-persistence-fs`: Project =
   project
     .in( file( "persistence-fs" ) )
@@ -121,7 +113,7 @@ val `stnu-backend`: Project = project
   .enablePlugins( BuildInfo )
   .settings( buildInfoPackage := "net.chwthewke.stnu.server" )
   .settings( sharedSettings )
-  .dependsOn( `stnu-assets`, `stnu-protocol-jvm`, `stnu-persistence`, `stnu-persistence-fs` )
+  .dependsOn( `stnu-assets`, `stnu-protocol-jvm`, `stnu-persistence-fs` )
   .settings(
     circeParser,
     http4sCore,
@@ -255,7 +247,6 @@ val `stnu-jvm`: Project =
       `stnu-protocol-jvm`,
       `stnu-tools`,
       `stnu-assets`,
-      `stnu-persistence`,
       `stnu-persistence-fs`,
       `stnu-backend`,
       `stnu-laws`,
@@ -272,7 +263,6 @@ val stnu: Project =
       `stnu-tools`,
       `stnu-assets`,
       `stnu-protocol`,
-      `stnu-persistence`,
       `stnu-persistence-fs`,
       `stnu-backend`,
       `stnu-backend-app`,

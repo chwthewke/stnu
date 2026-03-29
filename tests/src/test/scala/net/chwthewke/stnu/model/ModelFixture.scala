@@ -1,5 +1,5 @@
 package net.chwthewke.stnu
-package persistence
+package model
 
 import cats.effect.IO
 import cats.effect.Resource

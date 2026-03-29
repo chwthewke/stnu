@@ -8,8 +8,7 @@ import server.middleware.LoggingMiddleware
 
 case class AppConfig(
     server: ServerConfig,
-    logging: LoggingMiddleware.Config,
-    database: persistence.Config
+    logging: LoggingMiddleware.Config
 )
 
 object AppConfig:

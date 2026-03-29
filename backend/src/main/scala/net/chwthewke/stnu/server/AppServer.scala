@@ -19,7 +19,6 @@ import scala.concurrent.duration.*
 
 import model.ModelIndex
 import persistence.FsPlans
-import persistence.Plans
 import persistence.PlansPersistenceApi
 import protocol.game.FullModel
 import server.middleware.Cors
@@ -63,16 +62,8 @@ object AppServer:
       modelsNev <- models.toNev.liftTo[F]( Error( "No model was loaded - index empty" ) )
     yield ( modelIndex, modelsNev )
 
-  private def storage[F[_]: Async](
-      args: List[String],
-      config: persistence.Config
-  ): Resource[F, PlansPersistenceApi[F]] =
-    OptionT
-      .fromOption[Resource[F, *]]( args.headOption )
-      .cataF(
-        persistence.Resources.managedTransactor( config ).map( Plans( _ ) ),
-        dir => Resource.eval( FsPlans.init[F]( Path( dir ) ) )
-      )
+  private def storage[F[_]: Async]( args: List[String] ): Resource[F, PlansPersistenceApi[F]] =
+    Resource.eval( FsPlans.init[F]( Path( args.headOption.getOrElse( "." ) ) ) )
 
   def resource[F[_]: Async]( args: List[String] ): Resource[F, Unit] =
     for
@@ -81,7 +72,7 @@ object AppServer:
       shutdown               <- Resource.eval( Deferred[F, Unit] )
       ( modelIndex, models ) <- Resource.eval( loadModels[F] )
       modelHash              <- Resource.eval( assets.loadModelHash[F] )
-      plans                  <- storage( args, config.database )
+      plans                  <- storage( args )
       server                 <- new AppServer(
                   config.server,
                   Routes(
