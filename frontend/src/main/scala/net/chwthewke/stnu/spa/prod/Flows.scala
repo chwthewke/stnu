@@ -549,13 +549,17 @@ object Flows:
         .toVector,
       flows.itemFlows
         .fmap: itemTransports =>
-          itemTransports.transports.iterator
-            .map: itemTransport =>
-              ( for
-                ( end, splits ) <- itemTransport.ends.iterator
-                splitId         <- splits.iterator
-              yield ( end, splitId ) ).toVector
-            .toVector
+          pp.ItemFlows(
+            itemTransports.transports.iterator
+              .map: itemTransport =>
+                ( for
+                  ( end, splits ) <- itemTransport.ends.iterator
+                  splitId         <- splits.iterator
+                yield ( end, splitId ) ).toVector
+              .toVector,
+            itemTransports.transportSplits.map:
+              case TransportSplit( amount, from, to ) => ( amount, from, to )
+          )
     )
 
   given Conversion[Flows, pp.Flows]:
@@ -595,13 +599,18 @@ object Flows:
             )
 
       val itemFlowRefs: Map[ClassName[Item], ItemFlows] =
-        stored.itemFlows.mapFilter: transports =>
-          transports
+        stored.itemFlows.mapFilter: itemFlows =>
+          itemFlows.itemTransports
             .map: transport =>
               ItemTransportRef(
                 transport.groupMapReduce( _._1 )( t => NonEmptyVector.one( t._2 ) )( _.concatNev( _ ) )
               )
             .toNev
-            .map( itemTransports => ItemFlows( itemTransports, Vector.empty ) )
+            .map:
+              ItemFlows(
+                _,
+                itemFlows.transportSplits.map:
+                  case ( amount, from, to ) => TransportSplit( amount, from, to )
+              )
 
       Flows( prod, stored.prodHash, stored.nextId, endSplits, itemFlowRefs, Ui.init )

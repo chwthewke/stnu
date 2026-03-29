@@ -172,7 +172,7 @@ object FsPlans:
     val logger: SelfAwareStructuredLogger[F] = Slf4jLogger.getLoggerFromName( "FS.MIGRATIONS" )
     for
       currentSchemaVersion <- new SchemaOps[F]( dataDir ).readSchemaVersion.value
-      _ <- logger.info( show"Current schema version is: ${currentSchemaVersion.fold( "NONE" )( _.toString )}" )
+      _ <- logger.debug( show"Current schema version is: ${currentSchemaVersion.fold( "NONE" )( _.toString )}" )
       lastMigrationIndex =
         currentSchemaVersion
           .flatMap( v => Codecs.migrations.indexWhere( _.toCodecs.version == v ).some.filter( _ >= 0 ) )
@@ -180,11 +180,17 @@ object FsPlans:
         Codecs.migrations
           .drop( lastMigrationIndex.fold( 0 )( _ + 1 ) )
           .takeWhile( _.toCodecs.version <= upTo.version )
-      _ <- logger.info( show"Applying ${migrations.size} migrations: ${migrations.map( _.describe ).mkString_( " " )}" )
-      _ <- logger.info( "NOT RUNNING MIGRATIONS YET" )
+      _ <-
+        logger.debug(
+          show"Applying ${migrations.size} migrations until version " + migrations.lastOption.map( _.version ).mkString
+        )
+      _ <- migrations.traverseVoid: m =>
+             doMigration( dataDir, m ) *>
+               logger.info( show"Applied migration: ${m.describe}" )
+      _ <- logger.info( "Applied all migrations." )
     yield ()
 
-  def init[F[_]: Async]( dataDir: Path, codecs: Codecs.Aux[Plan, PlanSummary] = Codecs.v1 ): F[PlansPersistenceApi[F]] =
+  def init[F[_]: Async]( dataDir: Path, codecs: Codecs.Aux[Plan, PlanSummary] = Codecs.v2 ): F[PlansPersistenceApi[F]] =
     given files: Files[F] = Files.forAsync[F]
     for
       _ <- files.createDirectories( dataDir )

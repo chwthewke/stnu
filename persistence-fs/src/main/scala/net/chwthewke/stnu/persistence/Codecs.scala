@@ -24,6 +24,7 @@ import model.prod.Group
 import protocol.persistence.EndId
 import protocol.persistence.ExtractionOptions
 import protocol.persistence.Flows
+import protocol.persistence.ItemFlows
 import protocol.persistence.LogisticsOptions
 import protocol.persistence.Plan
 import protocol.persistence.PlanId
@@ -59,6 +60,70 @@ object Codecs:
   val schemaVersion: Codec[SchemaVersion] = codecs.uint16.xmap( SchemaVersion( _ ), _.version )
 
   object v1 extends Codecs:
+    case class Flows(
+        prodHash: Int,
+        nextId: ProcessSplitId,
+        endSplits: Vector[( EndId, Vector[( ProcessSplitId, Double /* fraction */, Group )] )],
+        itemFlows: Map[ClassName[Item], Vector[Vector[( FlowEnd, ProcessSplitId )]]]
+    )
+
+    case class P(
+        name: PlanName,
+        recipeOptions: RecipeOptions,
+        resourceOptions: ResourceOptions,
+        extractionOptions: ExtractionOptions,
+        logisticsOptions: LogisticsOptions,
+        powerOptions: PowerOptions,
+        requestSelection: RequestSelection,
+        flows: Flows,
+        productionUi: ProductionUi
+    )
+
+    type S = PlanSummary
+
+    override def version: SchemaVersion = SchemaVersion( 1 )
+
+    override def getPlanName( plan: P ): PlanName = plan.name
+
+    override def getSummaryUpdated( summary: PlanSummary ): Instant = v2.getSummaryUpdated( summary )
+
+    override def toPlanSummary( planId: PlanId, plan: P, updated: Instant ): PlanSummary =
+      PlanSummary( planId, plan.name, updated, plan.requestSelection.requestedAmounts.toVector )
+
+    override def planName: Codec[PlanName] = v2.planName
+
+    override def planSummary: Codec[PlanSummary] = v2.planSummary
+
+    override def plan: Codec[P] =
+      (
+        planName,
+        v2.recipeOptions,
+        v2.resourceOptions,
+        v2.extractionOptions,
+        v2.logisticsOptions,
+        v2.powerOptions,
+        v2.requestSelection,
+        flows,
+        v2.productionUi
+      ).imapN( P.apply )( Tuple.fromProductTyped )
+
+    val flows: Codec[Flows] =
+      val endSplits: Codec[Vector[( EndId, Vector[( ProcessSplitId, Double, Group )] )]] =
+        codecs.vectorOfN(
+          codecs.uint16,
+          v2.endId :: codecs.vectorOfN( codecs.int32, v2.processSplitId :: codecs.double :: v2.group )
+        )
+      val itemFlows: Codec[Map[ClassName[Item], Vector[Vector[( FlowEnd, ProcessSplitId )]]]] =
+        codecs
+          .vectorOfN(
+            codecs.int32,
+            v2.className[Item] ::
+              codecs.vectorOfN( codecs.int32, codecs.vectorOfN( codecs.int32, v2.flowEnd :: v2.processSplitId ) )
+          )
+          .xmap( _.toMap, _.toVector )
+      ( codecs.int32, v2.processSplitId, endSplits, itemFlows ).imapN( Flows.apply )( Tuple.fromProductTyped )
+
+  object v2 extends Codecs:
     type P = Plan
     type S = PlanSummary
 
@@ -183,21 +248,23 @@ object Codecs:
         .typecase( 2, requested )
         .typecase( 3, byproduct )
 
+    val itemFlows: Codec[ItemFlows] =
+      (
+        codecs.vectorOfN( codecs.int32, codecs.vectorOfN( codecs.int32, flowEnd :: processSplitId ) ),
+        codecs.vectorOfN( codecs.int32, codecs.double :: codecs.uint16 :: codecs.uint16 )
+      ).imapN( ItemFlows.apply )( Tuple.fromProductTyped )
+
     val flows: Codec[Flows] =
       val endSplits: Codec[Vector[( EndId, Vector[( ProcessSplitId, Double, Group )] )]] =
         codecs.vectorOfN(
           codecs.uint16,
           endId :: codecs.vectorOfN( codecs.int32, processSplitId :: codecs.double :: group )
         )
-      val itemFlows: Codec[Map[ClassName[Item], Vector[Vector[( FlowEnd, ProcessSplitId )]]]] =
+      val itemFlowsMap: Codec[Map[ClassName[Item], ItemFlows]] =
         codecs
-          .vectorOfN(
-            codecs.int32,
-            className[Item] ::
-              codecs.vectorOfN( codecs.int32, codecs.vectorOfN( codecs.int32, flowEnd :: processSplitId ) )
-          )
+          .vectorOfN( codecs.int32, className[Item] :: itemFlows )
           .xmap( _.toMap, _.toVector )
-      ( codecs.int32, processSplitId, endSplits, itemFlows ).imapN( Flows.apply )( Tuple.fromProductTyped )
+      ( codecs.int32, processSplitId, endSplits, itemFlowsMap ).imapN( Flows.apply )( Tuple.fromProductTyped )
 
     override val plan: Codec[Plan] =
       (
@@ -224,7 +291,8 @@ object Codecs:
 
     def upgradePlan( fromP: FromP ): ToP
 
-    def describe: String = s"${fromCodecs.version} -> ${toCodecs.version}"
+    def describe: String       = s"${fromCodecs.version} -> ${toCodecs.version}"
+    def version: SchemaVersion = toCodecs.version
   }
 
   object Migration:
@@ -249,7 +317,27 @@ object Codecs:
         override def upgradePlan( fromP: P0 ): P1 = upgradePlan0( fromP )
       }
 
+  private def upgradePlanToV2( plan: v1.P ): v2.P =
+    Plan(
+      plan.name,
+      plan.recipeOptions,
+      plan.resourceOptions,
+      plan.extractionOptions,
+      plan.logisticsOptions,
+      plan.powerOptions,
+      plan.requestSelection,
+      Flows(
+        plan.flows.prodHash,
+        plan.flows.nextId,
+        plan.flows.endSplits,
+        plan.flows.itemFlows
+          .fmap: itemTransports =>
+            ItemFlows( itemTransports, Vector.empty )
+      ),
+      plan.productionUi
+    )
+
   val migrations: Vector[Migration] =
     Vector(
+      Migration( v1, v2 )( upgradePlanToV2 )
     )
- 

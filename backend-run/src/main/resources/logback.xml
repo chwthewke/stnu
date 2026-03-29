@@ -9,7 +9,11 @@
         <appender-ref ref="stdout" />
     </root>
 
-    <logger name="com.zaxxer.hikari" level="WARN" additivity='false'>
+    <logger name="FS.MIGRATIONS" level="DEBUG" additivity="false">
+        <appender-ref ref="stdout" />
+    </logger> 
+    
+    <logger name="com.zaxxer.hikari" level="WARN" additivity="false">
         <appender-ref ref="stdout" />
     </logger>
 

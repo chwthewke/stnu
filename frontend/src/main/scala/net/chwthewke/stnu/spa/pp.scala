@@ -31,4 +31,7 @@ object pp {
 
   type Flows = protocol.persistence.Flows
   val Flows: protocol.persistence.Flows.type = protocol.persistence.Flows
+
+  type ItemFlows = protocol.persistence.ItemFlows
+  val ItemFlows: protocol.persistence.ItemFlows.type = protocol.persistence.ItemFlows
 }

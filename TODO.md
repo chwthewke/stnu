@@ -86,6 +86,8 @@
 - ~~recipe row: estimate building footprint~~
   - with options for clearance/etc.
   - simple footprint per (leaf?) group (Dijsktra)
+- ~~Organizer: affordance for splitting transports (and not just processes)~~
+- Group visibility toggle (both views or only plan?)
 
 #### fixes
 - ~~Requests panel looks like ass~~
@@ -95,6 +97,7 @@
 - Something is also wrong with "hide FICSMAS" in plan
 - ~~new request panel: restore the \<input>s~~
 - ~~revert is weird on local reload~~ OK now?
+- Group summary import/exports need to take into account whether the group is a net importer, exporter or neither
 
 #### the quest for flows
 

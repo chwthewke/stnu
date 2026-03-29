@@ -120,6 +120,8 @@ class FlowsTests extends ScalaCheckSuite with GameFixture with FlowsProperties:
 
   checkFlowsProperties( "after merge (2-5 splits)", afterMergeNSplits() )
 
+  // TODO after transport split (hard to arrange though)
+
 object FlowsTests:
   case class InitialFlows( flows: Flows ) extends FlowsSetup:
     override def toString: String = s"INITIAL ${ShownFlows( flows )}"
