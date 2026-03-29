@@ -1,6 +1,7 @@
 package net.chwthewke.stnu
 package persistence
 
+import cats.Monad
 import cats.data.NonEmptySet
 import cats.data.OptionT
 import cats.effect.Async
@@ -19,20 +20,27 @@ import protocol.persistence.PlanId
 import protocol.persistence.PlanName
 import protocol.persistence.PlanSummary
 
-class FsPlans[F[_]: Sync]( private val data: Path )( using Files[F] ) extends PlansPersistenceApi[F]:
-  private val planFile: String    = "plan"
-  private val summaryFile: String = "summary"
-  private val indexDir: String    = ".index"
+class CurrentFsPlans[F[_]: Sync]( dataDir: Path, codecs: Codecs.Aux[Plan, PlanSummary] )( using Files[F] )
+    extends FsPlans[F, Plan, PlanSummary]( dataDir, codecs )
+    with PlansPersistenceApi[F]
+
+abstract class FsPlans[F[_]: Sync, Plan, PlanSummary](
+    private val data: Path,
+    private val codecs: Codecs.Aux[Plan, PlanSummary]
+)( using Files[F] ):
+
+  import FsPlans.*
 
   private val logger: SelfAwareStructuredLogger[F] = Slf4jLogger.getLoggerFromName( "FS" )
 
-  override def readPlans: F[Vector[PlanSummary]] =
+  def readPlans: F[Vector[PlanSummary]] =
     readPlanIds.flatMap: planIds =>
-      planIds.toVector.traverseFilter( id => readPlanSummaryFile( data / id.toString / summaryFile ).value )
+      planIds.toVector.traverseFilter( id => readPlanSummary( PlanId( id ) ).value )
 
-  override def savePlan( plan: Plan, at: Instant, overwrite: Boolean ): F[Option[PlanId]] =
-    val hash: String = PlanFileName.nameHash( plan.name )
-    getPlanId( plan.name ).value
+  def savePlan( plan: Plan, at: Instant, overwrite: Boolean ): F[Option[PlanId]] =
+    val planName: PlanName = codecs.getPlanName( plan )
+    val hash: String       = PlanFileName.nameHash( planName )
+    getPlanId( planName ).value
       .flatMap:
         case Some( planId ) =>
           OptionT.whenF( overwrite )( writePlanFiles( planId, plan, at ) ).as( planId ).value
@@ -44,9 +52,9 @@ class FsPlans[F[_]: Sync]( private val data: Path )( using Files[F] ) extends Pl
             _      <- writePlanFiles( planId, plan, at )
           yield planId.some
 
-  override def readPlan( planId: PlanId ): OptionT[F, Plan] = readPlanFile( data / planId.id.toString / planFile )
+  def readPlan( planId: PlanId ): OptionT[F, Plan] = readPlanFile( data / planId.id.toString / planFile )
 
-  override def deletePlan( planId: PlanId ): F[Boolean] =
+  def deletePlan( planId: PlanId ): F[Boolean] =
     readPlanName( data / planId.id.toString / planFile )
       .semiflatMap: name =>
         FileOps.deleteDirectory( data / indexDir / PlanFileName.nameHash( name ) / planId.id.toString, force = false )
@@ -93,13 +101,16 @@ class FsPlans[F[_]: Sync]( private val data: Path )( using Files[F] ) extends Pl
       .subflatMap( identity )
 
   private def readPlanName( path: Path ): OptionT[F, PlanName] =
-    OptionT.whenM( FileOps.isRegularFile[F]( path ) )( FileOps.readValue( path, Codecs.planName ) )
+    OptionT.whenM( FileOps.isRegularFile[F]( path ) )( FileOps.readValue( path, codecs.planName ) )
 
   private def readPlanFile( path: Path ): OptionT[F, Plan] =
-    OptionT.whenM( FileOps.isRegularFile[F]( path ) )( FileOps.readValue( path, Codecs.plan ) )
+    OptionT.whenM( FileOps.isRegularFile[F]( path ) )( FileOps.readValue( path, codecs.plan ) )
+
+  private def readPlanSummary( planId: PlanId ): OptionT[F, PlanSummary] =
+    readPlanSummaryFile( data / planId.id.toString / summaryFile )
 
   private def readPlanSummaryFile( path: Path ): OptionT[F, PlanSummary] =
-    OptionT.whenM( FileOps.isRegularFile[F]( path ) )( FileOps.readValue( path, Codecs.planSummary ) )
+    OptionT.whenM( FileOps.isRegularFile[F]( path ) )( FileOps.readValue( path, codecs.planSummary ) )
 
   private def writePlanFiles( planId: PlanId, plan: Plan, at: Instant ): F[Unit] =
     (
@@ -108,12 +119,78 @@ class FsPlans[F[_]: Sync]( private val data: Path )( using Files[F] ) extends Pl
     ).tupled
       .use:
         case ( planHandle, summaryHandle ) =>
-          FileOps.writeValue( summaryHandle, Codecs.planSummary )(
-            PlanSummary( planId, plan.name, at, plan.requestSelection.requestedAmounts.toVector )
+          FileOps.writeValue( summaryHandle, codecs.planSummary )(
+            codecs.toPlanSummary( planId, plan, at )
           )
-            *> FileOps.writeValue( planHandle, Codecs.plan )( plan )
+            *> FileOps.writeValue( planHandle, codecs.plan )( plan )
 
 object FsPlans:
-  def init[F[_]: Async]( dataDir: Path ): F[FsPlans[F]] =
+  private class SchemaOps[F[_]: Sync]( private val data: Path )( using Files[F] ):
+    def readSchemaVersion: OptionT[F, SchemaVersion] =
+      OptionT
+        .whenM( FileOps.isRegularFile[F]( data / schemaVersionFile ) ):
+          FileOps.readValue( data / schemaVersionFile, Codecs.schemaVersion )
+
+    def writeSchemaVersion( version: SchemaVersion ): F[Unit] =
+      FileOps
+        .lock( data / schemaVersionFile )
+        .use: handle =>
+          FileOps.writeValue( handle, Codecs.schemaVersion )( version )
+
+  private val planFile: String          = "plan"
+  private val summaryFile: String       = "summary"
+  private val indexDir: String          = ".index"
+  private val schemaVersionFile: String = ".version"
+
+  def doMigration[F[_]: Async, P0, S0, P1, S1]( dataDir: Path, migration: Codecs.Migration.Aux[P0, S0, P1, S1] )( using
+      Files[F]
+  ): F[Unit] =
+    for
+      sourcePlans <- forVersion[F, P0, S0]( dataDir, migration.fromCodecs )
+      planIds     <- sourcePlans.readPlanIds
+      destPlans   <- forVersion[F, P1, S1]( dataDir, migration.toCodecs )
+      _ <- planIds.traverseVoid( id => migratePlan( dataDir, PlanId( id ), sourcePlans, destPlans, migration ) )
+      _ <- new SchemaOps[F]( dataDir ).writeSchemaVersion( migration.toCodecs.version )
+    yield ()
+
+  def migratePlan[F[_]: Monad, P0, S0, P1, S1](
+      dataDir: Path,
+      planId: PlanId,
+      sourcePlans: FsPlans[F, P0, S0],
+      destPlans: FsPlans[F, P1, S1],
+      migration: Codecs.Migration.Aux[P0, S0, P1, S1]
+  ): F[Unit] =
+    ( sourcePlans.readPlanSummary( planId ), sourcePlans.readPlan( planId ) ).tupled.foreachF:
+      case ( summary, plan ) =>
+        destPlans.writePlanFiles(
+          planId,
+          migration.upgradePlan( plan ),
+          migration.fromCodecs.getSummaryUpdated( summary )
+        )
+
+  def doMigrations[F[_]: Async]( dataDir: Path, upTo: Codecs )( using Files[F] ): F[Unit] =
+    val logger: SelfAwareStructuredLogger[F] = Slf4jLogger.getLoggerFromName( "FS.MIGRATIONS" )
+    for
+      currentSchemaVersion <- new SchemaOps[F]( dataDir ).readSchemaVersion.value
+      _ <- logger.info( show"Current schema version is: ${currentSchemaVersion.fold( "NONE" )( _.toString )}" )
+      lastMigrationIndex =
+        currentSchemaVersion
+          .flatMap( v => Codecs.migrations.indexWhere( _.toCodecs.version == v ).some.filter( _ >= 0 ) )
+      migrations =
+        Codecs.migrations
+          .drop( lastMigrationIndex.fold( 0 )( _ + 1 ) )
+          .takeWhile( _.toCodecs.version <= upTo.version )
+      _ <- logger.info( show"Applying ${migrations.size} migrations: ${migrations.map( _.describe ).mkString_( " " )}" )
+      _ <- logger.info( "NOT RUNNING MIGRATIONS YET" )
+    yield ()
+
+  def init[F[_]: Async]( dataDir: Path, codecs: Codecs.Aux[Plan, PlanSummary] = Codecs.v1 ): F[PlansPersistenceApi[F]] =
     given files: Files[F] = Files.forAsync[F]
-    files.createDirectories( dataDir ).as( new FsPlans[F]( dataDir ) )
+    for
+      _ <- files.createDirectories( dataDir )
+      _ <- doMigrations( dataDir, upTo = codecs )
+    yield new CurrentFsPlans[F]( dataDir, codecs )
+
+  private def forVersion[F[_]: Async, P, S]( dataDir: Path, codecs: Codecs.Aux[P, S] ): F[FsPlans[F, P, S]] =
+    given files: Files[F] = Files.forAsync[F]
+    files.createDirectories( dataDir ).as( new FsPlans[F, P, S]( dataDir, codecs ) {} )
