@@ -12,16 +12,15 @@ import fs2.io.file.Path
 import fs2.io.net.Network
 import java.time.temporal.ChronoUnit
 import org.http4s.HttpRoutes
-import org.http4s.Request
 import org.http4s.ember.server.EmberServerBuilder
 import pureconfig.ConfigSource
 import pureconfig.module.catseffect.syntax.*
 import scala.concurrent.duration.*
 
 import model.ModelIndex
-import net.chwthewke.stnu.persistence.FsPlans
-import net.chwthewke.stnu.persistence.PlansPersistenceApi
+import persistence.FsPlans
 import persistence.Plans
+import persistence.PlansPersistenceApi
 import protocol.game.FullModel
 import server.middleware.Cors
 import server.middleware.LastModifiedMiddleware
