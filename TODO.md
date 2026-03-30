@@ -97,7 +97,7 @@
 - Something is also wrong with "hide FICSMAS" in plan
 - ~~new request panel: restore the \<input>s~~
 - ~~revert is weird on local reload~~ OK now?
-- Group summary import/exports need to take into account whether the group is a net importer, exporter or neither
+- ~~Group summary import/exports need to take into account whether the group is a net importer, exporter or neither~~
 
 #### the quest for flows
 

@@ -30,6 +30,8 @@ trait CustomEnum[A]:
   def withNameEither( name: String ): Either[String, A] =
     withNameOption( name ).toRight( s"$name not in $casesList" )
 
+  def withIndexOption( index: Int ): Option[A] = cases.lift( index )
+
 trait Enum[A] extends CustomEnum[A]:
   final override def keyOf( a: A ): String = a.toString
 

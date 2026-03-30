@@ -2,13 +2,11 @@ package net.chwthewke.stnu
 package spa
 package views
 
-import cats.Semigroup
 import cats.data.NonEmptyVector
 import cats.syntax.all.*
 import tyrian.Html
 
 import data.Countable
-import model.Footprint
 import model.Item
 import model.Machine
 import model.prod.FlowEnd
@@ -19,9 +17,9 @@ import spa.prod.Flows
 import spa.prod.GroupFlows
 import spa.prod.GroupTransport
 import spa.prod.Groups
+import spa.prod.IntegratedFootprint
 import spa.prod.LocalGroupEnd
 import spa.prod.RemoteGroupEnd
-import spa.prod.footprints
 
 object GroupSummary:
   val b: Bulma    = Bulma
@@ -29,8 +27,8 @@ object GroupSummary:
 
   def apply( flows: Flows, groups: Groups, group: Group, groupFlows: GroupFlows, flat: Boolean ): Html[Nothing] =
     Html.div(
-      importExports( flows, groups, group, groupFlows, flat ),
-      machinesSummary( flows, groups, group )
+      machinesSummary( flows, groups, group ),
+      importExports( flows, groups, group, groupFlows, flat )
     )
 
   private def getEndFlows[A]( byEnd: Map[FlowEnd, Map[Item, A]], flowEnd: FlowEnd )(
@@ -80,9 +78,10 @@ object GroupSummary:
   ): Html[Nothing] =
     Html.div(
       getEndFlows( groupFlows, flowEnd, flat ).toList
+        .sortBy( _._1.displayName )
         .map:
           case ( item, transports ) =>
-            groupTransports( flows, groups, flowEnd, item, transports, flat )
+            groupTransports( flows, groups, flowEnd, item, groupFlows.balance.get( item ).flatten, transports, flat )
     )
 
   private def groupTransports(
@@ -90,6 +89,7 @@ object GroupSummary:
       groups: Groups,
       flowEnd: FlowEnd,
       item: Item,
+      balance: Option[Double],
       transports: NonEmptyVector[GroupTransport],
       flat: Boolean
   ): Html[Nothing] =
@@ -101,9 +101,16 @@ object GroupSummary:
           transports.zipWithIndex.map { case ( t, ix ) => ( t, ix.some ) }
       ).toVector.toList
     Html.div( b.block )(
-      Html.h4( b.subtitle + b.hasTextCentered + b.hasBackgroundGreyDarker + b.hasTextLight )(
-        icon.verticalAlign().withClasses( b.pr2 ).withSize( b.is32x32 ).item( flows.prod.env, item ),
-        Html.text( item.displayName )
+      Html.h4( b.subtitle + b.hasTextCentered + b.hasBackgroundGreyDarker + b.hasTextLight + b.py1 )(
+        icon.verticalAlign().withClasses( b.mr2 ).withSize( b.is32x32 ).item( flows.prod.env, item ),
+        Html.span( va() )( item.displayName ),
+        Html.div( b.help )(
+          balance match
+            case Some( value ) =>
+              val flowDirection = if ( value > 0 ) "exporter" else "importer"
+              s"Net $flowDirection: ${Numbers.showDouble3( value.abs )}"
+            case None => "Net neutral"
+        )
       )
         ::
           groupTransportsWithIndex.map {
@@ -198,57 +205,54 @@ object GroupSummary:
       .sortBy:
         case ( machine, _ ) => ( machine.tier, machine.displayName )
 
-  private def blockFootprint[B: Semigroup]( wrap: Footprint => B )( machineCounts: List[( Machine, Int )] ): Option[B] =
-    machineCounts
-      .foldMap:
-        case ( machine, count ) =>
-          machine.footprint
-            .flatMap: footprint =>
-              Option.when( count > 0 )( wrap( footprint ).combineN( count ) )
-
-  // NOTE
-  //   - for leaf groups, computes the footprint as if it were a single row of machines
-  //   - for non-leaf groups which have only leaf children, computes the footprint by putting the children's
-  //      rows (plus one row for this group's machines if any) next to each other
-  private def groupFootprint(
+  private def groupMachines(
       flows: Flows,
       groups: Groups,
-      group: Group,
-      machineCounts: List[( Machine, Int )]
-  ): Option[Footprint] =
+      group: Group
+  ): ( List[Countable[Int, Machine]], Option[IntegratedFootprint] ) =
+    def localMachinesAndFootprint: ( List[Countable[Int, Machine]], Option[IntegratedFootprint] ) =
+      val machineCounts: List[( Machine, Int )] = getMachineCounts( flows, group )
+      (
+        machineCounts.map { case ( machine, count ) => Countable( machine, count ) },
+        machineCounts.foldMap:
+          case ( machine, count ) =>
+            Option.when( count > 0 )( machine.footprint.map( IntegratedFootprint.row ).combineN( count ) ).flatten
+      )
+
     groups
       .get( group.path )
-      .flatMap:
-        case Groups.Nil =>
-          // leaf group -> row footprint
-          blockFootprint( footprints.Row( _ ) )( machineCounts ).map( _.footprint )
-        case subgroups @ Groups.SubGroups( children ) =>
-          def childrenFootprints: List[Footprint] =
-            children
-              .flatMap:
-                case ( i, child ) =>
-                  groupFootprint(
-                    flows,
-                    groups,
-                    Group( group.path :+ i ),
-                    getMachineCounts( flows, Group( group.path :+ i ) )
-                  )
-              .toList
-          if ( subgroups.depth == 2 )
-            childrenFootprints.foldMap( footprints.Floor( _ ).some ).map( _.footprint )
-          else if ( subgroups.depth == 3 )
-            childrenFootprints.foldMap( footprints.Building( _ ).some ).map( _.footprint )
-          else
-            none
+      .foldMap:
+        case Groups.Nil                   => localMachinesAndFootprint
+        case Groups.SubGroups( children ) =>
+          val ( childrenMachines, childrenFootprints ) =
+            children.keys.toVector
+              .map: i =>
+                val ( childMachines, childFootprint ) =
+                  groupMachines( flows, groups, Group( group.path :+ i ) )
+                ( childMachines, childFootprint.integrate )
+              .combineAll
+
+          val ( localMachines, localFootprint ) = localMachinesAndFootprint
+          ( localMachines |+| childrenMachines, localFootprint |+| childrenFootprints )
 
   private def machinesSummary( flows: Flows, groups: Groups, group: Group ): Html[Nothing] =
-    val machineCounts: List[( Machine, Int )] = getMachineCounts( flows, group )
+    val ( machines, footprint ) = groupMachines( flows, groups, group )
+
+    val machineCounts: List[( Machine, Int )] =
+      machines.gather
+        .sortBy( cm => ( cm.item.machineType, cm.item.tier, cm.item.displayName ) )
+        .map( cm => ( cm.item, cm.amount ) )
 
     val simpleFootprint: Option[Html[Nothing]] =
-      groupFootprint( flows, groups, group, machineCounts )
-        .map: footprint =>
-          Elements.messageCenteredHeader( b.isPrimary, b.hasTextPrimaryDark, Html.text( "Simple footprint" ) )(
-            FootprintElements.text( footprint )
+      footprint
+        .map: integratedFootprint =>
+          val integrationLevel: String = integratedFootprint.level.displayName
+          Elements.messageCenteredHeader(
+            b.isPrimary,
+            b.hasTextPrimaryDark,
+            Html.text( s"Footprint estimate ($integrationLevel)" )
+          )(
+            FootprintElements.text( integratedFootprint.footprint )
           )
 
     Html.div( b.hasTextCentered + b.container + b.mb5 )(

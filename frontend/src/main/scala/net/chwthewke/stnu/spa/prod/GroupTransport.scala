@@ -13,5 +13,5 @@ case class GroupTransport(
     localAdjacent: Int,
     remoteEnds: NonEmptyVector[Countable[Double, RemoteGroupEnd]]
 ) extends FlowTransport:
-  override def amount: Double    = localEnds.foldMap( _.amount )
+  override def amount: Double    = remoteEnds.foldMap( _.amount )
   override def balanced: Boolean = true // unbalanced warnings are irrelevant

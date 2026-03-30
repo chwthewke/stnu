@@ -641,7 +641,7 @@ object PlanTable:
 
       Html.tr(
         Html.td( noBorderStyle, Html.colspan := "10", b.hasTextCentered )(
-          Elements.messageCenteredHeader( b.isPrimary, b.hasTextPrimaryDark, Html.text( "Footprint estimates" ) )(
+          Elements.messageCenteredHeader( b.isPrimary, b.hasTextPrimaryDark, Html.text( "Footprint estimate" ) )(
             Html.table( b.table + b.isFullwidth )(
               Html.thead(
                 estimates._1F.map: n =>
