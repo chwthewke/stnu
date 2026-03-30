@@ -52,19 +52,24 @@ object GroupSummary:
       group: Group,
       groupFlows: GroupFlows,
       flat: Boolean
-  ): Html[Nothing] =
-    Html.div( b.block )(
-      Html.h2( b.title + b.isSize4 + b.hasTextCentered )(
-        s"Import/exports of ${FlowElements.longGroupName( group )}"
-      ),
-      Html.div( b.columns )(
-        Html.div( b.column + b.isHalf )(
-          Html.h3( b.subtitle + b.isSize4 + b.hasTextCentered )( "IMPORTS" ),
-          endGroupFlows( flows, groups, groupFlows, FlowEnd.Destination, flat )
+  ): Option[Html[Nothing]] =
+    val imports: Option[Html[Nothing]] = endGroupFlows( flows, groups, groupFlows, FlowEnd.Destination, flat )
+    val exports: Option[Html[Nothing]] = endGroupFlows( flows, groups, groupFlows, FlowEnd.Source, flat )
+
+    Option.when( imports.isDefined || exports.isDefined )(
+      Html.div( b.block )(
+        Html.h2( b.title + b.isSize4 + b.hasTextCentered )(
+          s"Import/exports of ${FlowElements.longGroupName( group )}"
         ),
-        Html.div( b.column + b.isHalf )(
-          Html.h3( b.subtitle + b.isSize4 + b.hasTextCentered )( "EXPORTS" ),
-          endGroupFlows( flows, groups, groupFlows, FlowEnd.Source, flat )
+        Html.div( b.columns )(
+          Html.div( b.column + b.isHalf )(
+            Html.h3( b.subtitle + b.isSize4 + b.hasTextCentered )( "IMPORTS" ),
+            imports
+          ),
+          Html.div( b.column + b.isHalf )(
+            Html.h3( b.subtitle + b.isSize4 + b.hasTextCentered )( "EXPORTS" ),
+            exports
+          )
         )
       )
     )
@@ -75,13 +80,16 @@ object GroupSummary:
       groupFlows: GroupFlows,
       flowEnd: FlowEnd,
       flat: Boolean
-  ): Html[Nothing] =
-    Html.div(
-      getEndFlows( groupFlows, flowEnd, flat ).toList
-        .sortBy( _._1.displayName )
-        .map:
-          case ( item, transports ) =>
-            groupTransports( flows, groups, flowEnd, item, groupFlows.balance.get( item ).flatten, transports, flat )
+  ): Option[Html[Nothing]] =
+    val endFlows: List[( Item, NonEmptyVector[GroupTransport] )] = getEndFlows( groupFlows, flowEnd, flat ).toList
+      .sortBy( _._1.displayName )
+    Option.when( endFlows.nonEmpty )(
+      Html.div(
+        endFlows
+          .map:
+            case ( item, transports ) =>
+              groupTransports( flows, groups, flowEnd, item, groupFlows.balance.get( item ).flatten, transports, flat )
+      )
     )
 
   private def groupTransports(
@@ -235,7 +243,7 @@ object GroupSummary:
           val ( localMachines, localFootprint ) = localMachinesAndFootprint
           ( localMachines |+| childrenMachines, localFootprint |+| childrenFootprints )
 
-  private def machinesSummary( flows: Flows, groups: Groups, group: Group ): Html[Nothing] =
+  private def machinesSummary( flows: Flows, groups: Groups, group: Group ): Option[Html[Nothing]] =
     val ( machines, footprint ) = groupMachines( flows, groups, group )
 
     val machineCounts: List[( Machine, Int )] =
@@ -255,19 +263,21 @@ object GroupSummary:
             FootprintElements.text( integratedFootprint.footprint )
           )
 
-    Html.div( b.hasTextCentered + b.container + b.mb5 )(
-      Html.h2( b.title + b.isSize4 + b.hasTextCentered )(
-        s"Machines in ${FlowElements.longGroupName( group )}"
-      ),
-      Html.div( b.block )(
-        Html.div( b.grid + b.isGap8 )(
-          machineCounts.map:
-            case ( machine, count ) =>
-              Html.div( b.cell )(
-                RecipeFrag.numberedIcon( flows.prod.env, Countable( machine, count ), None ),
-                Html.span( b.ml2 )( machine.displayName )
-              )
-        )
-      ),
-      simpleFootprint
+    Option.when( machineCounts.nonEmpty || simpleFootprint.isDefined )(
+      Html.div( b.hasTextCentered + b.container + b.mb5 )(
+        Html.h2( b.title + b.isSize4 + b.hasTextCentered )(
+          s"Machines in ${FlowElements.longGroupName( group )}"
+        ),
+        Html.div( b.block )(
+          Html.div( b.grid + b.isGap8 )(
+            machineCounts.map:
+              case ( machine, count ) =>
+                Html.div( b.cell )(
+                  RecipeFrag.numberedIcon( flows.prod.env, Countable( machine, count ), None ),
+                  Html.span( b.ml2 )( machine.displayName )
+                )
+          )
+        ),
+        simpleFootprint
+      )
     )

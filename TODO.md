@@ -88,6 +88,7 @@
   - simple footprint per (leaf?) group (Dijsktra)
 - ~~Organizer: affordance for splitting transports (and not just processes)~~
 - Group visibility toggle (both views or only plan?)
+- Affordance for drilling down into peer groups in gorup transports
 
 #### fixes
 - ~~Requests panel looks like ass~~
@@ -98,6 +99,8 @@
 - ~~new request panel: restore the \<input>s~~
 - ~~revert is weird on local reload~~ OK now?
 - ~~Group summary import/exports need to take into account whether the group is a net importer, exporter or neither~~
+- Group grid: incorrect fill or presence of grand-nibling groups (relative to current)
+- Group summary: flat/transport toggle incorrectly shown when there are no group transports 
 
 #### the quest for flows
 
