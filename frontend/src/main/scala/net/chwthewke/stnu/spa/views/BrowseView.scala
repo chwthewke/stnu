@@ -166,22 +166,23 @@ object BrowseView:
         case power: Recipe.PowerGeneration => displayPowerGenerationRecipe( env, power )
         case manu: Recipe.Manufacturing    => displayManufacturingRecipe( env, manu )
 
-    private def displayPowerGenerationRecipe( env: Env, recipe: Recipe.PowerGeneration ) =
+    private def selectIcon( env: Env, ci: Countable[Double, Item] ): Html[BrowseMsg] =
+      RecipeFrag.numberedIcon1( env, ci, b.mx1, Html.onClick( BrowseMsg.SelectItem( ci.item.displayName ) ) )
+
+    private def displayPowerGenerationRecipe( env: Env, recipe: Recipe.PowerGeneration ): List[Html[BrowseMsg]] =
       displayRecipe( env, recipe ): products =>
         Html.td( Html.styles( CSS.textAlign( "left" ), CSS.verticalAlign( "middle" ) ) )(
           Html.span( b.hasTextWeightBold, Html.style( CSS.verticalAlign( "middle" ) ) )(
-            Numbers.showDouble1( -recipe.power.average ) + " MW"
+            Numbers.showDouble1M( -recipe.power.average ) + " MW"
           ) ::
             nbsp ::
-            products.map: ci =>
-              RecipeFrag.numberedIcon1( env, ci, b.px1, Html.onClick( BrowseMsg.SelectItem( ci.item.displayName ) ) )
+            products.map( selectIcon( env, _ ) )
         )
 
-    private def displayManufacturingRecipe( env: Env, recipe: Recipe.Manufacturing ) =
+    private def displayManufacturingRecipe( env: Env, recipe: Recipe.Manufacturing ): List[Html[BrowseMsg]] =
       displayRecipe( env, recipe ): products =>
         Html.td( Html.styles( CSS.textAlign( "left" ), CSS.verticalAlign( "middle" ) ) )(
-          products.toList.map: ci =>
-            RecipeFrag.numberedIcon1( env, ci, b.px1, Html.onClick( BrowseMsg.SelectItem( ci.item.displayName ) ) )
+          products.toList.map( selectIcon( env, _ ) )
         )
 
     private def displayRecipe[R <: Recipe, M <: BrowseMsg]( env: Env, recipe: R )(
@@ -203,8 +204,7 @@ object BrowseView:
         ),
         Html.td( Html.styles( CSS.textAlign( "right" ), CSS.verticalAlign( "middle" ) ) )(
           Html.span()(
-            recipe.ingredients.map: ci =>
-              RecipeFrag.numberedIcon1( env, ci, b.px1, Html.onClick( BrowseMsg.SelectItem( ci.item.displayName ) ) )
+            recipe.ingredients.map( selectIcon( env, _ ) )
           )
         ),
         Html.td( Html.styles( CSS.textAlign( "center" ), CSS.verticalAlign( "middle" ) ) )(
@@ -213,7 +213,7 @@ object BrowseView:
         displayProducts( recipe.products ),
         Html.td( Html.styles( CSS.verticalAlign( "middle" ) ) )(
           Html.span(
-            s"${Numbers.showDouble1( recipe.duration.toMillis / 1000d )} s"
+            s"${Numbers.showDouble1M( recipe.duration.toMillis / 1000d )} s"
           )
         )
       )

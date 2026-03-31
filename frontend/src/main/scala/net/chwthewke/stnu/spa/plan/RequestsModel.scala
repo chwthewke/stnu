@@ -13,17 +13,22 @@ case class RequestsModel(
     search: SearchQuery
 ):
 
-  val requestedAmounts: SortedMap[ClassName[Item], Double] =
+  val requests: List[( Item, Double )] =
     requestAmountEditors
       .mapFilter:
         case ( item, input ) =>
-          input.input.flatMap( _.toDoubleOption ).tupleLeft( item.className )
+          input.input.flatMap( _.toDoubleOption ).tupleLeft( item )
+
+  val requestedAmounts: SortedMap[ClassName[Item], Double] =
+    requests
+      .map:
+        case ( item, amount ) => ( item.className, amount )
       .to( SortedMap )
 
   val requested: Vector[Countable[Double, ClassName[Item]]] =
-    requestedAmounts
+    requests
       .map:
-        case ( item, amount ) => Countable( item, amount )
+        case ( item, amount ) => Countable( item.className, amount )
       .toVector
 
   val requestedItems: Set[ClassName[Item]] = requested.map( _.item ).toSet

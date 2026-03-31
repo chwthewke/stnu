@@ -57,7 +57,7 @@ object RecipeFrag:
       c: Conversion[I, IconMagnet]
   ): Html[A] =
     Html.span( List[Attr[Nothing]]( b.tag + b.isMedium ) )(
-      Html.strong( Numbers.showDouble1( ci.amount ) ),
+      Html.strong( Numbers.showDouble1M( ci.amount ) ),
       nbsp,
       c( ci.item ).getIcon( env, icon.verticalAlign().withDropShadow() )
     )
@@ -73,7 +73,7 @@ object RecipeFrag:
       c: Conversion[I, IconMagnet]
   ): Html[A] =
     numberedIconVar( ci.map( c( _ ).getIcon( env, icon.verticalAlign().withDropShadow() ) ), classes, attrs* )(
-      Numbers.showDouble1
+      Numbers.showDouble1M
     )
 
   def numberedIcon3[A, I]( env: Env, ci: Countable[Double, I], classes: Classes, attrs: Attr[A]* )( using
@@ -111,12 +111,12 @@ object RecipeFrag:
     val powerText: List[Elem[Nothing]] =
       power match
         case Power.Production( value ) =>
-          Html.span( b.hasTextWeightBold )( Numbers.showDouble1( -power.average ) + " MW" ) :: Nil
+          Html.span( b.hasTextWeightBold )( Numbers.showDouble1M( -power.average ) + " MW" ) :: Nil
         case Power.Fixed( value ) =>
-          Html.span( b.hasTextWeightBold )( Numbers.showDouble1( power.average ) + " MW" ) :: Nil
+          Html.span( b.hasTextWeightBold )( Numbers.showDouble1M( power.average ) + " MW" ) :: Nil
         case Power.Variable( min, max ) =>
-          Html.span( b.hasTextWeightBold )( Numbers.showDouble1( power.average ) ) ::
-            Html.text( s" (${Numbers.showDouble1( power.min )}-${Numbers.showDouble1( power.max )}) " ) ::
+          Html.span( b.hasTextWeightBold )( Numbers.showDouble1M( power.average ) ) ::
+            Html.text( s" (${Numbers.showDouble1M( power.min )}-${Numbers.showDouble1M( power.max )}) " ) ::
             Html.span( b.hasTextWeightBold )( "MW" ) ::
             Nil
     Html.span( va(), b.iconText + b.mr1 )(

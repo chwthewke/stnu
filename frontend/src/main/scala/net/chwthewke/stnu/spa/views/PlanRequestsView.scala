@@ -2,6 +2,8 @@ package net.chwthewke.stnu
 package spa
 package views
 
+import cats.syntax.all.*
+import mouse.boolean.*
 import tyrian.Attribute
 import tyrian.CSS
 import tyrian.Html
@@ -39,9 +41,18 @@ object PlanRequestsView:
       )
 
     val description: Html[Nothing] =
-      val total: Int    = requests.requestAmountEditors.length
-      val project: Int  = requests.requestAmountEditors.count( r => isProjectPart( r._1 ) )
-      val fluids: Int   = requests.requestAmountEditors.count( r => r._1.form != Form.Solid )
+      val ( total, project, fluids, storableAmount ) =
+        requests.requests.foldMap:
+          case ( item, amount ) =>
+            val projectPart: Boolean = isProjectPart( item )
+            val solid: Boolean       = item.form == Form.Solid
+            (
+              1,
+              projectPart.valueOrZero( 1 ),
+              solid.zeroOrValue( 1 ),
+              ( !projectPart && solid ).valueOrZero( amount )
+            )
+
       val storable: Int = total - project - fluids
 
       def s( n: Int ): String = if ( n == 1 ) "" else "s"
@@ -57,7 +68,9 @@ object PlanRequestsView:
         Html.p(
           Html.strong( storable.toString ),
           nbsp,
-          Html.text( "storable, " ),
+          Html.text( "storable (" ),
+          Html.strong( Numbers.showDouble3M( storableAmount ) ),
+          Html.text( "/min), " ),
           Html.strong( project.toString ),
           nbsp,
           Html.text( s"project part${s( project )}, " ),
