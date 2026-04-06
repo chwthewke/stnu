@@ -89,6 +89,9 @@
 - ~~Organizer: affordance for splitting transports (and not just processes)~~
 - Group visibility toggle (both views or only plan?)
 - Affordance for drilling down into peer groups in gorup transports
+- Power amplification
+- Change logic of extraction recipes when overclocking (use all, then overclock)
+- hover with more precision for (some) doubles
 
 #### fixes
 - ~~Requests panel looks like ass~~
@@ -100,7 +103,10 @@
 - ~~revert is weird on local reload~~ OK now?
 - ~~Group summary import/exports need to take into account whether the group is a net importer, exporter or neither~~
 - Group grid: incorrect fill or presence of grand-nibling groups (relative to current)
-- Group summary: flat/transport toggle incorrectly shown when there are no group transports 
+- Group summary
+  - flat/transport toggle incorrectly shown when there are no group transports
+  - still not exactly right re: transport (count), fiddle with net imports/exports
+- maybe using Tag.withKey could improve vdom patching perf (target all the groupGrid 1st)
 
 #### the quest for flows
 

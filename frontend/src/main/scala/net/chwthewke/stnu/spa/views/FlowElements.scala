@@ -43,7 +43,7 @@ object FlowElements:
         case Some( nev ) =>
           val w    = currentTree.subGroupWidthWithNewChild
           val step = gamut / w
-          val next = acc + ( nev.head.toDouble - 0.5d ) * step
+          val next = acc + ( nev.head.toDouble - 1d ) * step
           currentTree.subGroups.flatMap( _.get( nev.head ) ) match
             case None         => next
             case Some( subs ) => loop( next, step, Group( nev.tail ), subs )
