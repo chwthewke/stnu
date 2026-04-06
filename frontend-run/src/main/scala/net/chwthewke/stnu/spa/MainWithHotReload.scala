@@ -41,6 +41,6 @@ object MainWithHotReload
       Html
         .div(
           b.notification + b.isDanger + b.p0,
-          Html.styles( CSS.position( "fixed" ), CSS.bottom( "0" ), CSS.right( "0" ) )
+          Html.styles( CSS.position( "fixed" ), CSS.bottom( "0" ), CSS.left( "0" ) )
         )( "Dev build" )
     )

@@ -44,6 +44,7 @@ enum PlanMsg:
   case SwapGroups( from: Group, to: Group )
   case ToggleGroupSummaryExpanded( group: Group )
   case ToggleGroupSummaryFlat( group: Group )
+  case MoveTo( anchor: Option[String] )
   //
   case SendSolverRequest
   case ReceiveSolverResponse( request: SolverRequest, solution: SolverResponse )

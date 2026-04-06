@@ -116,6 +116,10 @@ class PlanModel(
       copy( productionUi = productionUi.toggleGroupSummaryExpanded( group ) ) -> Cmd.None
     case PlanMsg.ToggleGroupSummaryFlat( group ) =>
       copy( productionUi = productionUi.toggleGroupSummaryFlat( group ) ) -> Cmd.None
+    case PlanMsg.MoveTo( None ) =>
+      this -> MoveTo.top
+    case PlanMsg.MoveTo( Some( anchor ) ) =>
+      this -> MoveTo.element( anchor )
     case PlanMsg.ToggleProductionRowExpanded( recipe ) =>
       copy( productionUi = productionUi.toggleProductionRowExpanded( recipe ) ) -> Cmd.None
     case PlanMsg.MoveProductionRow( rows, index, amount ) =>

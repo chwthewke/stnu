@@ -2,7 +2,6 @@ package net.chwthewke.stnu
 package spa
 package views
 
-import cats.data.NonEmptyList
 import cats.data.NonEmptyVector
 import cats.syntax.all.*
 import tyrian.Attr
@@ -16,6 +15,7 @@ import model.Transport
 import model.prod.FlowEnd
 import spa.css.Bulma
 import spa.css.Classes
+import spa.css.CssClass
 import spa.css.Phosphor
 import spa.plan.PlanModel
 import spa.plan.PlanMsg
@@ -101,53 +101,73 @@ object FlowsView:
           .sortBy( _._1.displayName )
     val groups: Groups = flows.foldMap( Groups.of )
 
-    flows.flatMap( modal ) ++:
-      PlanHeader(
-        model,
-        panelButtons :+ reset :+ toggleShow( model.productionUi )*
-      ) ++:
-      problemNotifications( model.env, itemFlows ) :++
-      flows.map: f =>
-        Html.div(
-          itemFlows
-            .filter:
-              case ( _, trs ) =>
-                model.productionUi.showAllFlows || trs.exists( it => it.overflow || !it.balanced )
-            .map:
-              case ( item, transports ) =>
-                displayItem( f, groups, item, transports )
-        )
+    def planHeader: List[Html[PlanMsg]] =
+      PlanHeader( model, panelButtons :+ reset :+ toggleShow( model.productionUi )* )
 
-  private def problemNotifications(
+    def itemTags: Html[PlanMsg] = Html.div( b.block )( itemLinks( model.env, model.productionUi, itemFlows ) )
+
+    def goToTop: Html[PlanMsg] =
+      Html.button(
+        b.isLight + b.button,
+        Html.styles( CSS.position( "fixed" ), CSS.bottom( "0.5rem" ), CSS.right( "0.5rem" ), CSS.zIndex( "2" ) ),
+        Html.onClick( PlanMsg.MoveTo( none ) )
+      )( Html.i( p.regular.arrowLineUp )() )
+
+    def itemFlowBlocks: List[Html[PlanMsg]] =
+      flows
+        .map: f =>
+          Html.div(
+            itemFlows
+              .filter:
+                case ( _, trs ) =>
+                  model.productionUi.showAllFlows || trs.exists( it => it.overflow || !it.balanced )
+              .map:
+                case ( item, transports ) =>
+                  displayItem( f, groups, item, transports )
+          )
+        .toList
+
+    List(
+      Html.div( b.mb6 )(
+        flows.flatMap( modal ) ++:
+          planHeader ++:
+          itemTags +:
+          goToTop +:
+          itemFlowBlocks ++: Nil
+      )
+    )
+
+  private def itemAnchorId( item: Item ): String =
+    show"fa_${item.className}"
+
+  private def itemAnchor( item: Item ): Attr[Nothing] =
+    Html.id := itemAnchorId( item )
+
+  private def itemLinks(
       env: Env,
+      ui: ProdModel.Ui,
       itemFlows: List[( Item, NonEmptyVector[ItemTransport] )]
-  ): List[Html[Nothing]] =
-    val ( overflow, unbalanced ) =
-      itemFlows
-        .foldMap:
-          case ( item, itemTransports ) =>
-            (
-              Option.when( itemTransports.exists( _.overflow ) )( item ).toList,
-              Option.when( itemTransports.exists( !_.balanced ) )( item ).toList
-            )
-    def notification( classes: Classes, text: String, items: NonEmptyList[Item] ): Html[Nothing] =
-      Html.div( b.notification + classes )(
-        Html.p( b.hasTextWeightBold + b.isSize4 )( s"$text:" ),
-        Html.p(
-          items.toList.map: item =>
-            Html.span( b.tag + b.isDark + b.mx1 )(
+  ): List[Html[PlanMsg]] =
+    itemFlows.foldMap:
+      case ( item, itemTransports ) =>
+        val unbalanced = itemTransports.exists( !_.balanced )
+        val overflow   = itemTransports.exists( _.overflow )
+        Option
+          .when( ui.showAllFlows || unbalanced || overflow ):
+            val color: CssClass =
+              if ( unbalanced ) b.isDanger
+              else if ( overflow ) b.isWarning
+              else b.isDark
+
+            Html.span(
+              b.tag + b.m1 + color,
+              Html.style( CSS.cursor( "pointer" ) ),
+              Html.onClick( PlanMsg.MoveTo( Some( itemAnchorId( item ) ) ) )
+            )(
               Html.span( b.iconText )( item.displayName ),
               Html.span( b.icon )( icon.verticalAlign().withDropShadow().item( env, item ) )
             )
-        )
-      )
-
-    List(
-      overflow.toNel
-        .map( notification( b.isWarning, "The following items have overflows", _ ) ),
-      unbalanced.toNel
-        .map( notification( b.isDanger, "The following items are unbalanced", _ ) )
-    ).flattenOption
+          .toList
 
   private def renderSrcDestMachines( env: Env, srcDest: Split[SrcDest] ): List[Elem[Nothing]] =
     def renderMachines( recipe: ClockedRecipe ) =
@@ -392,7 +412,7 @@ object FlowsView:
       transports: NonEmptyVector[ItemTransport]
   ): Html[PlanMsg] =
     val env = flows.prod.env
-    Html.div( b.block )(
+    Html.div( b.block, itemAnchor( item ) )(
       Html.h4( b.subtitle )(
         icon.verticalAlign().withClasses( b.mr2 ).withSize( b.is32x32 ).item( env, item ),
         Html.text( item.displayName )
