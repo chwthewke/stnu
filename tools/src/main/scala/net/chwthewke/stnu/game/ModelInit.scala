@@ -106,7 +106,7 @@ object ModelInit:
           val usefulItemClasses: Set[ClassName[Item]] =
             ex.foldMap( t => t.recipes.foldMap( itemClassesOf( _ ) ) ) ++
               mf.foldMap( itemClassesOf( _ ) ) ++
-              pw.foldMap( itemClassesOf( _ ) )
+              pw.foldMap( itemClassesOf( _ ) ) + Item.somersloop
 
           val usefulItems: SortedMap[ClassName[Item], Item] =
             modelItems.items

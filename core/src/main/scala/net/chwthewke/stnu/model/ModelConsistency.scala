@@ -2,7 +2,6 @@ package net.chwthewke.stnu
 package model
 
 import cats.Applicative
-import cats.data.NonEmptyList
 import cats.data.ValidatedNel
 import cats.syntax.all.*
 import mouse.option.*

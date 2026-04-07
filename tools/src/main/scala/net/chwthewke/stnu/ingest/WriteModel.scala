@@ -52,8 +52,6 @@ object WriteModel:
   abstract class LocalProgram( storage: DataVersionStorage ) extends Program( storage, _.runLocal )
   abstract class GrabProgram( storage: DataVersionStorage )  extends Program( storage, _.grabAndRun )
 
-object WriteLocalModel1_0 extends WriteModel.LocalProgram( DataVersionStorage.Release1_0 )
 object WriteLocalModel1_1 extends WriteModel.LocalProgram( DataVersionStorage.Release1_1 )
 
-object GrabAndWriteModel1_0 extends WriteModel.GrabProgram( DataVersionStorage.Release1_0 )
 object GrabAndWriteModel1_1 extends WriteModel.GrabProgram( DataVersionStorage.Release1_1 )

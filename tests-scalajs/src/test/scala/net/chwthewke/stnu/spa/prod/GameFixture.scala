@@ -23,8 +23,6 @@ trait GameFixture extends FunSuite:
   def defaultSolutions: ExportedSolutions =
     data().exportedSolutions.byModelVersion.getOrElse( data().envs.last._1, ExportedSolutions( SortedMap.empty ) )
 
-  def `r1.0`: Env =
-    data().envs( ModelVersionId( 6 ) ).getOrElse( throw new IllegalStateException( "r1.0 model missing" ) )
   def `r1.1`: Env =
     data().envs( ModelVersionId( 7 ) ).getOrElse( throw new IllegalStateException( "r1.1 model missing" ) )
 

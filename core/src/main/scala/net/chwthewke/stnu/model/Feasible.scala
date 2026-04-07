@@ -13,7 +13,8 @@ object Feasible:
       allowOtherItem: Item => Boolean = True,
       allowRecipe: Recipe.NonExtraction => Boolean = True,
       initialItems: Set[ClassName[Item]] = Set.empty,
-      initialRecipes: Set[ClassName[Recipe.NonExtraction]] = Set.empty
+      initialRecipes: Set[ClassName[Recipe.NonExtraction]] = Set.empty,
+      forcedItems: Set[ClassName[Item]] = Set( Item.somersloop )
   ): ( Set[ClassName[Item]], Set[ClassName[Recipe.NonExtraction]] ) =
     val allowedExtractedItems: Set[ClassName[Item]] =
       model.extractedItems.filter( allowExtractedItem( _ ) ).map( _.className ).toSet
@@ -42,4 +43,4 @@ object Feasible:
       if ( moreItems.isEmpty ) ( itemsAcc, recipesAcc )
       else loop( itemsAcc ++ moreItems, recipesAcc ++ moreRecipes.map( _.className ) )
 
-    loop( allowedExtractedItems ++ initialItems, initialRecipes )
+    loop( allowedExtractedItems ++ initialItems ++ forcedItems, initialRecipes )

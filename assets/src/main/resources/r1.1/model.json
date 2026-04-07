@@ -4218,6 +4218,14 @@
       "tier" : 8
     },
     {
+      "className" : "Desc_WAT1_C",
+      "displayName" : "Somersloop",
+      "form" : "Solid",
+      "fuelValue" : 0.0,
+      "sinkPoints" : 0,
+      "tier" : 0
+    },
+    {
       "className" : "Desc_Water_C",
       "displayName" : "Water",
       "form" : "Liquid",

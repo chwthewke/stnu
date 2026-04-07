@@ -38,4 +38,4 @@ object GrabDocs:
     override def run( args: List[String] ): IO[ExitCode] =
       new GrabDocs[IO]( storage ).run.as( ExitCode.Success )
 
-object GrabDocsR1_0 extends GrabDocs.Program( DataVersionStorage.Release1_0 )
+object GrabDocsR1_1 extends GrabDocs.Program( DataVersionStorage.Release1_1 )

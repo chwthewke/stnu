@@ -1,22 +1,18 @@
 package net.chwthewke.stnu
 
 import fs2.io.file.Path
+import java.nio.file.Paths
 
 enum DataVersionStorage(
     val gameSource: Path,
-    val textureSourceSubdir: String,
+    val textureSource: Path,
     val modelVersion: ModelVersion
 ):
-  case Release1_0
-      extends DataVersionStorage(
-        DataVersionStorage.epicPath,
-        "Satisfactory1.0",
-        ModelVersion( ModelVersionId( 6 ), "Satisfactory 1.0", "r1.0" )
-      )
   case Release1_1
       extends DataVersionStorage(
         DataVersionStorage.steamPath,
-        "Satisfactory1.1",
+        Path.fromNioPath( Paths.get( sys.props( "user.home" ) ) ) /
+          "Downloads" / "FModel" / "Output" / "Exports" / "FactoryGame" / "Content",
         ModelVersion( ModelVersionId( 7 ), "Satisfactory 1.1", "r1.1" )
       )
 

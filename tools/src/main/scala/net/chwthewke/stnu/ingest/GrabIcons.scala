@@ -13,7 +13,6 @@ import fs2.hashing.HashAlgorithm
 import fs2.hashing.Hashing
 import fs2.io.file.Files
 import fs2.io.file.Path
-import java.nio.file.Paths
 import scodec.bits.ByteVector
 
 import data.ImageName
@@ -22,13 +21,15 @@ import game.IconData
 import model.IconIndex
 import model.Model
 
-class GrabIcons[F[_]: Async]( private val loader: Loader[F] )( using Files: Files[F], Hashing: Hashing[F] ):
+class GrabIcons[F[_]: Async]( private val loader: Loader[F] )( using
+    Files: Files[F],
+    Hashing: Hashing[F]
+):
   val console: Console[F] = Console.make[F]
 
   private def findTexture( iconData: IconData ): OptionT[F, TextureData] =
     val targetPath: Path =
-      GrabIcons
-        .sourcePath( loader.version )
+      loader.version.textureSource
         .resolve( Path.apply( iconData.dir.stripPrefix( "Game/" ) ) )
         .resolve( s"${iconData.textureName}.png" )
     OptionT
@@ -109,9 +110,6 @@ class GrabIcons[F[_]: Async]( private val loader: Loader[F] )( using Files: File
     yield ()
 
 object GrabIcons:
-  private val exportsRoot: Path = Path.fromNioPath( Paths.get( sys.props( "user.home" ) ) ) / "Downloads" / "Output"
-  private def sourcePath( storage: DataVersionStorage ): Path =
-    exportsRoot / storage.textureSourceSubdir / "Exports" / "FactoryGame" / "Content"
   private val targetImages: Path                                  = DataVersionStorage.resourcesBase / "img"
   private def targetIndexDir( storage: DataVersionStorage ): Path = storage.resourcesDir
   private def indexPath( storage: DataVersionStorage ): Path      = targetIndexDir( storage ) / "index.json"
@@ -121,5 +119,4 @@ object GrabIcons:
       Loader[IO]( storage ).use: loader =>
         new GrabIcons[IO]( loader ).run.as( ExitCode.Success )
 
-object GrabIconsR1_0 extends GrabIcons.Program( DataVersionStorage.Release1_0 )
 object GrabIconsR1_1 extends GrabIcons.Program( DataVersionStorage.Release1_1 )
