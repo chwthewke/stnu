@@ -49,6 +49,7 @@
 - ~~load Model & write model **to JSON**~~
 - ~~Why are some recipes with Ionized fuel in T8?~~
 - move SolutionSampleExporter to a tool, and code-gen the solutions.json
+- evaluate "potential for amplification" on recipes statically
 
 ### backend
 - ~~import resources~~
@@ -94,9 +95,11 @@
 - ~~Organizer: affordance for splitting transports (and not just processes)~~
 - Group visibility toggle (both views or only plan?)
 - Affordance for drilling down into peer groups in gorup transports
-- Power amplification
+- ~~Power amplification~~
 - Change logic of extraction recipes when overclocking (use all, then overclock)
 - hover with more precision for (some) doubles
+- favorite recipes (set in browse?)
+- Flows: show the amounts on each side when unbalanced
 
 #### fixes
 - ~~Requests panel looks like ass~~
@@ -112,6 +115,8 @@
   - flat/transport toggle incorrectly shown when there are no group transports
   - still not exactly right re: transport (count), fiddle with net imports/exports
 - maybe using Tag.withKey could improve vdom patching perf (target all the groupGrid 1st)
+- ~~need to update REQUESTED in flows when recipes do not change :/~~
+- Library: deleting a plan should reload the library or apply the deletion to the model
 
 #### the quest for flows
 

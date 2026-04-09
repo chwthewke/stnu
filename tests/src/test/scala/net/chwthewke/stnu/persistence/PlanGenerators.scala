@@ -64,14 +64,16 @@ object PlanGenerators:
     for
       miner <-
         Gen.oneOf( model.machines.values.filter( _.machineType.extractor.contains_( ExtractorType.Miner ) ).toSeq )
-      clockSpeed      <- Gen.oneOf( ClockSpeedPreset.cases )
-      extractors      <- pick( ExtractorType.cases )
-      preferFracking  <- pick( model.extractedItems )
-      resourceWeights <-
+      clockSpeed                       <- Gen.oneOf( ClockSpeedPreset.Extraction.cases )
+      excludeWaterPumpFromOverclocking <- Gen.oneOf( false, true )
+      extractors                       <- pick( ExtractorType.cases )
+      preferFracking                   <- pick( model.extractedItems )
+      resourceWeights                  <-
         model.extractedItems.traverse( Gen.choose( -ResourceWeights.range, ResourceWeights.range ).tupleLeft )
     yield ExtractionOptions(
       miner.className,
       clockSpeed,
+      excludeWaterPumpFromOverclocking,
       extractors.toSet,
       preferFracking.map( _.className ).toSet,
       resourceWeights.map { case ( item, weight ) => ( item.className, weight ) }.toMap
@@ -102,7 +104,7 @@ object PlanGenerators:
 
   def powerOptions( model: Model ): Gen[PowerOptions] =
     pick( model.machines.values.filter( _.machineType.isPowerGenerator ).toSeq ).map: generators =>
-      PowerOptions( generators.map( _.className ).toSet )
+      PowerOptions( generators.map( _.className ).toSet, 0, ClockSpeedPreset.`100%` )
 
   def requestSelection( model: Model ): Gen[RequestSelection] =
     for

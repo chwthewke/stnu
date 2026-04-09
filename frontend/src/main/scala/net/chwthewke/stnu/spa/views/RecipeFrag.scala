@@ -15,6 +15,7 @@ import model.Power
 import model.Recipe
 import model.ResourcePurity
 import model.Transport
+import protocol.solver.BoostedRecipe
 import spa.Env
 import spa.css.Bulma
 import spa.css.Classes
@@ -178,10 +179,15 @@ object RecipeFrag:
         Html.span( Html.title := recipe.describe, va() )( recipe.displayNameNoAlt ) +: extractionRecipeTags
     )
 
+  def recipeNameWithBoost( env: Env )( boosted: BoostedRecipe[Recipe] ): Html[Nothing] =
+    Html.span(
+      List( recipeName( env )( boosted.recipe ) ) ++ productionBoost( env )( boosted.usedSlots )
+    )
+
   def srcDestName( env: Env )( srcDest: SrcDest ): Html[Nothing] =
     srcDest match
-      case SrcDest.Extract( recipe ) => recipeName( env )( recipe.recipe )
-      case SrcDest.Step( recipe )    => recipeName( env )( recipe.recipe )
+      case SrcDest.Extract( recipe ) => recipeNameWithBoost( env )( recipe.boostedRecipe )
+      case SrcDest.Step( recipe )    => recipeNameWithBoost( env )( recipe.boostedRecipe )
       case SrcDest.Input             => Html.span( "INPUT" )
       case SrcDest.Requested         => Html.span( "REQUEST" )
       case SrcDest.Byproduct         => Html.span( "BYPRODUCT" )
@@ -192,4 +198,13 @@ object RecipeFrag:
         Option
           .when( split.max > 1 )( split.split )
           .foldMap( num => List( nbsp, Html.text( s"#$num" ) ) )
+    )
+
+  def productionBoost( env: Env )( shardsUsed: Int ): Option[Html[Nothing]] =
+    Option.when( shardsUsed > 0 )(
+      Html.span( b.mx2 )(
+        List.fill( shardsUsed )(
+          icon.verticalAlign().withDropShadow().withSize( b.is16x16 ).item( env, Item.somersloop )
+        )
+      )
     )

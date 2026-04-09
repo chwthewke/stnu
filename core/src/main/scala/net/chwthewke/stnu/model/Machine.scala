@@ -14,18 +14,22 @@ case class Machine(
     tier: Tier,
     powerConsumption: Double,
     powerConsumptionExponent: Double,
+    productionBoost: Option[ProductionBoost],
     footprint: Option[Footprint]
 ) derives ConfiguredDecoder,
-      ConfiguredEncoder
+      ConfiguredEncoder:
+  def powerConsumptionFactor( clockSpeed: ClockSpeed ): Double =
+    math.pow( clockSpeed.fraction, powerConsumptionExponent )
 
 object Machine:
-  given Show[Machine] = Show.show:
-    case Machine( className, displayName, machineType, tier, powerConsumption, powerConsumptionExponent, footprint ) =>
-      show"""$displayName # $className
-            |$machineType Tier $tier
-            |Power: ${f"$powerConsumption%.0f MW"} (exp: ${f"$powerConsumptionExponent%.4f"})
-            |Footprint: ${footprint.fold( "-" )( _.show )}
-            |""".stripMargin
+  given Show[Machine] = Show.show: machine =>
+    import machine.*
+    val boost: String = productionBoost.foldMap( pb => show"Production boost: $pb\n" )
+    show"""$displayName # $className
+          |$machineType Tier $tier
+          |Power: ${f"$powerConsumption%.0f MW"} (exp: ${f"$powerConsumptionExponent%.4f"})
+          |${boost}Footprint: ${footprint.fold( "-" )( _.show )}
+          |""".stripMargin
 
   given Order[Machine]    = Order.by( _.className )
   given Ordering[Machine] = Order.catsKernelOrderingForOrder

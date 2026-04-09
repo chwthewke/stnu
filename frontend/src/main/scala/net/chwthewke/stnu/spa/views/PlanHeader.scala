@@ -31,8 +31,9 @@ object PlanHeader:
             Html.div( b.levelItem + b.buttons )(
               if ( model.ui.isOrganizer ) FlowsView.closeButton( model ) else FlowsView.openButton( model ),
               Html.button(
-                b.button + b.isSuccess + Option.when( !model.canCompute )( b.isStatic ),
-                Html.onClick( PlanMsg.SendSolverRequest )
+                b.button + b.isSuccess + Option.when( model.ui.isComputing )( b.isLoading ),
+                Html.disabled( !model.canCompute ),
+                Option.when( model.canCompute && !model.ui.isComputing )( Html.onClick( PlanMsg.SendSolverRequest ) )
               )(
                 Html.span( b.iconText )(
                   Html.span( b.icon )( Html.i( p.bold.`calculator` )() ),

@@ -15,6 +15,7 @@ object LocalExtractionOptions:
   case class Saved(
       minerClass: ClassName[Machine],
       clockSpeed: String,
+      excludeWaterPumpFromOverclocking: Boolean,
       extractors: Set[ExtractorType],
       preferFracking: Set[ClassName[Item]],
       resourceWeightSliders: Map[ClassName[Item], Int]
@@ -25,6 +26,7 @@ object LocalExtractionOptions:
       Saved(
         extractionOptions.minerClass,
         ClockSpeedPreset.keyOf( extractionOptions.clockSpeed ),
+        extractionOptions.excludeWaterPumpFromOverclocking,
         extractionOptions.extractors,
         extractionOptions.preferFracking,
         extractionOptions.resourceWeightSliders
@@ -33,6 +35,7 @@ object LocalExtractionOptions:
   case class Loaded(
       minerClass: ClassName[Machine],
       clockSpeed: String,
+      excludeWaterPumpFromOverclocking: Boolean,
       extractors: Set[ExtractorType],
       preferFracking: Set[ClassName[Item]],
       resourceWeightSliders: Map[ClassName[Item], Int]
@@ -40,7 +43,8 @@ object LocalExtractionOptions:
     def toExtractionOptions: ExtractionOptions =
       ExtractionOptions(
         minerClass,
-        ClockSpeedPreset.withNameOption( clockSpeed ).getOrElse( ClockSpeedPreset.`100%` ),
+        ClockSpeedPreset.Extraction.withNameOption( clockSpeed ).getOrElse( ClockSpeedPreset.`100%` ),
+        excludeWaterPumpFromOverclocking,
         extractors,
         preferFracking,
         resourceWeightSliders

@@ -8,7 +8,6 @@ import mouse.option.*
 
 import data.Countable
 import model.Item
-import model.Recipe
 import model.prod.FlowEnd
 import model.prod.Group
 import protocol.persistence.ProcessSplitId
@@ -18,7 +17,6 @@ case class ItemTransportRef( ends: Map[FlowEnd, NonEmptyVector[ProcessSplitId]] 
       prod: ProdModel,
       item: Item,
       index: Int,
-      prodRecipes: Map[ClassName[Recipe], ClockedRecipe],
       endsBySplitId: Map[ProcessSplitId, ( Double, Group, EndId )],
       endSplits: Map[EndId, ProcessSplits],
       splitsById: Map[ProcessSplitId, Split[SrcDest]],

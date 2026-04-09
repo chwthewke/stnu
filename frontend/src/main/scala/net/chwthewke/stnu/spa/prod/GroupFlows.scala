@@ -95,7 +95,7 @@ object GroupFlows:
       case EndId.Input( item )     => GroupEnd.Remote( RemoteGroupEnd.Input )
       case EndId.Requested( item ) => GroupEnd.Remote( RemoteGroupEnd.Requested )
       case EndId.Byproduct( item ) => GroupEnd.Remote( RemoteGroupEnd.Byproduct )
-      case EndId.Process( _ )      =>
+      case EndId.Process( _, _ )   =>
         val toSplitGroup: Group = group.nearestGroupTo( split.group )
 
         if ( toSplitGroup == group )
@@ -108,12 +108,12 @@ object GroupFlows:
   private def groupItemBalance( flows: Flows, group: Group, item: Item ): Option[Double] =
     def itemBalance( endId: EndId ): Double =
       endId match
-        case EndId.Input( ci )       => ci.amount
-        case EndId.Requested( ci )   => -ci.amount
-        case EndId.Byproduct( ci )   => -ci.amount
-        case EndId.Process( recipe ) =>
+        case EndId.Input( ci )              => ci.amount
+        case EndId.Requested( ci )          => -ci.amount
+        case EndId.Byproduct( ci )          => -ci.amount
+        case EndId.Process( recipe, boost ) =>
           flows.prodRecipes
-            .get( recipe )
+            .get( ( recipe, boost ) )
             .foldMap: process =>
               process.itemsPerMinute
                 .find( _.item.className == item.className )

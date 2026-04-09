@@ -38,9 +38,9 @@ case class RecipeOptionsInputModel(
     solutionOpt
       .flatMap( _.response.solution )
       .fold( this ): solution =>
-        val recipes =
+        val recipes: Vector[ClassName[Recipe.Manufacturing]] =
           solution.recipes.mapFilter: cr =>
-            env.getRecipe( cr.item ) match
+            env.getRecipe( cr.item.recipe ) match
               case Some( r: Recipe.Manufacturing ) => r.className.some
               case _                               => none
         copy( allowedRecipes = recipes.toSet )

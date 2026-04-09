@@ -4,9 +4,11 @@ package views
 
 import cats.syntax.all.*
 import tyrian.Attr
+import tyrian.CSS
 import tyrian.Elem
 import tyrian.Html
 
+import model.ClockSpeedPreset
 import spa.css.Bulma
 import spa.css.Classes
 
@@ -68,3 +70,42 @@ object Elements:
   object ButtonContent:
     given Conversion[Classes, ButtonContent] = ( cls: Classes ) => new ButtonContent( Html.i( cls )() ) {}
     given Conversion[String, ButtonContent]  = ( txt: String ) => new ButtonContent( Html.span( txt ) ) {}
+
+  def clockSpeedField[A <: ClockSpeedPreset]( name: String, all: Enum[A], current: A ): Html[A] =
+    Html.div( b.field )(
+      all.cases.toList.map: cs =>
+        Html.div( b.control )(
+          Html.label( b.radio )(
+            Html.input(
+              Html.`type` := "radio",
+              Html.name   := name,
+              Option.when[Attr[Nothing]]( current == cs )( Html.checked ),
+              Html.onChange( _ => cs )
+            ),
+            nbsp,
+            Html.text( cs.toString )
+          )
+        )
+    )
+
+  def resourceMeter( height: Double, unit: String, value: Double ): Html[Nothing] =
+    Html.div(
+      Html.styles(
+        CSS.marginLeft( "auto" ),
+        CSS.height( s"$height$unit" ),
+        CSS.width( "0.5em" ),
+        CSS.borderRadius( "2px" ),
+        CSS.backgroundColor( "#CCC" ),
+        CSS.position( "relative" )
+      )
+    )(
+      Html.div(
+        Html.styles(
+          CSS.width( "0.5em" ),
+          CSS.height( f"${value * height}%.2f$unit" ),
+          CSS.backgroundColor( s"hsl(${( 120d * value ).toInt} 100% 50%)" ),
+          CSS.position( "absolute" ),
+          CSS.bottom( "0px" )
+        )
+      )()
+    )

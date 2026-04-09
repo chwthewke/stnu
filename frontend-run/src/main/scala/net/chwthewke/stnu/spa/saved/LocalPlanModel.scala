@@ -2,10 +2,15 @@ package net.chwthewke.stnu
 package spa
 package saved
 
+import io.circe.Decoder
+import io.circe.Encoder
 import io.circe.derivation.ConfiguredDecoder
 import io.circe.derivation.ConfiguredEncoder
 
 import spa.plan.PlanModel
+
+private given Encoder[Either[Boolean, LocalSolution.Saved]]  = Encoder.encodeEither( "canCompute", "solution" )
+private given Decoder[Either[Boolean, LocalSolution.Loaded]] = Decoder.decodeEither( "canCompute", "solution" )
 
 object LocalPlanModel:
   case class Saved(
@@ -16,7 +21,7 @@ object LocalPlanModel:
       logisticsOptions: LocalLogisticsOptions.Saved,
       powerOptions: LocalPowerOptions.Saved,
       requestSelection: LocalRequestSelection.Saved,
-      solutionComputed: Boolean,
+      solution: Either[Boolean, LocalSolution.Saved],
       prodUi: LocalProductionUi.Saved,
       flows: LocalFlows.Saved
   ) derives ConfiguredEncoder
@@ -31,7 +36,7 @@ object LocalPlanModel:
         LocalLogisticsOptions.Saved( planModel.env, planModel.logisticsOptions ),
         LocalPowerOptions.Saved( planModel.powerOptions ),
         LocalRequestSelection.Saved( planModel.requests ),
-        !planModel.canCompute,
+        LocalSolution.Saved( planModel.solution ).toRight( planModel.canCompute ),
         LocalProductionUi.Saved( planModel.productionUi ),
         LocalFlows.Saved( planModel.flows )
       )
@@ -44,7 +49,7 @@ object LocalPlanModel:
       logisticsOptions: LocalLogisticsOptions.Loaded,
       powerOptions: LocalPowerOptions.Loaded,
       requestSelection: LocalRequestSelection.Loaded,
-      solutionComputed: Boolean,
+      solution: Either[Boolean, LocalSolution.Loaded],
       prodUi: LocalProductionUi.Loaded,
       flows: LocalFlows.Loaded
   ) derives ConfiguredDecoder:
@@ -58,8 +63,9 @@ object LocalPlanModel:
           logisticsOptions = logisticsOptions.toLogisticsOptions,
           powerOptions = powerOptions.toPowerOptions,
           requests = requestSelection.toRequests,
+          solution = solution.toOption.map( _.toSolutionModel ),
           productionUi = prodUi.toProductionUi,
           flows = Left( flows.flows )
         ),
-        solutionComputed
+        solution.left.exists( identity )
       )

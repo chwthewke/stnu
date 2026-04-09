@@ -3,7 +3,6 @@ package spa
 package plan
 
 import cats.syntax.all.*
-import scala.collection.immutable.SortedMap
 
 import model.ClockSpeedPreset
 import model.ExtractorType
@@ -16,14 +15,17 @@ import protocol.solver.SolverRequest
 
 case class ExtractionOptions(
     minerClass: ClassName[Machine],
-    clockSpeed: ClockSpeedPreset,
+    clockSpeed: ClockSpeedPreset.Extraction,
+    excludeWaterPumpFromOverclocking: Boolean,
     extractors: Set[ExtractorType],
     preferFracking: Set[ClassName[Item]],
     resourceWeightSliders: Map[ClassName[Item], Int]
 ):
   def setOption( extractionOption: ExtractionOption ): ExtractionOptions = extractionOption match
-    case ExtractionOption.SetMiner( machine )                     => copy( minerClass = machine )
-    case ExtractionOption.SetClockSpeed( clockSpeed )             => copy( clockSpeed = clockSpeed )
+    case ExtractionOption.SetMiner( machine )                              => copy( minerClass = machine )
+    case ExtractionOption.SetClockSpeed( clockSpeed )                      => copy( clockSpeed = clockSpeed )
+    case ExtractionOption.ToggleExcludeWaterPumpFromOverclocking( enable ) =>
+      copy( excludeWaterPumpFromOverclocking = enable )
     case ExtractionOption.ToggleExtractorType( extractor, value ) =>
       copy( extractors = toggle( extractors, extractor, value ) )
     case ExtractionOption.ToggleFrackingPreference( item, value ) =>
@@ -38,14 +40,12 @@ case class ExtractionOptions(
 
   def resources(
       env: Env,
-      resources: Map[ExtractorType, Map[ClassName[Item], ResourceDistrib]]
+      resourcesDistribs: Map[ExtractorType, Map[ClassName[Item], ResourceDistrib]]
   ): Map[ClassName[Item], SolverRequest.Resource] =
-    val caps: SortedMap[ClassName[Item], Option[Double]] =
-      env.game.resourceCaps( minerClass, clockSpeed, extractors, resources )
-    val costs: Map[ClassName[Item], Double] = ResourceWeights( resourceWeightSliders ).costs( caps )
-    caps.map:
-      case ( item, cap ) =>
-        ( item, SolverRequest.Resource( cap, costs.getOrElse( item, 1d ) ) )
+    env.game
+      .resources( minerClass, clockSpeed, extractors, resourcesDistribs, ResourceWeights( resourceWeightSliders ) )
+      .fmap:
+        case ( cap, cost ) => SolverRequest.Resource( cap, cost )
 
 object ExtractionOptions:
 
@@ -56,6 +56,7 @@ object ExtractionOptions:
         .maxBy( _.powerConsumption )
         .className,
       ClockSpeedPreset.`100%`,
+      true,
       ExtractorType.cases.toSet,
       Set.empty,
       game.extractedItems.map( item => ( item.className, 4 ) ).toMap
@@ -63,7 +64,21 @@ object ExtractionOptions:
 
   given Conversion[ExtractionOptions, pp.ExtractionOptions]:
     override def apply( x: ExtractionOptions ): pp.ExtractionOptions =
-      pp.ExtractionOptions( x.minerClass, x.clockSpeed, x.extractors, x.preferFracking, x.resourceWeightSliders )
+      pp.ExtractionOptions(
+        x.minerClass,
+        x.clockSpeed,
+        x.excludeWaterPumpFromOverclocking,
+        x.extractors,
+        x.preferFracking,
+        x.resourceWeightSliders
+      )
 
   def from( p: pp.ExtractionOptions ): ExtractionOptions =
-    ExtractionOptions( p.minerClass, p.clockSpeed, p.extractors, p.preferFracking, p.resourceWeightSliders )
+    ExtractionOptions(
+      p.minerClass,
+      p.clockSpeed,
+      p.excludeWaterPumpFromOverclocking,
+      p.extractors,
+      p.preferFracking,
+      p.resourceWeightSliders
+    )

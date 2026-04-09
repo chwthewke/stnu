@@ -55,7 +55,8 @@ enum PlanMsg:
 
 enum ExtractionOption:
   case SetMiner( machine: ClassName[Machine] )
-  case SetClockSpeed( clockSpeed: ClockSpeedPreset )
+  case SetClockSpeed( clockSpeed: ClockSpeedPreset.Extraction )
+  case ToggleExcludeWaterPumpFromOverclocking( enable: Boolean )
   case ToggleExtractorType( extractor: ExtractorType, value: String )
   case ToggleFrackingPreference( item: ClassName[Item], value: String )
   case SetResourceWeight( item: ClassName[Item], value: String )
@@ -81,6 +82,8 @@ enum RecipeOption:
 enum PowerOption:
   case Reset
   case SetPowerGenerator( generator: ClassName[Machine], enable: Boolean )
+  case SetMaxProductionBoost( value: String )
+  case SetManufacturingClockSpeed( clockSpeedPreset: ClockSpeedPreset )
 
 enum RequestsAction:
   case Delete( item: ClassName[Item] )

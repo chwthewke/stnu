@@ -2,12 +2,12 @@ package net.chwthewke.stnu
 package protocol
 package solver
 
-import cats.data.NonEmptyVector
 import cats.syntax.all.*
 import org.scalacheck.Gen
 import org.scalacheck.cats.implicits.*
 
 import data.Countable
+import model.ClockSpeed
 import model.ClockSpeedPreset
 import model.ExtractorType
 import model.Feasible
@@ -15,8 +15,11 @@ import model.Item
 import model.Machine
 import model.Model
 import model.Recipe
+import model.ResourceWeights
 import model.Tier
+import model.Transport
 import service.solver.ConstraintSolver
+import service.solver.SolverService
 
 trait SolutionGenerators:
   type Recipes   = Set[ClassName[Recipe.NonExtraction]]
@@ -38,6 +41,28 @@ trait SolutionGenerators:
       model.machines.values.toVector
         .mapFilter( m => m.machineType.extractor.filter( _ != ExtractorType.Miner && m.tier <= tier ) )
         .toSet
+
+  def defaultConveyorBelt( model: Model ): Tier => Gen[Transport] = tier =>
+    if ( tier.value >= 9 )
+      model.conveyorBelts.toVector( 5 )
+    else if ( tier.value >= 7 )
+      model.conveyorBelts.toVector( 4 )
+    else if ( tier.value >= 3 )
+      model.conveyorBelts.toVector( 3 )
+    else if ( tier.value >= 1 )
+      model.conveyorBelts.toVector( 1 )
+    else
+      model.conveyorBelts.toVector( 0 )
+
+  def defaultPipeline( model: Model ): Tier => Gen[Transport] = tier =>
+    if ( tier.value >= 5 )
+      model.pipelines.toVector( 1 )
+    else
+      model.pipelines.toVector( 0 )
+
+  def defaultMaxProductionBoost( tier: Tier ): Gen[Int] =
+    if ( tier.value >= 5 ) Gen.oneOf( Gen.choose( 1, 50 ), Gen.const( 0 ) )
+    else Gen.const( 0 )
 
   def recipeSelection( model: Model )( tierGen: Gen[Tier] = defaultTier ): Gen[Set[ClassName[Recipe.NonExtraction]]] =
     (
@@ -62,7 +87,8 @@ trait SolutionGenerators:
       feasible: Vector[ClassName[Item]] =
         Feasible(
           model,
-          allowRecipe = ( recipe: Recipe.NonExtraction ) => recipes.contains_( recipe.className )
+          allowRecipe = ( recipe: Recipe.NonExtraction ) => recipes.contains_( recipe.className ),
+          forcedItems = Set.empty
         )._1.diff( model.extractedItems.map( _.className ).toSet ).toVector
       size      <- sizeGen( feasible.length )
       picked    <- Gen.pick( size.min( feasible.length ), feasible )
@@ -77,43 +103,69 @@ trait SolutionGenerators:
 
   def solverRequest( model: Model )(
       tierGen: Gen[Tier] = defaultTier,
-      recipeSelectionGen: Tier => Gen[Recipes] = recipeSelection( model )( _ ),
+      recipeSelectionGen: Tier => Gen[Recipes] = tier => retry( recipeSelection( model )( tier ), 13 ),
       requestSelectionGen: Recipes => Gen[Requested] = requestSelection( model )( _ ),
-      minerSelection: Tier => Gen[ClassName[Machine]] = defaultMiner( model ),
-      extractorSelection: Tier => Gen[Set[ExtractorType]] = defaultExtractors( model )
+      minerSelection: Tier => Gen[ClassName[Machine]] = tier => retry( defaultMiner( model )( tier ), 15 ),
+      extractorSelection: Tier => Gen[Set[ExtractorType]] = tier => retry( defaultExtractors( model )( tier ), 17 ),
+      bestConveyorBeltGen: Tier => Gen[Transport] = tier => retry( defaultConveyorBelt( model )( tier ), 19 ),
+      bestPipelineGen: Tier => Gen[Transport] = tier => retry( defaultPipeline( model )( tier ), 21 ),
+      maxProductionBoostGen: Tier => Gen[Int] = defaultMaxProductionBoost,
+      manufacturingClockSpeedGen: Gen[ClockSpeedPreset] = Gen.oneOf( ClockSpeedPreset.cases )
   ): Gen[SolverRequest] =
     for
-      clockSpeed <- Gen.oneOf( ClockSpeedPreset.cases )
-      tier       <- tierGen
-      minerClass <- minerSelection( tier )
-      extractors <- extractorSelection( tier )
-      recipes    <- recipeSelectionGen( tier )
-      requested  <- requestSelectionGen( recipes )
+      clockSpeed              <- Gen.oneOf( ClockSpeedPreset.cases )
+      tier                    <- tierGen
+      minerClass              <- minerSelection( tier )
+      extractors              <- extractorSelection( tier )
+      recipes                 <- recipeSelectionGen( tier )
+      requested               <- requestSelectionGen( recipes )
+      bestConveyorBelt        <- bestConveyorBeltGen( tier )
+      bestPipeline            <- bestPipelineGen( tier )
+      maxProductionBoost      <- maxProductionBoostGen( tier )
+      manufacturingClockSpeed <- manufacturingClockSpeedGen
     yield SolverRequest(
       model.version.version,
       requested,
       recipes,
       model
-        .resourceCaps(
+        .resources(
           minerClass,
           clockSpeed,
           extractors,
-          model.defaultResourceOptions.resourceNodes
+          model.defaultResourceOptions.resourceNodes,
+          ResourceWeights( model.extractedItems.map( item => ( item.className, 0 ) ).toMap )
         )
-        .fmap( cap => SolverRequest.Resource( cap = cap, weight = 1d ) )
+        .fmap { case ( cap, cost ) => SolverRequest.Resource( cap, cost ) },
+      bestConveyorBelt.className,
+      bestPipeline.className,
+      maxProductionBoost,
+      manufacturingClockSpeed
     )
 
   def solverRequestAndResponse( model: Model )(
       requestGen: Gen[SolverRequest] = solverRequest( model )()
   ): Gen[( SolverRequest, SolverResponse.Solution )] =
     requestGen.flatMap: request =>
-      val requested = request.requested.mapFilter( _.traverse( model.items.get ) )
-      val recipes   =
+      val requested                             = request.requested.mapFilter( _.traverse( model.items.get ) )
+      val recipes: Vector[Recipe.NonExtraction] =
         ( model.manufacturingRecipes ++ model.powerRecipes ).filter( r => request.recipeSelection( r.className ) )
-      val inputs = request.resources
+      val inputs                      = request.resources
+      val bestConveyorBelt: Transport =
+        model.conveyorBelts.find( _.className == request.bestConveyorBelt ).getOrElse( model.conveyorBelts.last )
+      val bestPipeline: Transport =
+        model.pipelines.find( _.className == request.bestPipeline ).getOrElse( model.pipelines.last )
+      val recipesWithClockSpeed: Vector[( Recipe.NonExtraction, ClockSpeed )] =
+        recipes.fproduct( SolverService.maxClockSpeed( bestConveyorBelt, bestPipeline ) )
+
       ConstraintSolver
-        .solve( requested, recipes, inputs )
-        .fold( _ => Gen.asciiStr /* advance seed */ >> Gen.fail, Gen.const )
+        .solve(
+          requested,
+          recipesWithClockSpeed,
+          inputs,
+          request.maxProductionBoost,
+          request.manufacturingClockSpeed
+        )
+        .fold( _ => Gen.fail, Gen.const )
         .tupleLeft( request )
 
 object SolutionGenerators extends SolutionGenerators

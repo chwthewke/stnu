@@ -34,5 +34,5 @@ object SidePanel extends CustomEnum[SidePanel]:
         case SidePanel.ResourcePrefs => "Res. prefs"
         case SidePanel.Logistics     => "Logistics"
         case SidePanel.Recipes       => "Recipes"
-        case SidePanel.Power         => "Power"
+        case SidePanel.Power         => "Power & amp."
         case SidePanel.Requests      => "Requests"

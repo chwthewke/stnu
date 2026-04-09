@@ -474,7 +474,7 @@ object FlowsView:
       )
     )
 
-  private def actionButton( content: Elem[Nothing], classes: Classes, help: Elem[Nothing] )(
+  private def actionButton( content: Elem[Nothing], classes: Classes, help: Elem[Nothing]* )(
       action: FlowAction,
       addon: Option[Html[FlowAction]],
       preview: Option[Html[Nothing]]
@@ -491,7 +491,7 @@ object FlowsView:
         ),
         preview.map( Html.span( b.ml2 )( _ ) )
       ),
-      Html.p( b.help )( help )
+      Html.p( b.help )( help* )
     )
 
   case class PreviewResultIcon( classes: Classes, icon: Classes, ifOverflow: Boolean ):
@@ -561,14 +561,23 @@ object FlowsView:
       pos: SrcDestPos,
       actionParam: Option[IntActionParam]
   )( content: Elem[Nothing], classes: Classes, help: Elem[Nothing] ): Html[FlowAction] =
-    actionButton( content, classes, help )(
+    val splitPreviewOpt: Option[SplitMergePreview] = flows.previewSplit( pos, splitType )
+    val splitShardsWarning: List[Html[Nothing]]    =
+      splitPreviewOpt
+        .filter( preview => preview.originalBoostedMachineCount.exists( _ < preview.result.size ) )
+        .foldMap: _ =>
+          List(
+            Html.br(),
+            Html.span( b.hasTextWarning )( "Will increase the number of somersloop used." )
+          )
+    actionButton( content, classes, help :: splitShardsWarning* )(
       FlowAction.SplitSrcDest( pos, splitType ),
       actionParam.map( intActionParamSelector ),
       previewResult(
         PreviewResultIcon.SuccessUnlessOverflow,
         flows.prod.env,
         pos.item,
-        flows.previewSplit( pos, splitType )
+        splitPreviewOpt
       )
     )
 
@@ -583,7 +592,7 @@ object FlowsView:
   ): Html[PlanMsg] =
     val env: Env = flows.prod.env
     Modal
-      .apply( FlowAction.AbortModalFlowOp )(
+      .apply( FlowAction.AbortModalFlowOp, Html.style( CSS.width( "60rem" ) ) )(
         Html.div( b.box )(
           splitModalHeading( env, action.pos, action.srcDest ),
           splitActionButton( flows, action.even, action.pos, none )(
@@ -681,7 +690,7 @@ object FlowsView:
   ): Html[PlanMsg] =
     val env: Env = flows.prod.env
     Modal
-      .apply( FlowAction.AbortModalFlowOp )(
+      .apply( FlowAction.AbortModalFlowOp, Html.style( CSS.width( "60rem" ) ) )(
         Html.div( b.box )(
           mergeModalHeading( env, action.pos, action.srcDest ),
           mergeActionButton( flows, action.local, action.pos )(

@@ -109,7 +109,7 @@ object PlanRequestsView:
                   )
                 ),
                 Html.label( Html.`for` := RequestsModel.editorId( item.className ), b.ml2 )(
-                  icon.verticalAlign().item( model.env, item ),
+                  icon.verticalAlign().withDropShadow().item( model.env, item ),
                   nbsp,
                   Html.text( item.displayName )
                 )

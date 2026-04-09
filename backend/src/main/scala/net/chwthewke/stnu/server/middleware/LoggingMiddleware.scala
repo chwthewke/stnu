@@ -1,8 +1,8 @@
 package net.chwthewke.stnu
-package server.middleware
+package server
+package middleware
 
 import cats.effect.Async
-import org.http4s.Request
 import org.http4s.server.HttpMiddleware
 import org.http4s.server.middleware.RequestLogger
 import org.http4s.server.middleware.ResponseLogger

@@ -23,7 +23,7 @@ case class Flows(
     prod: ProdModel,
     prodHash: ProdModel.Hash,
     nextId: ProcessSplitId,
-    endSplits: Map[EndId, ProcessSplits],
+    endSplits: SortedMap[EndId, ProcessSplits],
     itemFlows: Map[ClassName[Item], ItemFlows],
     ui: Flows.Ui
 ):
@@ -34,9 +34,9 @@ case class Flows(
       splits                     <- endSplits.get( endId )
       splitIndex                 <- splits.splits.toVector.indexWhere( _._1 == splitId ).some.filter( _ >= 0 )
       srcDest                    <- endId match
-                   case EndId.Process( recipe ) =>
+                   case EndId.Process( recipe, boost ) =>
                      prodRecipes
-                       .get( recipe )
+                       .get( ( recipe, boost ) )
                        .map: process =>
                          process.recipe match
                            case _: Recipe.Extraction    => SrcDest.Extract( process )
@@ -54,8 +54,8 @@ case class Flows(
     yield ( splitId, split ) ).toMap
 
   // NOTE these 2 exposed as it might be useful for testing
-  lazy val prodRecipes: Map[ClassName[Recipe], ClockedRecipe] =
-    prod.productionRows.fproductLeft( _.recipe.className ).toMap
+  lazy val prodRecipes: Map[( ClassName[Recipe], Int ), ClockedRecipe] =
+    prod.productionRows.fproductLeft( cr => ( cr.recipe.className, cr.boostedRecipe.usedSlots ) ).toMap
 
   lazy val endsBySplitId: Map[ProcessSplitId, ( Double, Group, EndId )] =
     ( for
@@ -63,8 +63,19 @@ case class Flows(
       ( id, ( frac, group ) )            <- splits.iterator
     yield ( id, ( frac, group, endId ) ) ).toMap
 
+  lazy val productionBoostShards: Int =
+    splitsById.unorderedFoldMap( split => split.value.process.foldMap( _.productionBoostShards ) )
+
+  lazy val powerShards: ( Int, Int ) =
+    splitsById.unorderedFoldMap: split =>
+      split.value.process.foldMap: process =>
+        process.recipe match
+          case _: Recipe.Extraction    => ( process.powerShards, 0 )
+          case _: Recipe.NonExtraction => ( 0, process.powerShards )
+
   /**
    * Ok to call this if
+   *
    * @param splitId
    *   comes from somewhere in this [[Flows]]
    * @return
@@ -85,7 +96,6 @@ case class Flows(
                     prod,
                     item,
                     index,
-                    prodRecipes,
                     endsBySplitId,
                     endSplits,
                     splitsById,
@@ -101,11 +111,6 @@ case class Flows(
 
   //////////////////
   // UPDATES
-
-  def setProduction( newProd: ProdModel ): Flows =
-    if ( prodHash == ProdModel.solutionHash( newProd ) )
-      copy( prod = newProd, prodHash = ProdModel.solutionHash( newProd ) )
-    else Flows.init( newProd )
 
   def update( action: FlowAction ): Flows =
     action match
@@ -300,6 +305,9 @@ case class Flows(
 
   private def toSplitMergePreview( pos: SrcDestPos, result: List[Double] ): SplitMergePreview =
     SplitMergePreview(
+      pos
+        .getSplit( itemTransports )
+        .flatMap( _.item.value.process.flatMap( p => Option.when( p.boostedRecipe.usedSlots > 0 )( p.machineCount ) ) ),
       result,
       pos.getTransport( itemTransports ).forall( in => result.exists( _ > in.perMinute ) ) // any overflow remaining?
     )
@@ -498,7 +506,7 @@ object Flows:
   def init( prod: ProdModel ): Flows =
 
     val endIds: List[EndId] =
-      prod.productionRows.map( cr => EndId.Process( cr.recipe.className ) ) ++
+      prod.productionRows.map( cr => EndId.Process( cr.recipe.className, cr.boostedRecipe.usedSlots ) ) ++
         externalAmounts( prod )
           .foldMap:
             case Countable( item, amount ) =>
@@ -516,7 +524,7 @@ object Flows:
           case ( endId, index ) => ( endId, ProcessSplitId( index + 1 ) )
         .to( SortedMap )
 
-    val endSplits: Map[EndId, ProcessSplits] =
+    val endSplits: SortedMap[EndId, ProcessSplits] =
       endProcessSplitIds.fmap( ProcessSplits.init )
 
     Flows(
@@ -530,10 +538,10 @@ object Flows:
 
   private def storeEndId( endId: EndId ): pp.EndId =
     endId match
-      case EndId.Process( recipe ) => pp.EndId.Process( recipe )
-      case EndId.Input( item )     => pp.EndId.Input( item.item )
-      case EndId.Requested( item ) => pp.EndId.Requested( item.item )
-      case EndId.Byproduct( item ) => pp.EndId.Byproduct( item.item )
+      case EndId.Process( recipe, boost ) => pp.EndId.Process( recipe, boost )
+      case EndId.Input( item )            => pp.EndId.Input( item.item )
+      case EndId.Requested( item )        => pp.EndId.Requested( item.item )
+      case EndId.Byproduct( item )        => pp.EndId.Byproduct( item.item )
 
   private def store( flows: Flows ): pp.Flows =
     pp.Flows(
@@ -565,6 +573,7 @@ object Flows:
   given Conversion[Flows, pp.Flows]:
     override def apply( flows: Flows ): pp.Flows = store( flows )
 
+  // TODO maybe this should depend on prod having a solution or not
   def from( prod: ProdModel, stored: pp.Flows ): Flows =
     restore( prod, stored ).getOrElse( init( prod ) )
 
@@ -578,8 +587,8 @@ object Flows:
 
       def restoreEndId( endId: pp.EndId ): EndId =
         endId match
-          case pp.EndId.Process( recipe ) => EndId.Process( recipe )
-          case pp.EndId.Input( item )     =>
+          case pp.EndId.Process( recipe, boost ) => EndId.Process( recipe, boost )
+          case pp.EndId.Input( item )            =>
             EndId.Input( Countable( item, -endAmounts.getOrElse( item, 0d ) ) )
           case pp.EndId.Requested( item ) =>
             EndId.Requested( Countable( item, requestedAmounts.getOrElse( item, 0d ) ) )
@@ -588,15 +597,17 @@ object Flows:
               Countable( item, endAmounts.getOrElse( item, 0d ) - requestedAmounts.getOrElse( item, 0d ) )
             )
 
-      val endSplits: Map[EndId, ProcessSplits] =
-        stored.endSplits.toMap.map:
-          case ( endId, split ) =>
-            (
-              restoreEndId( endId ),
-              ProcessSplits(
-                split.iterator.map { case ( id, fraction, group ) => ( id, ( fraction, group ) ) }.to( SortedMap )
+      val endSplits: SortedMap[EndId, ProcessSplits] =
+        stored.endSplits.iterator
+          .map:
+            case ( endId, split ) =>
+              (
+                restoreEndId( endId ),
+                ProcessSplits(
+                  split.iterator.map { case ( id, fraction, group ) => ( id, ( fraction, group ) ) }.to( SortedMap )
+                )
               )
-            )
+          .to( SortedMap )
 
       val itemFlowRefs: Map[ClassName[Item], ItemFlows] =
         stored.itemFlows.mapFilter: itemFlows =>

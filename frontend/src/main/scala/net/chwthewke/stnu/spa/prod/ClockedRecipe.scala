@@ -5,11 +5,11 @@ import cats.syntax.all.*
 
 import data.Countable
 import model.ClockSpeed
-import model.ClockSpeedPreset
 import model.Item
 import model.Machine
 import model.Power
 import model.Recipe
+import protocol.solver.BoostedRecipe
 
 /**
  * Represents a whole number of machines producing a recipe at a clock speed allowing for a given target production
@@ -22,21 +22,19 @@ import model.Recipe
  *   the fractional amount of machines producing the recipe
  * @param clockSpeed
  *   the clock speed of the machines
- * @param clockSpeedPreset
- *   the max clock speed
  * @param machineCount
  *   the integer amount of machines
  */
 case class ClockedRecipe(
-    recipes: Countable[Double, Recipe],
+    recipes: Countable[Double, BoostedRecipe[Recipe]],
     clockSpeed: ClockSpeed,
-    clockSpeedPreset: ClockSpeedPreset,
     machineCount: Int
 ) {
 
-  def recipe: Recipe = recipes.item
+  val boostedRecipe: BoostedRecipe[Recipe] = recipes.item
+  def recipe: Recipe                       = boostedRecipe.recipe
 
-  def machine: Machine                 = recipes.item.producedIn
+  def machine: Machine                 = recipe.producedIn
   def powerConsumptionExponent: Double = machine.powerConsumptionExponent
 
   val clockSpeedMillionth: Int = ( clockSpeed.percent * 10000d ).ceil.toInt
@@ -44,7 +42,7 @@ case class ClockedRecipe(
   def fractionalAmount: Double = recipes.amount
 
   def power: Power =
-    recipes.item.power.map(
+    boostedRecipe.power.map(
       consumed = _ * machineCount * math.pow( clockSpeedMillionth / 1e6d, powerConsumptionExponent ),
       produced = _ * machineCount * clockSpeedMillionth / 1e6d
     )
@@ -57,24 +55,25 @@ case class ClockedRecipe(
 
   val productsPerMinute: List[Countable[Double, Item]] = recipes.flatTraverse( _.productsPerMinute.toList )
 
+  def productionBoostShards: Int = machineCount * boostedRecipe.usedSlots
+
+  def powerShards: Int = machineCount * math.ceil( 2d * ( clockSpeed.fraction - 1d ).max( 0d ) ).toInt
+
   def itemsPerMinute: List[Countable[Double, Item]] =
     ( ingredientsPerMinute.map( _.mapAmount( am => -am ) ) ++ productsPerMinute ).gather
       .mapFilter( _.significant )
 
   def mapAmount( f: Double => Double ): ClockedRecipe =
-    recipe match
-      case x: Recipe.NonExtraction => ClockedRecipe.roundUp( Countable( x, f( fractionalAmount ) ) )
-      case r: Recipe.Extraction => ClockedRecipe.overclocked( Countable( r, f( fractionalAmount ) ), clockSpeedPreset )
+    ClockedRecipe.overclocked( Countable( boostedRecipe, f( fractionalAmount ) ) )
 
   def times( d: Double ): ClockedRecipe = mapAmount( _ * d )
 }
 
 object ClockedRecipe {
-  def fixed( recipe: Recipe, fractionalAmount: Double, preset: ClockSpeedPreset, amount: Int ): ClockedRecipe =
+  def fixed( recipe: BoostedRecipe[Recipe], fractionalAmount: Double, amount: Int ): ClockedRecipe =
     ClockedRecipe(
       Countable( recipe, fractionalAmount ),
       ClockSpeed.ofFraction( fractionalAmount / amount ),
-      preset,
       amount
     )
 
@@ -83,12 +82,14 @@ object ClockedRecipe {
     val floor: Double = amount.floor
     if ( amount - floor < Countable.Tolerance ) floor else amount
 
-  def roundUp( recipe: Countable[Double, Recipe.NonExtraction] ): ClockedRecipe =
-    val realAmount: Double = amountCorrection( recipe.amount )
-    fixed( recipe.item, realAmount, ClockSpeedPreset.`100%`, realAmount.ceil.toInt )
-
-  def overclocked( recipe: Countable[Double, Recipe.Extraction], clockSpeedLimit: ClockSpeedPreset ): ClockedRecipe =
-    val intAmount: Int = math.ceil( amountCorrection( recipe.amount / clockSpeedLimit.value.fraction ) ).toInt
-    ClockedRecipe.fixed( recipe.item, recipe.amount, clockSpeedLimit, intAmount )
+  def overclocked( recipe: Countable[Double, BoostedRecipe[Recipe]] ): ClockedRecipe =
+    val fractionalMachineCount: Double = amountCorrection( recipe.amount / recipe.item.maxClockSpeed.fraction )
+    val machineCount: Int              = math.ceil( fractionalMachineCount ).toInt
+    val recipeCount: Double            = fractionalMachineCount * recipe.item.maxClockSpeed.fraction
+    ClockedRecipe(
+      Countable( recipe.item, recipeCount ),
+      ClockSpeed.ofFraction( recipeCount / machineCount ),
+      machineCount
+    )
 
 }

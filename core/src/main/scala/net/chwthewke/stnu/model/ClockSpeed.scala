@@ -3,6 +3,8 @@ package model
 
 import cats.Order
 import cats.Show
+import io.circe.Decoder
+import io.circe.Encoder
 
 opaque type ClockSpeed = Double
 
@@ -16,3 +18,5 @@ object ClockSpeed:
   given Show[ClockSpeed]     = Show.show( cs => f"$cs%3.4f" )
   given Order[ClockSpeed]    = Order[Double]
   given Ordering[ClockSpeed] = Order.catsKernelOrderingForOrder
+  given Decoder[ClockSpeed]  = Decoder[Double]
+  given Encoder[ClockSpeed]  = Encoder[Double]

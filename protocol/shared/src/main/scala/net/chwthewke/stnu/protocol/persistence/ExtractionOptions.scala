@@ -2,7 +2,8 @@ package net.chwthewke.stnu
 package protocol
 package persistence
 
-import io.circe.derivation.ConfiguredCodec
+import io.circe.derivation.ConfiguredDecoder
+import io.circe.derivation.ConfiguredEncoder
 
 import model.ClockSpeedPreset
 import model.ExtractorType
@@ -11,8 +12,10 @@ import model.Machine
 
 case class ExtractionOptions(
     minerClass: ClassName[Machine],
-    clockSpeed: ClockSpeedPreset,
+    clockSpeed: ClockSpeedPreset.Extraction,
+    excludeWaterPumpFromOverclocking: Boolean,
     extractors: Set[ExtractorType],
     preferFracking: Set[ClassName[Item]],
     resourceWeightSliders: Map[ClassName[Item], Int]
-) derives ConfiguredCodec
+) derives ConfiguredDecoder,
+      ConfiguredEncoder

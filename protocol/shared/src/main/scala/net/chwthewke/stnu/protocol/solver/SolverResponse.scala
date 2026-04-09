@@ -5,8 +5,8 @@ package solver
 import cats.Show
 import cats.data.NonEmptyList
 import cats.derived.strict.*
-import io.circe.Codec
-import io.circe.derivation.ConfiguredCodec
+import io.circe.Decoder
+import io.circe.Encoder
 import io.circe.derivation.ConfiguredDecoder
 import io.circe.derivation.ConfiguredEncoder
 
@@ -19,7 +19,7 @@ sealed trait SolverResponse derives Show, ConfiguredDecoder, ConfiguredEncoder
 object SolverResponse:
   case class Solution(
       inputs: Vector[Countable[Double, ClassName[Item]]],
-      recipes: Vector[Countable[Double, ClassName[Recipe.NonExtraction]]]
+      recipes: Vector[Countable[Double, BoostedRecipe[ClassName[Recipe.NonExtraction]]]]
   ) extends SolverResponse
   case object InvalidModelVersion                                    extends SolverResponse with SolverResponse.Error
   case class InvalidClasses( classes: NonEmptyList[ClassName[Any]] ) extends SolverResponse with SolverResponse.Error
@@ -27,7 +27,8 @@ object SolverResponse:
 
   sealed trait Error extends SolverResponse
 
-  given Codec[Solution] = ConfiguredCodec.derived
+  given Decoder[Solution] = ConfiguredDecoder.derived
+  given Encoder[Solution] = ConfiguredEncoder.derived
 
   extension ( response: SolverResponse )
     def solution: Option[SolverResponse.Solution] =

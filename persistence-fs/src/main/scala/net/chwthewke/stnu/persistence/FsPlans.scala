@@ -189,7 +189,10 @@ object FsPlans:
       _ <- logger.info( "Applied all migrations." )
     yield ()
 
-  def init[F[_]: Async]( dataDir: Path, codecs: Codecs.Aux[Plan, PlanSummary] = Codecs.v3 ): F[PlansPersistenceApi[F]] =
+  def init[F[_]: Async](
+      dataDir: Path,
+      codecs: Codecs.Aux[Plan, PlanSummary] = Codecs.latest
+  ): F[PlansPersistenceApi[F]] =
     given files: Files[F] = Files.forAsync[F]
     for
       _ <- files.createDirectories( dataDir )

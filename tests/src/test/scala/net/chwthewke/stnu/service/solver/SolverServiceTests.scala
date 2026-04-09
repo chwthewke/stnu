@@ -10,6 +10,7 @@ import munit.CatsEffectSuite
 import munit.catseffect.IOFixture
 
 import data.Countable
+import model.ClockSpeedPreset
 import model.Item
 import model.Model
 import protocol.solver.SolverRequest
@@ -40,8 +41,17 @@ class SolverServiceTests extends CatsEffectSuite:
             ( item.className, SolverRequest.Resource( none, 1d ) )
           .toMap
 
-      val request = SolverRequest( model.version.version, requested, recipeSelection.toSet, resources )
-      val solver  = modelsFixture()
+      val request = SolverRequest(
+        model.version.version,
+        requested,
+        recipeSelection.toSet,
+        resources,
+        model.conveyorBelts.last.className,
+        model.pipelines.last.className,
+        0,
+        ClockSpeedPreset.`100%`
+      )
+      val solver = modelsFixture()
       solver
         .solveEither( request )
         .value

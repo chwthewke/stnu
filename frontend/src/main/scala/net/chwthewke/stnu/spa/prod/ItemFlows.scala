@@ -26,7 +26,7 @@ object ItemFlows:
 
     endProcessSplitIds.toVector
       .foldMap:
-        case ( EndId.Process( recipeClass ), id ) =>
+        case ( EndId.Process( recipeClass, _ ), id ) =>
           processesByClass
             .get( recipeClass )
             .foldMap: cr =>

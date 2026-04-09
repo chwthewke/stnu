@@ -32,8 +32,9 @@ object ProdModelGenerators:
       resourceNodes( env ),
       extractionOptions( env ),
       pickTransports( env.game.conveyorBelts ),
-      pickTransports( env.game.pipelines )
-    ).mapN( ( request, solution, nodes, extraction, belts, pipelines ) =>
+      pickTransports( env.game.pipelines ),
+      Gen.oneOf( Gen.choose( 1, env.game.defaultResourceOptions.maxProductionBoostShards ), Gen.const( 0 ) )
+    ).mapN( ( request, solution, nodes, extraction, belts, pipelines, maxShards ) =>
       ProdModel( env, request, solution, nodes, extraction, belts, pipelines )
     )
 
@@ -67,7 +68,8 @@ object ProdModelGenerators:
       Gen
         .oneOf( env.game.machines.values.filter( _.machineType.extractor.contains( ExtractorType.Miner ) ) )
         .map( _.className ),
-      Gen.oneOf( ClockSpeedPreset.cases )
-    ).mapN(
-      ExtractionOptions( _, _, ExtractorType.cases.toSet, Set.empty, Map.empty )
-    )
+      Gen.oneOf( ClockSpeedPreset.Extraction.cases )
+    ).mapN: ( minerClass, clockSpeed ) =>
+      ExtractionOptions
+        .init( env.game )
+        .copy( minerClass = minerClass, clockSpeed = clockSpeed )

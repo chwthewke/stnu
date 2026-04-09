@@ -8,7 +8,7 @@ import model.Item
 import model.Recipe
 
 enum EndId derives ConfiguredCodec:
-  case Process( recipe: ClassName[Recipe] )
+  case Process( recipe: ClassName[Recipe], boost: Int )
   case Input( item: ClassName[Item] )
   case Requested( item: ClassName[Item] )
   case Byproduct( item: ClassName[Item] )

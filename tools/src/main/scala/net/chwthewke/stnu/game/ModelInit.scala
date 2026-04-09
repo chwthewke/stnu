@@ -21,6 +21,7 @@ import model.ManufacturerType
 import model.Model
 import model.Power
 import model.PowerGeneratorType
+import model.ProductionBoost
 import model.Recipe
 import model.RecipeCategory
 import model.ResourceOptions
@@ -141,7 +142,7 @@ object ModelInit:
             case ( itemClass, distrib ) =>
               modelItems.get( itemClass.translate ).toValidNel( itemClass ).as( itemClass ).tupleRight( distrib )
           .map( _.toMap )
-      .map( ResourceOptions( _ ) )
+      .map( ResourceOptions( _, config.maxProductionBoostShards ) )
       .leftMap( _.mkString_( "Unknown items in resource nodes config: ", ", ", "" ) )
       .toEither
 
@@ -280,6 +281,7 @@ object ModelInit:
           tier,
           extractor.powerConsumption,
           extractor.powerConsumptionExponent,
+          none,
           config.buildingFootprints.get( className )
         )
 
@@ -307,6 +309,7 @@ object ModelInit:
                 Tier( 0 ),
                 0d,
                 1d,
+                none,
                 config.buildingFootprints.get( machineClass )
               )
 
@@ -364,6 +367,13 @@ object ModelInit:
       tier,
       manufacturer.powerConsumption,
       manufacturer.powerConsumptionExponent,
+      Option.when( manufacturer.productionShardSlotSize > 0 )(
+        ProductionBoost(
+          manufacturer.productionShardSlotSize,
+          manufacturer.productionShardBoostMultiplier,
+          manufacturer.productionBoostPowerConsumptionExponent
+        )
+      ),
       config.buildingFootprints.get( machineClass )
     )
 
@@ -467,6 +477,7 @@ object ModelInit:
               t,
               0d,
               generator.powerConsumptionExponent,
+              none,
               config.buildingFootprints.get( generatorClass )
             ),
             Power.Fixed( -generator.powerProduction )

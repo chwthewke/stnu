@@ -24,6 +24,7 @@ sealed trait Recipe:
   def duration: FiniteDuration
   def producedIn: Machine
   def power: Power
+  def productionBoost: Option[ProductionBoost] = producedIn.productionBoost
 
   def ingredientsPerMinute: List[Countable[Double, Item]] = ingredients.map( perMinute )
   def productsPerMinute: P[Countable[Double, Item]]       = products.map( perMinute )
@@ -53,9 +54,18 @@ sealed trait Recipe:
 
 object Recipe:
 
-  sealed trait NonExtraction extends Recipe:
+  sealed trait NonExtraction extends Recipe with Product with Serializable:
     def category: RecipeCategory.Manufacturing | RecipeCategory.PowerGeneration
     override def className: ClassName[Recipe.NonExtraction]
+
+    def powerConsumption( boostShards: Int, clockSpeed: ClockSpeed ): Power =
+      power.map(
+        c =>
+          c
+            * productionBoost.fold( 1d )( _.powerConsumptionFactor( boostShards ) )
+            * producedIn.powerConsumptionFactor( clockSpeed ),
+        identity
+      )
 
   object NonExtraction:
     given Show[Recipe.NonExtraction]     = Show.show( showRecipe )
@@ -95,6 +105,17 @@ object Recipe:
   ) extends Recipe
       with NonExtraction:
     type P[a] = NonEmptyList[a]
+
+    def itemsPerMinuteMap( boostShards: Int, clockSpeed: ClockSpeed ): Map[Item, Double] =
+      val productionBoostEffect: Double = 1d + productionBoost.foldMap( _.effect * boostShards )
+      val clockSpeedEffect: Double      = clockSpeed.fraction
+
+      productsPerMinute.foldMap:
+        case Countable( it, am ) => Map( it -> am * productionBoostEffect * clockSpeedEffect )
+      |+|
+        ingredientsPerMinute
+          .foldMap:
+            case Countable( it, am ) => Map( it -> -am * clockSpeedEffect )
 
   object Manufacturing:
     given Show[Recipe.Manufacturing]     = Show.show( showRecipe )

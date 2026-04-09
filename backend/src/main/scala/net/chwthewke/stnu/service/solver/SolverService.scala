@@ -10,9 +10,12 @@ import org.http4s.Method.POST
 import org.http4s.circe.CirceEntityCodec.*
 
 import data.Countable
+import model.ClockSpeed
+import model.Form
 import model.Item
 import model.Model
 import model.Recipe
+import model.Transport
 import protocol.codec.UriCodec
 import protocol.solver.SolverApi
 import protocol.solver.SolverRequest
@@ -23,13 +26,20 @@ class SolverService[F[_]: Async](
     private val solver: ConstraintSolver
 ) extends SolverApi[F]
     with UriCodec.Dsl[F]:
+
   private def validateInputs( model: Model )(
       requested: Vector[Countable[Double, ClassName[Item]]],
       recipeSelection: Set[ClassName[Recipe.NonExtraction]],
-      resources: Map[ClassName[Item], SolverRequest.Resource]
+      resources: Map[ClassName[Item], SolverRequest.Resource],
+      bestConveyorBelt: ClassName[Transport],
+      bestPipeline: ClassName[Transport]
   ): Either[
     SolverResponse.Error,
-    ( Vector[Countable[Double, Item]], Vector[Recipe.NonExtraction], Map[ClassName[Item], SolverRequest.Resource] )
+    (
+        Vector[Countable[Double, Item]],
+        Vector[( Recipe.NonExtraction, ClockSpeed )],
+        Map[ClassName[Item], SolverRequest.Resource]
+    )
   ] =
     (
       requested.traverse: item =>
@@ -38,9 +48,13 @@ class SolverService[F[_]: Async](
         model.recipes.get( cn ).collect { case ne: Recipe.NonExtraction => ne }.toValidNel( cn: ClassName[Any] ),
       resources.toVector
         .traverse:
-          case ( cn, res ) => model.items.get( cn ).toValidNel( cn: ClassName[Any] ).as( ( cn, res ) )
+          case ( cn, res ) => model.items.get( cn ).toValidNel( cn: ClassName[Any] ).as( ( cn, res ) ),
+      model.conveyorBelts.find( _.className == bestConveyorBelt ).toValidNel( bestConveyorBelt: ClassName[Any] ),
+      model.pipelines.find( _.className == bestPipeline ).toValidNel( bestPipeline: ClassName[Any] )
     )
-      .mapN( ( req, recSel, rsrcs ) => ( req, recSel, rsrcs.toMap ) )
+      .mapN( ( req, recSel, rsrcs, bcb, bp ) =>
+        ( req, recSel.fproduct( SolverService.maxClockSpeed( bcb, bp ) ), rsrcs.toMap )
+      )
       .leftMap( SolverResponse.InvalidClasses( _ ) )
       .toEither
 
@@ -51,8 +65,19 @@ class SolverService[F[_]: Async](
           models.get( request.modelVersion ).toRight( SolverResponse.InvalidModelVersion )
       ( requested, recipes, resources ) <-
         EitherT.fromEither[F]:
-          validateInputs( model )( request.requested, request.recipeSelection, request.resources )
-      solution <- EitherT( Async[F].interruptible( solver.solve( requested, recipes, resources ) ) )
+          validateInputs( model )(
+            request.requested,
+            request.recipeSelection,
+            request.resources,
+            request.bestConveyorBelt,
+            request.bestPipeline
+          )
+      solution <-
+        EitherT(
+          Async[F].interruptible(
+            solver.solve( requested, recipes, resources, request.maxProductionBoost, request.manufacturingClockSpeed )
+          )
+        )
     yield solution
 
   override def solve( request: SolverRequest ): F[SolverResponse] =
@@ -71,3 +96,19 @@ class SolverService[F[_]: Async](
 object SolverService:
   def apply[F[_]: Async]( models: Vector[Model] ): SolverService[F] =
     new SolverService[F]( models.fproductLeft( _.version.version ).toMap, ConstraintSolver )
+
+  def maxClockSpeed(
+      bestConveyorBelt: Transport,
+      bestPipeline: Transport
+  )(
+      recipe: Recipe.NonExtraction
+  ): ClockSpeed =
+    recipe.itemsPerMinuteMap
+      .map:
+        case ( item, amount ) =>
+          val maxAmount: Double =
+            ( if ( item.form == Form.Solid ) bestConveyorBelt else bestPipeline ).perMinute.toDouble
+          val frac = maxAmount / amount.abs
+          ClockSpeed.ofFraction( frac )
+      .toVector
+      .min // unsafe but no recipe has neither ingredient nor product

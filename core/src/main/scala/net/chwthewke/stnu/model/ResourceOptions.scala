@@ -10,7 +10,8 @@ import io.circe.derivation.ConfiguredDecoder
 import io.circe.derivation.ConfiguredEncoder
 
 case class ResourceOptions(
-    resourceNodes: Map[ExtractorType, Map[ClassName[Item], ResourceDistrib]]
+    resourceNodes: Map[ExtractorType, Map[ClassName[Item], ResourceDistrib]],
+    maxProductionBoostShards: Int
 ) derives ConfiguredDecoder,
       ConfiguredEncoder:
   def get( machine: Machine, item: Item ): ResourceDistrib =
@@ -30,8 +31,6 @@ case class ResourceOptions(
     )
 
 object ResourceOptions:
-
-  val empty: ResourceOptions = ResourceOptions( Map.empty )
 
   given Show[ResourceOptions] =
     def showItem( item: ClassName[Item], distrib: ResourceDistrib ): String =

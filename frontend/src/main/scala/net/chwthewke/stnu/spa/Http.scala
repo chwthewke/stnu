@@ -50,7 +50,11 @@ class Http[F[_]: Async]( private val flags: Http.Flags, private val client: Clie
     run( ( modelApi.getModelIndex, modelApi.getLatestModel ).mapN( Msg.RecvGameModel( _, _ ) ) )
 
   def computeSolution( solverRequest: SolverRequest ): Cmd[F, SolverResponse] =
-    run( solverApi.solve( solverRequest ) )
+    run(
+      solverApi
+        .solve( solverRequest )
+        .handleError( err => SolverResponse.SolverError( s"server error: ${err.getMessage}" ) )
+    )
 
   def save( plan: Plan, confirm: Boolean ): Cmd[F, Option[PlanId]] =
     run( plansApi.savePlan( plan, confirm ) )

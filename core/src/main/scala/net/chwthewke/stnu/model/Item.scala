@@ -19,6 +19,7 @@ case class Item(
 
 object Item:
   val somersloop: ClassName[Item] = ClassName( "Desc_WAT1_C" )
+  val powerShard: ClassName[Item] = ClassName( "Desc_CrystalShard_C" )
 
   given showItem: Show[Item] = Show.show: item =>
     show"""${item.displayName} # ${item.className}

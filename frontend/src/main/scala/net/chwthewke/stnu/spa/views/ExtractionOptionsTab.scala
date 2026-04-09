@@ -41,20 +41,24 @@ object ExtractionOptionsTab:
     )
 
   private def clockSpeedField( model: ExtractionOptions ): Html[ExtractionOption] =
+    Elements
+      .clockSpeedField( "res_prefs_clock_speed", ClockSpeedPreset.Extraction, model.clockSpeed )
+      .map( ExtractionOption.SetClockSpeed( _ ) )
+
+  private def excludeWaterPumpFromOverclockingField( model: ExtractionOptions ): Html[ExtractionOption] =
     Html.div( b.field )(
-      ClockSpeedPreset.values.toList.map: cs =>
-        Html.div( b.control )(
-          Html.label( b.radio )(
-            Html.input(
-              Html.`type` := "radio",
-              Html.name   := "res_prefs_clock_speed",
-              Option.when[Attr[Nothing]]( model.clockSpeed == cs )( Html.checked ),
-              Html.onChange( _ => ExtractionOption.SetClockSpeed( cs ) )
-            ),
-            nbsp,
-            Html.text( cs.toString )
-          )
+      Html.div( b.control )(
+        Html.label( b.checkbox )(
+          Html.input(
+            Html.`type` := "checkbox",
+            Option.when[Attr[Nothing]]( model.excludeWaterPumpFromOverclocking )( Html.checked ),
+            Html.onChange( _ =>
+              ExtractionOption.ToggleExcludeWaterPumpFromOverclocking( !model.excludeWaterPumpFromOverclocking )
+            )
+          ),
+          Html.text( "Exclude water pump" )
         )
+      )
     )
 
   private def extractorSelectionField( env: Env, model: ExtractionOptions ): Html[ExtractionOption] =
@@ -104,7 +108,8 @@ object ExtractionOptionsTab:
         Html.label( b.label )( "Miner" ),
         minerSelectionField( env, model ),
         Html.label( b.label )( "Extractor clock speed" ),
-        clockSpeedField( model )
+        clockSpeedField( model ),
+        excludeWaterPumpFromOverclockingField( model )
       ),
       Html.div( b.column + b.isHalf )(
         Html.label( b.label )( "Extractor types" ),

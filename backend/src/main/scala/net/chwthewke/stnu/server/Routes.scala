@@ -1,15 +1,24 @@
 package net.chwthewke.stnu
 package server
 
+import cats.data.Kleisli
+import cats.data.OptionT
 import cats.effect.Sync
 import cats.syntax.all.*
 import org.http4s.Charset
 import org.http4s.HttpRoutes
 import org.http4s.MediaType
+import org.http4s.Request
+import org.http4s.Response
 import org.http4s.StaticFile
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`Content-Type`
 import org.http4s.scalatags.*
+import org.http4s.server.HttpMiddleware
+import org.http4s.server.middleware.ErrorHandling
+import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
+import scala.util.control.NonFatal
 
 import server.middleware.Cors
 import server.middleware.LastModifiedMiddleware
@@ -50,12 +59,23 @@ class Routes[F[_]: Sync](
         `Content-Type`( MediaType.application.javascript, Charset.`UTF-8` )
       )
 
+  private val logger: SelfAwareStructuredLogger[F] = Slf4jLogger.getLoggerFromName( "HTTP.ERRORS" )
+
+  private val errorHandling: HttpMiddleware[F] = ( svc: Kleisli[OptionT[F, *], Request[F], Response[F]] ) =>
+    ErrorHandling.Custom.recoverWith[OptionT[F, *], F, Request[F]]( svc ):
+      case NonFatal( e ) =>
+        OptionT.liftF:
+          logger.error( e )( "Error processing request" ) *>
+            Sync[F].raiseError( e )
+
   val routes: HttpRoutes[F] =
     loggingMiddleware(
-      systemRoutes
-        <+> corsMiddleware( solverApi.routes <+> plansApi.routes )
-        <+> pageRoutes
-        <+> lastModifiedMiddleware( corsMiddleware( modelApi.routes <+> staticRoutes ) )
+      errorHandling(
+        systemRoutes
+          <+> corsMiddleware( solverApi.routes <+> plansApi.routes )
+          <+> pageRoutes
+          <+> lastModifiedMiddleware( corsMiddleware( modelApi.routes <+> staticRoutes ) )
+      )
     )
 
 object Routes:

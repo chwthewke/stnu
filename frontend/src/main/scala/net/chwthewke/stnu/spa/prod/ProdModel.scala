@@ -12,6 +12,7 @@ import scala.collection.Factory
 import scala.util.hashing.MurmurHash3
 
 import data.Countable
+import model.ClockSpeedPreset
 import model.ExtractionRecipes
 import model.ExtractorType
 import model.Form
@@ -22,7 +23,7 @@ import model.ResourceDistrib
 import model.Transport
 import model.prod.Group
 import protocol.persistence.ProcessSplitId
-import protocol.solver
+import protocol.solver.BoostedRecipe
 import protocol.solver.SolverRequest
 import protocol.solver.SolverResponse
 import spa.plan.ExtractionOptions
@@ -63,41 +64,52 @@ case class ProdModel(
     @tailrec
     def loop(
         acc: List[ClockedRecipe],
-        candidates: List[( Recipe.Extraction, Option[Int] )],
+        candidates: List[( Recipe.Extraction, Option[Int], ClockSpeedPreset.Extraction )],
         amount: Double
     ): ( List[ClockedRecipe], List[Countable[Double, Item]] ) =
       candidates match
-        case Nil                                        => ( acc, item.withAmount( amount ).significant.toList )
-        case ( recipe, maxCountOpt ) :: otherCandidates =>
+        case Nil => ( acc, item.withAmount( amount ).significant.toList )
+        case ( recipe, maxCountOpt, maxClockSpeed ) :: otherCandidates =>
           val perMinute: Double =
             recipe.productsPerMinute.find( _.item.className == item.item.className ).foldMap( _.amount )
-          def available( count: Int ): Double = perMinute * extractionOptions.clockSpeed.value.fraction * count
+          def available( count: Int ): Double = perMinute * maxClockSpeed.value.fraction * count
+
+          def toClockedRecipe( cr: Countable[Double, Recipe.Extraction] ): Option[ClockedRecipe] =
+            cr.significant.map( scr => ClockedRecipe.overclocked( scr.map( BoostedRecipe( _, maxClockSpeed ) ) ) )
 
           maxCountOpt.filter( available( _ ) < amount ) match
             case Some( maxCount ) =>
               loop(
-                Countable( recipe, maxCount.toDouble ).significant
-                  .map( ClockedRecipe.overclocked( _, extractionOptions.clockSpeed ) ) ++: acc,
+                toClockedRecipe( Countable( recipe, maxCount.toDouble ) ) ++: acc,
                 otherCandidates,
                 amount - perMinute * maxCount
               )
             case None =>
               (
-                Countable( recipe, amount / perMinute ).significant
-                  .map( ClockedRecipe.overclocked( _, extractionOptions.clockSpeed ) ) ++: acc,
+                toClockedRecipe( Countable( recipe, amount / perMinute ) ) ++: acc,
                 Nil
               )
 
     loop( Nil, extractionRecipesFor( item.item ), item.amount )
 
-  def extractionRecipesFor( item: Item ): List[( Recipe.Extraction, Option[Int] )] =
+  def extractionRecipesFor( item: Item ): List[( Recipe.Extraction, Option[Int], ClockSpeedPreset.Extraction )] =
 
     def allowedRecipes(
         machine: Machine,
         extractionRecipes: ExtractionRecipes
-    ): List[( Recipe.Extraction, Option[Int] )] =
+    ): List[( Recipe.Extraction, Option[Int], ClockSpeedPreset.Extraction )] =
+      val clockSpeed =
+        machine.machineType.extractor match
+          case Some( ExtractorType.WaterPump ) =>
+            if ( extractionOptions.excludeWaterPumpFromOverclocking )
+              ClockSpeedPreset.`100%`
+            else extractionOptions.clockSpeed
+          case Some( ExtractorType.FicsmasTree ) => ClockSpeedPreset.`100%`
+          case _                                 => extractionOptions.clockSpeed
+
       extractionRecipes match
-        case ExtractionRecipes.Fixed( recipe )      => ( recipe, None ) :: Nil
+        case ExtractionRecipes.Fixed( recipe ) =>
+          ( recipe, None, clockSpeed ) :: Nil
         case ExtractionRecipes.Variable( byPurity ) =>
           val extractorAllowed =
             machine.machineType.extractor match
@@ -111,7 +123,7 @@ case class ProdModel(
             val distrib: ResourceDistrib =
               machine.machineType.extractor.flatMap( resourceNodes.get ).flatMap( _.get( item.className ) ).orEmpty
             byPurity.toMap.toList.reverse.map:
-              case ( purity, recipe ) => ( recipe, Some( distrib.get( purity ) ) )
+              case ( purity, recipe ) => ( recipe, Some( distrib.get( purity ) ), clockSpeed )
           else Nil
 
     val machineTypeOrdering: Ordering[Machine] =
@@ -126,11 +138,17 @@ case class ProdModel(
       .foldMap:
         case ( machine, recipes ) => allowedRecipes( machine, recipes )
 
+  lazy val extractedItems: List[Countable[Double, Item]] =
+    result.foldMap( _.inputs.sortBy( _.item.displayName ).toList )
+
   private lazy val manufacturingRows: Vector[ClockedRecipe] =
     result
       .foldMap( _.recipes.toVector )
       .filter( _.isSignificant )
-      .map( ClockedRecipe.roundUp )
+      .map( ClockedRecipe.overclocked )
+
+  lazy val manufacturingResources: Map[ClockedRecipe, Double] =
+    ResourceAttribution( env, extractedItems.toVector, manufacturingRows )
 
   @tailrec
   private def sort(
@@ -189,7 +207,16 @@ object ProdModel:
               (
                 MurmurHash3.unorderedHash( solution.request.map( ci => ci.item.className ) ),
                 MurmurHash3.unorderedHash( solution.inputs.map( ci => ci.item.className ) ),
-                MurmurHash3.unorderedHash( solution.recipes.map( ci => ci.item.className ) )
+                MurmurHash3.unorderedHash(
+                  solution.recipes
+                    .map( _.item )
+                    .map( br =>
+                      if ( br.usedSlots == 0 )
+                        br.recipe.className
+                      else
+                        ClassName[Recipe.NonExtraction]( show"${br.recipe.className}_${br.usedSlots}" )
+                    )
+                )
               )
             )
       )
@@ -199,7 +226,7 @@ object ProdModel:
     case Result(
         request: Vector[Countable[Double, Item]],
         inputs: Vector[Countable[Double, Item]],
-        recipes: Vector[Countable[Double, Recipe.NonExtraction]]
+        recipes: Vector[Countable[Double, BoostedRecipe[Recipe.NonExtraction]]]
     )
     case Failure( solverMessage: String )
 
@@ -221,7 +248,7 @@ object ProdModel:
           Result(
             request.requested.mapFilter( _.traverse( env.getItem ) ),
             inputs.mapFilter( _.traverse( env.getItem ) ),
-            recipes.mapFilter( _.traverse( env.getRecipe ) )
+            recipes.mapFilter( _.traverse( _.traverse( env.getRecipe ) ) )
           )
         case SolverResponse.InvalidModelVersion       => Failure( dataErrorModelVersion )
         case SolverResponse.InvalidClasses( classes ) => Failure( dataErrorClasses( classes ) )
@@ -239,7 +266,7 @@ object ProdModel:
       fraction: Double,
       group: Group
   ):
-    def end: EndId = EndId.Process( process.recipe.className )
+    def end: EndId = EndId.process( process )
 
   case class Ui(
       prodHash: Option[ProdModel.Hash],
@@ -330,7 +357,7 @@ object ProdModel:
     def initRowOrder[F[_]: Foldable]( flows: Flows )( using CC: Factory[Row, F[Row]], M: Monoid[F[Row]] ): F[Row] =
       flows.prod.productionRows
         .foldMap: process =>
-          val endId = EndId.Process( process.recipe.className )
+          val endId = EndId.process( process )
           flows.endSplits
             .get( endId )
             .foldMap: splits =>

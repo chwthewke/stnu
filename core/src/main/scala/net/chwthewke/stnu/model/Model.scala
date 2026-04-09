@@ -72,6 +72,20 @@ case class Model(
                         distrib.foldMap( ( purity, count ) => count * byPurity.get( purity ).productsPerMinute.amount )
                     ).some
 
+  def resources(
+      minerClass: ClassName[Machine],
+      clockSpeed: ClockSpeedPreset,
+      extractors: Set[ExtractorType],
+      resourceNodes: Map[ExtractorType, Map[ClassName[Item], ResourceDistrib]],
+      weights: ResourceWeights
+  ): SortedMap[ClassName[Item], ( Option[Double], Double )] =
+    val caps: SortedMap[ClassName[Item], Option[Double]] =
+      resourceCaps( minerClass, clockSpeed, extractors, resourceNodes )
+    val costs: Map[ClassName[Item], Double] = weights.costs( caps )
+    caps.map:
+      case ( item, cap ) =>
+        ( item, ( cap, costs.getOrElse( item, 1d ) ) )
+
 object Model:
 
   given Show[Model] = Show.show: model =>

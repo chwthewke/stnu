@@ -108,7 +108,7 @@ trait FlowsProperties:
 
     val processRecipes =
       flows.endSplits.keySet.collect:
-        case EndId.Process( recipe ) => recipe
+        case EndId.Process( recipe, _ ) => recipe
 
     assert(
       clue( processRecipes ) ==
@@ -221,8 +221,8 @@ trait FlowsProperties:
   ): Unit =
     def prodRecipe( endId: EndId ): Option[ClockedRecipe] =
       endId match
-        case EndId.Process( recipe ) => flows.prodRecipes.get( recipe )
-        case _                       => none
+        case EndId.Process( recipe, boost ) => flows.prodRecipes.get( ( recipe, boost ) )
+        case _                              => none
 
     val splitsProducers: Vector[( ClassName[Item], ClassName[Recipe], Int, Double )] =
       ( for

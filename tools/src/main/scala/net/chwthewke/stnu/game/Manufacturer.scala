@@ -10,18 +10,46 @@ final case class Manufacturer(
     displayName: String,
     powerConsumption: Double,
     powerConsumptionExponent: Double,
+    productionBoostPowerConsumptionExponent: Double,
+    productionShardBoostMultiplier: Double,
+    productionShardSlotSize: Int,
     isCollider: Boolean
 )
 
 object Manufacturer:
   def manufacturerDecoder( isCollider: Boolean ): Decoder[Manufacturer] =
     given Decoder[Double] = Decoders.doubleStringDecoder
-    Decoder.forProduct4(
+    Decoder.forProduct7(
       "ClassName",
       "mDisplayName",
       "mPowerConsumption",
-      "mPowerConsumptionExponent"
-    )( ( cn, dn, pc, pe ) => Manufacturer( cn, dn, pc, pe, isCollider ) )
+      "mPowerConsumptionExponent",
+      "mProductionBoostPowerConsumptionExponent",
+      "mProductionShardBoostMultiplier",
+      "mProductionShardSlotSize"
+    )( Manufacturer.of( _, _, _, _, _, _, _, isCollider ) )
+
+  private def of(
+      cn: ClassName[Manufacturer],
+      dn: String,
+      powerConsumption: Double,
+      powerConsumptionExponent: Double,
+      productionBoostPowerConsumptionExponent: Double,
+      productionShardBoostMultiplier: Double,
+      productionShardSlotSize: Int,
+      isCollider: Boolean
+  ): Manufacturer =
+    // NOTE for some reason the docs incorrectly represent the smelter as having no production amplification slots
+    Manufacturer(
+      cn,
+      dn,
+      powerConsumption,
+      powerConsumptionExponent,
+      productionBoostPowerConsumptionExponent,
+      productionShardBoostMultiplier,
+      if ( cn.name == "Build_SmelterMk1_C" ) 1 else productionShardSlotSize,
+      isCollider
+    )
 
   given Show[Manufacturer] = Show.show: manufacturer =>
     show"""${manufacturer.displayName} # ${manufacturer.className}

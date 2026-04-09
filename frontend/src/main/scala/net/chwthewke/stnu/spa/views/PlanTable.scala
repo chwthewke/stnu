@@ -39,74 +39,121 @@ object PlanTable:
 
   def apply( ui: ProdModel.Ui, flows: Flows ): Html[PlanMsg] =
     Html.div(
-      productionSummary( ui, flows.prod ),
+      productionSummary( ui, flows ),
       planTable( ui, flows )
     )
 
-  private def productionSummary( ui: ProdModel.Ui, production: ProdModel ): Html[Nothing] =
+  private def productionSummary( ui: ProdModel.Ui, flows: Flows ): Html[Nothing] =
     Details
       .open( isOpen = ui.productionSummaryExpanded )(
         Html.text( "Summary" ),
         Html.div( b.mx4 + b.columns )(
-          Html.div( b.column + b.isHalf + b.hasTextCentered )(
+          Html.div( b.column + b.hasTextCentered )(
             Html.p( b.isSize5 )( "Resources" ),
-            Html.ul()(
-              production.extractionRows
-                .foldMap( cr => cr.productsPerMinute )
-                .gather
-                .map: ci =>
-                  Html.li( b.hasTextWeightBold )(
-                    RecipeFrag.numberedIcon1( production.env, ci, b.mr2 ),
-                    Html.text( ci.item.displayName )
-                  )
-            )
+            resourcesSummary( flows.prod )
           ),
-          Html.div( b.column + b.isHalf + b.hasTextCentered )(
+          shardsSummary( flows ),
+          Html.div( b.column + b.hasTextCentered )(
             Html.p( b.isSize5 )( "Machines" ),
-            Html.ul(
-              production.productionRows
-                .foldMap( cr => SortedMap( cr.recipe.producedIn -> cr.machineCount ) )
-                .toList
-                .map:
-                  case ( machine, amount ) =>
-                    Html.li( b.hasTextWeightBold )(
-                      RecipeFrag.numberedIcon1( production.env, Countable( machine, amount ), b.mr2 ),
-                      Html.text( machine.displayName )
-                    )
-            )
+            machinesSummary( flows )
           )
         )
       )
 
+  private def machinesSummary( flows: Flows ): Html[Nothing] =
+    Html.ul(
+      flows.splitsById
+        .unorderedFoldMap: split =>
+          split.value.process.foldMap: process =>
+            SortedMap( process.recipe.producedIn -> process.machineCount )
+        .toList
+        .map:
+          case ( machine, amount ) =>
+            Html.li( b.hasTextWeightBold )(
+              RecipeFrag.numberedIcon1( flows.prod.env, Countable( machine, amount ), b.mr2 ),
+              Html.text( machine.displayName )
+            )
+    )
+
+  private def shardsSummary( flows: Flows ): Option[Html[Nothing]] =
+    val powerShards: Option[List[Html[Nothing]]] = powerShardsSummary( flows )
+    val productionBoost: Option[Html[Nothing]]   = boostShardsSummary( flows )
+    Option.when( powerShards.isDefined || productionBoost.isDefined ):
+      Html.div( b.column + b.hasTextCentered )(
+        Html.p( b.isSize5 )( "Shards" ),
+        Html.ul( powerShards.orEmpty ++ productionBoost )
+      )
+
+  private def resourcesSummary( production: ProdModel ): Html[Nothing] =
+    Html.ul()(
+      production.extractedItems
+        .map: ci =>
+          Html.li( b.hasTextWeightBold )(
+            RecipeFrag.numberedIcon1( production.env, ci, b.mr2 ),
+            Html.text( ci.item.displayName )
+          )
+    )
+
+  private def powerShardsSummary( flows: Flows ): Option[List[Html[Nothing]]] =
+    flows.prod.env
+      .getItem( Item.powerShard )
+      .map: shard =>
+        val ( ex, mf ) = flows.powerShards
+        Option
+          .when( ex + mf > 0 ):
+            List(
+              Html.li( b.hasTextWeightBold )(
+                RecipeFrag.numberedIcon( flows.prod.env, Countable( shard, ex + mf ), b.mr2 ),
+                Html.text( shard.displayName )
+              )
+            )
+              ++ Option.when( ex > 0 )( Html.li( b.ml4 )( s"$ex for extraction" ) )
+              ++ Option.when( mf > 0 )( Html.li( b.ml4 )( s"$mf for manufacturing" ) )
+          .orEmpty
+
+  private def boostShardsSummary( flows: Flows ): Option[Html[Nothing]] =
+    flows.prod.env
+      .getItem( Item.somersloop )
+      .flatMap: sloop =>
+        flows.productionBoostShards.some
+          .filter( _ > 0 )
+          .map: used =>
+            Html.li( b.hasTextWeightBold )(
+              RecipeFrag.numberedIcon( flows.prod.env, Countable( sloop, used ), b.mr2 ),
+              Html.text( sloop.displayName )
+            )
+
   private def planTable( ui: ProdModel.Ui, flows: Flows ): Html[PlanMsg] =
     Html.table( b.table + b.isResponsive + b.isFullwidth + b.isHoverable, Html.style( CSS.tableLayout( "fixed" ) ) )(
-      // TODO at some point we're gonna have to do something better then fixed percentages
+      // TODO at some point we're gonna have to do something better than fixed percentages
       Html.colgroup(
         Html.col( Html.style( CSS.width( "5%" ) ) ),
         Html.col( Html.style( CSS.width( "10%" ) ) ),
         Html.col( Html.style( CSS.width( "8%" ) ) ),
-        Html.col( Html.style( CSS.width( "14%" ) ) ),
-        Html.col( Html.style( CSS.width( "24%" ) ) ),
-        Html.col( Html.style( CSS.width( "5%" ) ) ),
+        Html.col( Html.style( CSS.width( "15%" ) ) ),
+        Html.col( Html.style( CSS.width( "20%" ) ) ),
+        Html.col( Html.style( CSS.width( "7%" ) ) ),
+        Html.col( Html.style( CSS.width( "3%" ) ) ),
         Html.col( Html.style( CSS.width( "12%" ) ) ),
-        Html.col( Html.style( CSS.width( "10%" ) ) ),
+        Html.col( Html.style( CSS.width( "8%" ) ) ),
         Html.col( Html.style( CSS.width( "7%" ) ) ),
         Html.col( Html.style( CSS.width( "5%" ) ) )
       ),
       Html.thead(
         Html.tr(
-          Html.th( Html.colspan := "2" )( "Group" ),
-          Html.th( b.hasTextCentered )( "Amount" ),
-          Html.th( b.hasTextCentered )( "Item" ),
-          Html.th( b.hasTextCentered )( "Recipe" ),
-          Html.th( b.hasTextCentered, Html.colspan := "3" )( "Machines" ), // 27 (5, 12, 10)
-          Html.th( b.hasTextCentered, Html.colspan := "2" )( "Power" ) // 12 (7, 5)
+          Html.th( Html.colspan := "2" )( "Group" ), //                       15 (5, 10)
+          Html.th( b.hasTextCentered )( "Amount" ), //                         8
+          Html.th( b.hasTextCentered )( "Item" ),   //                        15
+          Html.th( Html.colspan := "2", b.hasTextCentered )( "Recipe" ), //   27 (20, 7)
+          Html.th( b.hasTextCentered, Html.colspan := "3" )( "Machines" ), // 23 (3, 12, 8)
+          Html.th( b.hasTextCentered, Html.colspan := "2" )( "Power" ) //     12 (7, 5)
         ),
         Html.tr(
           Html.th( Html.colspan := "5" )(),
-          Html.th( b.hasTextCentered )( "#" ),
+          Html.th( b.hasTextRight, Html.title := "Production amplification slots" )( "Amp." ),
+          Html.th( b.hasTextRight )( "#" ),
           Html.th( b.hasTextCentered )( "type" ),
-          Html.th( b.hasTextCentered )( "clock" ),
+          Html.th( b.hasTextRight )( "clock" ),
           powerHeaderCell( flows.prod ),
           Html.th( b.hasTextWeightBold )( "MW" )
         )
@@ -247,6 +294,7 @@ object PlanTable:
         initCells
         ++ List(
           recipeName( production.env, process, row, cellAttr ),
+          powerAmplificationCell( production, process, cellAttr ),
           Html.td( b.isFamilyMonospace + b.hasTextRight, cellAttr )(
             process.machineCount.toString
           ),
@@ -261,6 +309,25 @@ object PlanTable:
           powerCell( process, cellAttr ),
           Html.td( cellAttr )( "MW" )
         )
+    )
+
+  private def powerAmplificationCell(
+      production: ProdModel,
+      process: ClockedRecipe,
+      cellAttr: Attr[Nothing]
+  ): Html[Nothing] =
+    val somersloops: Option[Html[Nothing]] =
+      RecipeFrag.productionBoost( production.env )( process.boostedRecipe.usedSlots )
+
+//    val resourceMeter: Option[Html[Nothing]] =
+//      production.manufacturingResources
+//        .get( process )
+//        .map( d =>
+//          Html.span( Html.title := s"${Numbers.showDouble1M( d * 100 )}%" )( Elements.resourceMeter( 1.8d, "em", d ) )
+//        )
+
+    Html.td( b.hasTextRight, cellAttr )(
+      somersloops // ++ resourceMeter
     )
 
   private def groupsGrid( group: Group, endId: EndId, id: ProcessSplitId, groups: Groups ): Html[PlanMsg] =
@@ -400,7 +467,7 @@ object PlanTable:
         else
           summaryGroupDropdown( groups, group )
       ),
-      Html.td( cellAttr, Html.colspan := "6" )(
+      Html.td( cellAttr, Html.colspan := "7" )(
         Html.strong( s"Summary for ${FlowElements.longGroupName( group )}." ),
         Html.span( b.ml2 + b.isSize7 )( s"Click row to ${if ( expanded ) "collapse" else "expand"}" )
       ),
@@ -422,7 +489,7 @@ object PlanTable:
       Option
         .when( expanded )(
           Html.tr(
-            Html.td( Html.colspan := "10" )(
+            Html.td( Html.colspan := "11" )(
               GroupSummary(
                 flows,
                 groups,
@@ -505,7 +572,7 @@ object PlanTable:
               initCells ++
               Option.when( idx == 0 )(
                 Html.td(
-                  Html.colspan := "6",
+                  Html.colspan := "7",
                   Html.rowspan := items.size.toString,
                   Html.styles( CSS.textAlign( "center" ), CSS.verticalAlign( "middle" ) )
                 )( notification )
@@ -612,7 +679,7 @@ object PlanTable:
     val groups: Groups = Groups.of( flows )
 
     Html.tr(
-      Html.td( Html.colspan := "10" )(
+      Html.td( Html.colspan := "11" )(
         Html.div( b.columns )(
           Option.when( ingrColW > 0 )(
             Html.div( b.column + b.cls( s"is-$ingrColW" ) )(
@@ -632,7 +699,7 @@ object PlanTable:
 
   def processRecipe( env: Env, process: ClockedRecipe ): Html[Nothing] =
     Html.tr(
-      Html.td( noBorderStyle, Html.colspan := "10", b.isSize5 + b.hasTextCentered )(
+      Html.td( noBorderStyle, Html.colspan := "11", b.isSize5 + b.hasTextCentered )(
         RecipeFrag.recipeIcons( env )( process.recipe )
       )
     )
@@ -647,7 +714,7 @@ object PlanTable:
         1.to( process.machineCount.min( 4 ) ).toList.fproduct( estimateFootprint )
 
       Html.tr(
-        Html.td( noBorderStyle, Html.colspan := "10", b.hasTextCentered )(
+        Html.td( noBorderStyle, Html.colspan := "11", b.hasTextCentered )(
           Elements.messageCenteredHeader( b.isPrimary, b.hasTextPrimaryDark, Html.text( "Footprint estimate" ) )(
             Html.table( b.table + b.isFullwidth )(
               Html.thead(

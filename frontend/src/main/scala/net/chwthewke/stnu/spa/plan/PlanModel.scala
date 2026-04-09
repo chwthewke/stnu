@@ -83,7 +83,7 @@ class PlanModel(
 
   private def restoreFlows( prod: ProdModel, flows: Either[pp.Flows, Flows] ): Either[pp.Flows, Flows] =
     if ( prod.solution.isEmpty ) flows.flatMap( Left( _ ) )
-    else flows.fold( Flows.from( prod, _ ), _.setProduction( prod ) ).asRight
+    else flows.fold( Flows.from( prod, _ ), Flows.from( prod, _ ) ).asRight
 
   private def invalidateProduction(
       newProduction: ProdModel
@@ -136,11 +136,10 @@ class PlanModel(
     case PlanMsg.SwapGroups( from, to ) =>
       copy( flows = flows.map( _.swapGroups( from, to ) ) ) -> Cmd.None
     case PlanMsg.SendSolverRequest =>
-      this -> http
-        .computeSolution( solverRequest )
-        .map( PlanMsg.ReceiveSolverResponse( solverRequest, _ ) )
+      copy( ui = ui.setComputing( true ) ) ->
+        http.computeSolution( solverRequest ).map( PlanMsg.ReceiveSolverResponse( solverRequest, _ ) )
     case PlanMsg.ReceiveSolverResponse( solverRequest, solverResponse ) =>
-      copy( solution = SolutionModel( solverRequest, solverResponse ).some ) -> Cmd.None
+      copy( ui = ui.setComputing( false ), solution = SolutionModel( solverRequest, solverResponse ).some ) -> Cmd.None
     case PlanMsg.SaveRequest( confirm ) =>
       this -> http
         .save( save, confirm )
@@ -164,9 +163,10 @@ class PlanModel(
       http.loadPlan( id ).map( PlanMsg.PlanLoaded( id, _ ) )
 
   def restore: PlanModel = copy(
+    recipeOptions = if ( ui.options.contains( SidePanel.Recipes ) ) recipeOptions.restore else recipeOptions,
     resourceOptions =
       if ( ui.options.contains( SidePanel.ResourceNodes ) ) resourceOptions.restore else resourceOptions,
-    recipeOptions = if ( ui.options.contains( SidePanel.Recipes ) ) recipeOptions.restore else recipeOptions,
+    powerOptions = if ( ui.options.contains( SidePanel.Power ) ) powerOptions.restore else powerOptions,
     requests = if ( ui.options.contains( SidePanel.Requests ) ) requests.restore else requests
   )
 
@@ -190,11 +190,15 @@ class PlanModel(
         env.game.powerRecipes
           .filter( rec => rec.products.nonEmpty && powerOptions.allowedGenerators.contains( rec.producedIn.className ) )
           .map( _.className ),
-      extractionOptions.resources( env, resourceOptions.resourceNodes )
+      extractionOptions.resources( env, resourceOptions.resourceNodes ),
+      logisticsOptions.belts( env ).last.className,
+      logisticsOptions.pipelines( env ).last.className,
+      powerOptions.maxProductionBoost,
+      powerOptions.manufacturingClockSpeed
     )
 
   private def solutionDirty( solution: SolutionModel ): Boolean =
-    solution.requested != solverRequest
+    solution.response.solution.isEmpty || solution.requested != solverRequest
 
   lazy val canCompute: Boolean =
     if ( requests.requested.isEmpty )
@@ -250,10 +254,15 @@ object PlanModel:
       requests: RequestsModel,
       solution: Option[SolutionModel],
       productionUi: ProdModel.Ui,
-      flows: ProdModel => Either[pp.Flows, Flows]
+      savedFlows: Option[pp.Flows]
   ): PlanModel =
     val production: ProdModel =
       PlanModel.productionOf( env, resourceOptions, extractionOptions, logisticsOptions, requests, solution )
+    val flows: Either[pp.Flows, Flows] =
+      ( solution *> savedFlows )
+        .map( Flows.from( production, _ ).asRight )
+        .orElse( savedFlows.map( _.asLeft ) )
+        .getOrElse( Flows.init( production ).asRight )
     new PlanModel(
       env,
       ui,
@@ -267,7 +276,7 @@ object PlanModel:
       solution,
       production,
       productionUi,
-      flows( production )
+      flows
     )
 
   def init( env: Env, ui: Ui = Ui.init ): PlanModel =
@@ -283,7 +292,7 @@ object PlanModel:
       RequestsModel.init,
       none,
       ProdModel.Ui.init,
-      Flows.init( _ ).asRight
+      none
     )
 
   def load( env: Env, ui: Ui, planId: PlanId, saved: pp.Plan ): ( PlanModel, Cmd[Nothing, PlanMsg] ) =
@@ -300,7 +309,7 @@ object PlanModel:
         requests = RequestsModel.from( env, saved.requestSelection ).restore,
         solution = saved.solution.map { case ( req, res ) => SolutionModel( req, res ) },
         productionUi = ProdModel.Ui.from( saved.flows.prodHash, saved.productionUi ),
-        flows = _ => Left( saved.flows )
+        savedFlows = saved.flows.some
       )
     model -> ( if ( model.solution.isEmpty && model.canCompute ) Cmd.Emit( PlanMsg.SendSolverRequest ) else Cmd.None )
 
@@ -308,8 +317,11 @@ object PlanModel:
       hasOptions: SidePanel & SidePanel.OptionsTab,
       options: Option[SidePanel],
       requestSelectionVisible: Boolean,
-      isOrganizer: Boolean
+      isOrganizer: Boolean,
+      isComputing: Boolean
   ):
+    def setComputing( computing: Boolean ): Ui = copy( isComputing = computing )
+
     def setTab( optionsTab: Option[SidePanel], organizer: Boolean ): Ui =
       copy(
         hasOptions = optionsTab.flatMap( _.optionsTab ).getOrElse( this.hasOptions ),
@@ -324,5 +336,6 @@ object PlanModel:
       hasOptions = SidePanel.Recipes,
       options = none,
       requestSelectionVisible = false,
-      isOrganizer = false
+      isOrganizer = false,
+      isComputing = false
     )

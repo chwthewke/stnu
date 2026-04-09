@@ -16,7 +16,8 @@ import model.ResourceDistrib
 
 case class ExtraGameDataConfig(
     resourceNodes: Map[ExtractorType, Map[ClassName[Item], ResourceDistrib]],
-    buildingFootprints: Map[ClassName[Machine], Footprint]
+    buildingFootprints: Map[ClassName[Machine], Footprint],
+    maxProductionBoostShards: Int
 ) derives Show
 
 object ExtraGameDataConfig:

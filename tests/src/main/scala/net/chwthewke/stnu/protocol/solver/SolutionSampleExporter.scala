@@ -28,14 +28,11 @@ object SolutionSampleExporter extends IOApp:
     SolutionGenerators.solverRequestAndResponse( model )(
       requestGen = SolutionGenerators.solverRequest( model )(
         tierGen = tier,
-        recipeSelectionGen = tier => SolutionGenerators.recipeSelection( model )( tier ),
         requestSelectionGen =
-          recipes => SolutionGenerators.requestSelection( model )( recipes, sizeGen = _.min( size ) )
+          recipes => retry( SolutionGenerators.requestSelection( model )( recipes, sizeGen = _.min( size ) ), 11 ),
+        maxProductionBoostGen = _ => 0
       )
     )
-
-  def retry[A]( g: Gen[A], n: Int = 20 ): Gen[A] =
-    ( g.map( _.some ) <+> Gen.const( none ) ).retryUntil( _.isDefined, n ).map( _.get )
 
   def exportedSolutionsFor(
       model: Model
