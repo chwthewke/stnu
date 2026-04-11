@@ -57,7 +57,7 @@ case class Env(
       SortedMap( recipe.category.tier -> Vector( recipe ) )
 
     @tailrec
-    def sortTier[R <: Recipe](
+    def sortTier[R <: Recipe: Ordering](
         productAcc: Set[ClassName[Item]],
         acc: Vector[R],
         toSort: Vector[R]
@@ -67,14 +67,14 @@ case class Env(
         val ( feasible, infeasible ) =
           toSort.partition: recipe =>
             recipe.ingredients.forall( item => productAcc.contains( item.item.className ) )
-        if ( feasible.isEmpty ) ( productAcc, acc ++ infeasible.sortBy( _.displayName ) )
+        if ( feasible.isEmpty ) ( productAcc, acc ++ infeasible.sorted )
         else
           val feasibleProducts: Set[ClassName[Item]] =
             feasible.foldMap( r => r.productsList.map( _.item.className ).toSet )
-          sortTier( productAcc ++ feasibleProducts, acc ++ feasible.sortBy( _.displayName ), infeasible )
+          sortTier( productAcc ++ feasibleProducts, acc ++ feasible.sorted, infeasible )
 
     @tailrec
-    def sort[R <: Recipe](
+    def sort[R <: Recipe: Ordering](
         productAcc: Set[ClassName[Item]],
         acc: Vector[R],
         toSort: SortedMap[Tier, Vector[R]]
@@ -93,7 +93,7 @@ case class Env(
           case ( r, ix ) => ( r.className, ix )
         .toMap
 
-    Ordering.by( recipe => ( m.get( recipe.className ), recipe.displayName ) )
+    Ordering.by( recipe => ( m.get( recipe.className ), recipe ) )
 
   lazy val itemOrder: Ordering[Item] =
     val m: Map[ClassName[Item], Int] =

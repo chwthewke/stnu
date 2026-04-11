@@ -266,7 +266,7 @@ object FlowsView:
         Html.td( b.hasTextCentered )(
           if ( srcDest.item.max == 1 ) "*" else s"#${srcDest.item.split}/${srcDest.item.max}"
         ),
-        Html.td( srcDest.item.value.displayName ),
+        Html.td( RecipeFrag.srcDestName( env )( srcDest.item.value ) ),
         Html.td( b.hasTextCentered )( renderSrcDestMachines( env, srcDest.item ) ),
         Html.td( b.hasTextRight )( FlowElements.groupButton( groups, srcDest.item.group, newGroup = false, none ) )
       )
@@ -437,6 +437,7 @@ object FlowsView:
       srcDest: Countable[Double, Split[SrcDest]]
   ): Html[Nothing] =
     modalHeading(
+      env,
       "Split",
       RecipeFrag.numberedIcon3( env, srcDest.as( pos.item ), b.mx2 ),
       pos,
@@ -449,6 +450,7 @@ object FlowsView:
       srcDest: Countable[Double, Split[SrcDest]]
   ): Html[Nothing] =
     modalHeading(
+      env,
       "Merge",
       Icons.icon.withClasses( b.mx2 ).verticalAlign().withDropShadow().item( env, pos.item ),
       pos,
@@ -456,6 +458,7 @@ object FlowsView:
     )
 
   private def modalHeading(
+      env: Env,
       actionName: String,
       icon: Html[Nothing],
       pos: SrcDestPos,
@@ -464,10 +467,14 @@ object FlowsView:
     Html.h3( b.subtitle )(
       Html.span( va() )( actionName ),
       icon,
-      Html.span( va() )( s"${if ( pos.direction == FlowEnd.Source ) "from" else "to"} ${srcDest.item.displayName}" )
+      Html.span( va() )(
+        Html.text( if ( pos.direction == FlowEnd.Source ) "from" else "to" ),
+        nbsp,
+        RecipeFrag.splitName( env )( srcDest.item )
+      )
     )
 
-  private def actionButton( text: String, classes: Classes, help: String )(
+  private def actionButton( content: Elem[Nothing], classes: Classes, help: Elem[Nothing] )(
       action: FlowAction,
       addon: Option[Html[FlowAction]],
       preview: Option[Html[Nothing]]
@@ -479,7 +486,7 @@ object FlowsView:
             b.button + classes,
             Html.onClick( action ),
             Option.when( preview.isEmpty )( Html.disabled( true ) )
-          )( text ),
+          )( content ),
           addon
         ),
         preview.map( Html.span( b.ml2 )( _ ) )
@@ -553,8 +560,8 @@ object FlowsView:
       splitType: SplitType,
       pos: SrcDestPos,
       actionParam: Option[IntActionParam]
-  )( text: String, classes: Classes, help: String ): Html[FlowAction] =
-    actionButton( text, classes, help )(
+  )( content: Elem[Nothing], classes: Classes, help: Elem[Nothing] ): Html[FlowAction] =
+    actionButton( content, classes, help )(
       FlowAction.SplitSrcDest( pos, splitType ),
       actionParam.map( intActionParamSelector ),
       previewResult(
@@ -580,10 +587,12 @@ object FlowsView:
         Html.div( b.box )(
           splitModalHeading( env, action.pos, action.srcDest ),
           splitActionButton( flows, action.even, action.pos, none )(
-            "Evenly",
+            Html.text( "Evenly" ),
             b.isInfo,
-            s"spread the ${Numbers.showDouble3( action.srcDest.amount )} " +
-              s"${action.pos.item.displayName} with equal headroom/overflow"
+            Html.text(
+              s"spread the ${Numbers.showDouble3( action.srcDest.amount )} " +
+                s"${action.pos.item.displayName} with equal headroom/overflow"
+            )
           ),
           splitActionButton(
             flows,
@@ -591,9 +600,11 @@ object FlowsView:
             action.pos,
             action.equalSplitCount.map( equalSplitActionParam )
           )(
-            "Equally",
+            Html.text( "Equally" ),
             b.isInfo,
-            s"spread the ${Numbers.showDouble3( action.srcDest.amount )} ${action.pos.item.displayName} equally"
+            Html.text(
+              s"spread the ${Numbers.showDouble3( action.srcDest.amount )} ${action.pos.item.displayName} equally"
+            )
           ),
           splitActionButton(
             flows,
@@ -601,10 +612,12 @@ object FlowsView:
             action.pos,
             action.equalSplitCount.map( equalSplitActionParam )
           )(
-            "Equally (fixed)",
+            Html.text( "Equally (fixed)" ),
             b.isInfo,
-            s"spread the ${Numbers.showDouble3( action.srcDest.amount )} ${action.pos.item.displayName} " +
-              s"almost equally (without changing the number and clock speed of machines)"
+            Html.text(
+              s"spread the ${Numbers.showDouble3( action.srcDest.amount )} ${action.pos.item.displayName} " +
+                s"almost equally (without changing the number and clock speed of machines)"
+            )
           ),
           splitActionButton(
             flows,
@@ -612,33 +625,39 @@ object FlowsView:
             action.pos,
             action.machineCount.map( byMachineActionParam.tupled )
           )(
-            "By machine count",
+            Html.text( "By machine count" ),
             b.isInfo,
-            s"split a number of machines, keeping the same clock speed."
+            Html.text( s"split a number of machines, keeping the same clock speed." )
           ),
           splitActionButton( flows, action.remainder, action.pos, none )(
-            "Remainder",
+            Html.text( "Remainder" ),
             b.isInfo,
-            s"split the amount that goes over the total amount on the other end."
+            Html.text( s"split the amount that goes over the total amount on the other end." )
           ),
           Html.hr(),
           splitActionButton( flows, action.max, action.pos, none )(
-            "Max (once)",
+            Html.text( "Max (once)" ),
             b.isPrimary,
-            s"split one max (${action.transport.perMinute}) flow from the remainder"
+            Html.text( s"split one max (${action.transport.perMinute}) flow from the remainder" )
           ),
           splitActionButton( flows, action.maxAll, action.pos, none )(
-            "Max (all)",
+            Html.text( "Max (all)" ),
             b.isPrimary,
-            s"split as many max (${action.transport.perMinute}) flow as possible from the remainder"
+            Html.text( s"split as many max (${action.transport.perMinute}) flow as possible from the remainder" )
           ),
           Html.hr(),
           Html.div(
             action.opposite.map: splitType =>
               splitActionButton( flows, splitType, action.pos, none )(
-                s"split ${Numbers.showDouble3( splitType.split.amount )} for ${splitType.split.item.displayName}",
+                Html.span(
+                  Html.text(
+                    s"split ${Numbers.showDouble3( splitType.split.amount )} for"
+                  ),
+                  nbsp,
+                  RecipeFrag.splitName( env )( splitType.split.item )
+                ),
                 b.isLink,
-                ""
+                none
               )
           )
         )
@@ -649,8 +668,8 @@ object FlowsView:
       flows: Flows,
       mergeType: MergeType,
       pos: SrcDestPos
-  )( text: String, classes: Classes, help: String ): Html[FlowAction] =
-    actionButton( text, classes, help )(
+  )( content: Elem[Nothing], classes: Classes, help: Elem[Nothing] ): Html[FlowAction] =
+    actionButton( content, classes, help )(
       FlowAction.MergeSrcDest( pos, mergeType ),
       none,
       previewResult( PreviewResultIcon.WarnOnOverflow, flows.prod.env, pos.item, flows.previewMerge( pos, mergeType ) )
@@ -666,23 +685,36 @@ object FlowsView:
         Html.div( b.box )(
           mergeModalHeading( env, action.pos, action.srcDest ),
           mergeActionButton( flows, action.local, action.pos )(
-            "Local",
+            Html.text( "Local" ),
             b.isInfo,
-            s"Merge all ${action.srcDest.item.original.displayName} in " +
-              s"${action.transport.displayName} #${action.pos.index + 1}"
+            Html.span(
+              Html.text( "Merge all" ),
+              nbsp,
+              RecipeFrag.srcDestName( env )( action.srcDest.item.original ),
+              nbsp,
+              Html.text( s"in ${action.transport.displayName} #${action.pos.index + 1}" )
+            )
           ),
           mergeActionButton( flows, action.global, action.pos )(
-            "Global",
+            Html.text( "Global" ),
             b.isInfo,
-            s"Merge all ${action.srcDest.item.original.displayName}"
+            Html.span(
+              Html.text( "Merge all" ),
+              nbsp,
+              RecipeFrag.srcDestName( env )( action.srcDest.item.original )
+            )
           ),
           Html.hr(),
           Html.div(
             action.adjacent.map: mergeType =>
               mergeActionButton( flows, mergeType, action.pos )(
-                s"Merge with ${mergeType.split.item.displayName}",
+                Html.span(
+                  Html.text( "Merge with" ),
+                  nbsp,
+                  RecipeFrag.splitName( env )( mergeType.split.item )
+                ),
                 b.isLink,
-                ""
+                none
               )
           )
         )

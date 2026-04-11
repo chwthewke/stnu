@@ -13,11 +13,14 @@ import model.Item
 import model.Machine
 import model.Power
 import model.Recipe
+import model.ResourcePurity
 import model.Transport
 import spa.Env
 import spa.css.Bulma
 import spa.css.Classes
 import spa.css.Phosphor
+import spa.prod.Split
+import spa.prod.SrcDest
 import spa.views.Icons.Icon
 
 object RecipeFrag:
@@ -143,4 +146,50 @@ object RecipeFrag:
     ingredientIcons( env )( recipe ) ++ (
       Html.span( b.mr1 + b.icon, va() )( Html.i( p.fill.arrowFatRight )() ) ::
         productIcons( env )( recipe )
+    )
+
+  private def purityColor( purity: ResourcePurity ): String =
+    purity match
+      case ResourcePurity.Impure => "#d23430"
+      case ResourcePurity.Normal => "#f26416"
+      case ResourcePurity.Pure   => "#80b139"
+
+  def recipeName( env: Env )( recipe: Recipe ): Html[Nothing] =
+    def recipeProducerIcon: Html[Nothing] =
+      Html.span( b.icon + b.mx1, va() )( icon.verticalAlign().withDropShadow().machine( env, recipe.producedIn ) )
+
+    def extractionRecipeTags: List[Elem[Nothing]] = recipe match
+      case e: Recipe.Extraction =>
+        List( recipeProducerIcon )
+        ++
+          e.purity.map: purity =>
+            Html.span( b.mx1, va() )(
+              Html.i(
+                Html.styles( CSS.color( purityColor( purity ) ) ),
+                p.fill.circle
+              )()
+            )
+      case p: Recipe.PowerGeneration =>
+        List( nbsp, Html.span( va() )( "in" ), recipeProducerIcon )
+      case _ => Nil
+
+    Html.span(
+      Option.when( recipe.isAlternate )( Html.span( b.tag + b.isDark + b.isSize7 + b.mr1, va() )( "ALT" ) ) ++:
+        Html.span( Html.title := recipe.describe, va() )( recipe.displayNameNoAlt ) +: extractionRecipeTags
+    )
+
+  def srcDestName( env: Env )( srcDest: SrcDest ): Html[Nothing] =
+    srcDest match
+      case SrcDest.Extract( recipe ) => recipeName( env )( recipe.recipe )
+      case SrcDest.Step( recipe )    => recipeName( env )( recipe.recipe )
+      case SrcDest.Input             => Html.span( "INPUT" )
+      case SrcDest.Requested         => Html.span( "REQUEST" )
+      case SrcDest.Byproduct         => Html.span( "BYPRODUCT" )
+
+  def splitName( env: Env )( split: Split[SrcDest] ): Html[Nothing] =
+    Html.span(
+      srcDestName( env )( split.original ) ::
+        Option
+          .when( split.max > 1 )( split.split )
+          .foldMap( num => List( nbsp, Html.text( s"#$num" ) ) )
     )

@@ -183,7 +183,7 @@ object PlanOptionsView:
                             Html.value := isChecked.toString,
                             Html.onChange( _ => RecipeOption.SetRecipe( recipe.className, !isChecked ) )
                           ),
-                          Html.span( Html.title := recipe.describe )( recipe.displayName )
+                          RecipeFrag.recipeName( env )( recipe )
                         )
                       )
                 )
@@ -204,9 +204,6 @@ object PlanOptionsView:
           ),
           Html.tbody(
             env.game.defaultResourceOptions.resourceNodes.toList
-              .filter:
-                case ( ExtractorType.Miner | ExtractorType.OilPump | ExtractorType.Fracking, _ ) => true
-                case _                                                                           => false
               .sortBy( _._1 )
               .flatMap:
                 case ( extractor, resources ) =>

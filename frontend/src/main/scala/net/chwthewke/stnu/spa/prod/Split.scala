@@ -20,7 +20,6 @@ case class Split[+A <: SrcDest](
   import Split.*
 
   val value: A                            = original.times( fraction )
-  def displayName: String                 = original.displayName + Option.when( max > 1 )( s" #$split" ).orEmpty
   def times( fraction: Double ): Split[A] = copy( fraction = this.fraction * fraction )
 
 object Split:

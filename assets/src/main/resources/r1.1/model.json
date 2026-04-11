@@ -108,13 +108,6 @@
           "normalNodes" : 12,
           "pureNodes" : 8
         }
-      },
-      "WaterPump" : {
-        "Desc_Water_C" : {
-          "impureNodes" : 0,
-          "normalNodes" : 10000,
-          "pureNodes" : 0
-        }
       }
     }
   },
@@ -147,7 +140,7 @@
               }
             },
             "className" : "Desc_OreBauxite_C_Impure_Build_MinerMk1_C",
-            "displayName" : "Bauxite (impure, Miner Mk.1)",
+            "displayName" : "Bauxite",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -162,7 +155,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_OreBauxite_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -171,7 +165,7 @@
               }
             },
             "className" : "Desc_OreBauxite_C_Normal_Build_MinerMk1_C",
-            "displayName" : "Bauxite (normal, Miner Mk.1)",
+            "displayName" : "Bauxite",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -186,7 +180,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_OreBauxite_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -195,7 +190,7 @@
               }
             },
             "className" : "Desc_OreBauxite_C_Pure_Build_MinerMk1_C",
-            "displayName" : "Bauxite (pure, Miner Mk.1)",
+            "displayName" : "Bauxite",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -210,7 +205,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_OreBauxite_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -227,7 +223,7 @@
               }
             },
             "className" : "Desc_OreBauxite_C_Impure_Build_MinerMk2_C",
-            "displayName" : "Bauxite (impure, Miner Mk.2)",
+            "displayName" : "Bauxite",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -242,7 +238,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_OreBauxite_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -251,7 +248,7 @@
               }
             },
             "className" : "Desc_OreBauxite_C_Normal_Build_MinerMk2_C",
-            "displayName" : "Bauxite (normal, Miner Mk.2)",
+            "displayName" : "Bauxite",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -266,7 +263,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_OreBauxite_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -275,7 +273,7 @@
               }
             },
             "className" : "Desc_OreBauxite_C_Pure_Build_MinerMk2_C",
-            "displayName" : "Bauxite (pure, Miner Mk.2)",
+            "displayName" : "Bauxite",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -290,7 +288,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_OreBauxite_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -307,7 +306,7 @@
               }
             },
             "className" : "Desc_OreBauxite_C_Impure_Build_MinerMk3_C",
-            "displayName" : "Bauxite (impure, Miner Mk.3)",
+            "displayName" : "Bauxite",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -322,7 +321,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_OreBauxite_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -331,7 +331,7 @@
               }
             },
             "className" : "Desc_OreBauxite_C_Normal_Build_MinerMk3_C",
-            "displayName" : "Bauxite (normal, Miner Mk.3)",
+            "displayName" : "Bauxite",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -346,7 +346,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_OreBauxite_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -355,7 +356,7 @@
               }
             },
             "className" : "Desc_OreBauxite_C_Pure_Build_MinerMk3_C",
-            "displayName" : "Bauxite (pure, Miner Mk.3)",
+            "displayName" : "Bauxite",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -370,7 +371,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_OreBauxite_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -387,7 +389,7 @@
               }
             },
             "className" : "Desc_OreGold_C_Impure_Build_MinerMk1_C",
-            "displayName" : "Caterium Ore (impure, Miner Mk.1)",
+            "displayName" : "Caterium Ore",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -402,7 +404,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_OreGold_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -411,7 +414,7 @@
               }
             },
             "className" : "Desc_OreGold_C_Normal_Build_MinerMk1_C",
-            "displayName" : "Caterium Ore (normal, Miner Mk.1)",
+            "displayName" : "Caterium Ore",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -426,7 +429,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_OreGold_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -435,7 +439,7 @@
               }
             },
             "className" : "Desc_OreGold_C_Pure_Build_MinerMk1_C",
-            "displayName" : "Caterium Ore (pure, Miner Mk.1)",
+            "displayName" : "Caterium Ore",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -450,7 +454,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_OreGold_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -467,7 +472,7 @@
               }
             },
             "className" : "Desc_OreGold_C_Impure_Build_MinerMk2_C",
-            "displayName" : "Caterium Ore (impure, Miner Mk.2)",
+            "displayName" : "Caterium Ore",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -482,7 +487,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_OreGold_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -491,7 +497,7 @@
               }
             },
             "className" : "Desc_OreGold_C_Normal_Build_MinerMk2_C",
-            "displayName" : "Caterium Ore (normal, Miner Mk.2)",
+            "displayName" : "Caterium Ore",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -506,7 +512,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_OreGold_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -515,7 +522,7 @@
               }
             },
             "className" : "Desc_OreGold_C_Pure_Build_MinerMk2_C",
-            "displayName" : "Caterium Ore (pure, Miner Mk.2)",
+            "displayName" : "Caterium Ore",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -530,7 +537,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_OreGold_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -547,7 +555,7 @@
               }
             },
             "className" : "Desc_OreGold_C_Impure_Build_MinerMk3_C",
-            "displayName" : "Caterium Ore (impure, Miner Mk.3)",
+            "displayName" : "Caterium Ore",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -562,7 +570,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_OreGold_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -571,7 +580,7 @@
               }
             },
             "className" : "Desc_OreGold_C_Normal_Build_MinerMk3_C",
-            "displayName" : "Caterium Ore (normal, Miner Mk.3)",
+            "displayName" : "Caterium Ore",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -586,7 +595,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_OreGold_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -595,7 +605,7 @@
               }
             },
             "className" : "Desc_OreGold_C_Pure_Build_MinerMk3_C",
-            "displayName" : "Caterium Ore (pure, Miner Mk.3)",
+            "displayName" : "Caterium Ore",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -610,7 +620,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_OreGold_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -627,7 +638,7 @@
               }
             },
             "className" : "Desc_Coal_C_Impure_Build_MinerMk1_C",
-            "displayName" : "Coal (impure, Miner Mk.1)",
+            "displayName" : "Coal",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -642,7 +653,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_Coal_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -651,7 +663,7 @@
               }
             },
             "className" : "Desc_Coal_C_Normal_Build_MinerMk1_C",
-            "displayName" : "Coal (normal, Miner Mk.1)",
+            "displayName" : "Coal",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -666,7 +678,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_Coal_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -675,7 +688,7 @@
               }
             },
             "className" : "Desc_Coal_C_Pure_Build_MinerMk1_C",
-            "displayName" : "Coal (pure, Miner Mk.1)",
+            "displayName" : "Coal",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -690,7 +703,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_Coal_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -707,7 +721,7 @@
               }
             },
             "className" : "Desc_Coal_C_Impure_Build_MinerMk2_C",
-            "displayName" : "Coal (impure, Miner Mk.2)",
+            "displayName" : "Coal",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -722,7 +736,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_Coal_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -731,7 +746,7 @@
               }
             },
             "className" : "Desc_Coal_C_Normal_Build_MinerMk2_C",
-            "displayName" : "Coal (normal, Miner Mk.2)",
+            "displayName" : "Coal",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -746,7 +761,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_Coal_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -755,7 +771,7 @@
               }
             },
             "className" : "Desc_Coal_C_Pure_Build_MinerMk2_C",
-            "displayName" : "Coal (pure, Miner Mk.2)",
+            "displayName" : "Coal",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -770,7 +786,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_Coal_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -787,7 +804,7 @@
               }
             },
             "className" : "Desc_Coal_C_Impure_Build_MinerMk3_C",
-            "displayName" : "Coal (impure, Miner Mk.3)",
+            "displayName" : "Coal",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -802,7 +819,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_Coal_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -811,7 +829,7 @@
               }
             },
             "className" : "Desc_Coal_C_Normal_Build_MinerMk3_C",
-            "displayName" : "Coal (normal, Miner Mk.3)",
+            "displayName" : "Coal",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -826,7 +844,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_Coal_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -835,7 +854,7 @@
               }
             },
             "className" : "Desc_Coal_C_Pure_Build_MinerMk3_C",
-            "displayName" : "Coal (pure, Miner Mk.3)",
+            "displayName" : "Coal",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -850,7 +869,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_Coal_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -867,7 +887,7 @@
               }
             },
             "className" : "Desc_OreCopper_C_Impure_Build_MinerMk1_C",
-            "displayName" : "Copper Ore (impure, Miner Mk.1)",
+            "displayName" : "Copper Ore",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -882,7 +902,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_OreCopper_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -891,7 +912,7 @@
               }
             },
             "className" : "Desc_OreCopper_C_Normal_Build_MinerMk1_C",
-            "displayName" : "Copper Ore (normal, Miner Mk.1)",
+            "displayName" : "Copper Ore",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -906,7 +927,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_OreCopper_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -915,7 +937,7 @@
               }
             },
             "className" : "Desc_OreCopper_C_Pure_Build_MinerMk1_C",
-            "displayName" : "Copper Ore (pure, Miner Mk.1)",
+            "displayName" : "Copper Ore",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -930,7 +952,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_OreCopper_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -947,7 +970,7 @@
               }
             },
             "className" : "Desc_OreCopper_C_Impure_Build_MinerMk2_C",
-            "displayName" : "Copper Ore (impure, Miner Mk.2)",
+            "displayName" : "Copper Ore",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -962,7 +985,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_OreCopper_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -971,7 +995,7 @@
               }
             },
             "className" : "Desc_OreCopper_C_Normal_Build_MinerMk2_C",
-            "displayName" : "Copper Ore (normal, Miner Mk.2)",
+            "displayName" : "Copper Ore",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -986,7 +1010,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_OreCopper_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -995,7 +1020,7 @@
               }
             },
             "className" : "Desc_OreCopper_C_Pure_Build_MinerMk2_C",
-            "displayName" : "Copper Ore (pure, Miner Mk.2)",
+            "displayName" : "Copper Ore",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -1010,7 +1035,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_OreCopper_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -1027,7 +1053,7 @@
               }
             },
             "className" : "Desc_OreCopper_C_Impure_Build_MinerMk3_C",
-            "displayName" : "Copper Ore (impure, Miner Mk.3)",
+            "displayName" : "Copper Ore",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -1042,7 +1068,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_OreCopper_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -1051,7 +1078,7 @@
               }
             },
             "className" : "Desc_OreCopper_C_Normal_Build_MinerMk3_C",
-            "displayName" : "Copper Ore (normal, Miner Mk.3)",
+            "displayName" : "Copper Ore",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -1066,7 +1093,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_OreCopper_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -1075,7 +1103,7 @@
               }
             },
             "className" : "Desc_OreCopper_C_Pure_Build_MinerMk3_C",
-            "displayName" : "Copper Ore (pure, Miner Mk.3)",
+            "displayName" : "Copper Ore",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -1090,7 +1118,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_OreCopper_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -1107,7 +1136,7 @@
               }
             },
             "className" : "Desc_LiquidOil_C_Impure_Build_FrackingExtractor_C",
-            "displayName" : "Crude Oil (impure, Resource Well Extractor)",
+            "displayName" : "Crude Oil",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -1122,7 +1151,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_LiquidOil_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -1131,7 +1161,7 @@
               }
             },
             "className" : "Desc_LiquidOil_C_Normal_Build_FrackingExtractor_C",
-            "displayName" : "Crude Oil (normal, Resource Well Extractor)",
+            "displayName" : "Crude Oil",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -1146,7 +1176,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_LiquidOil_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -1155,7 +1186,7 @@
               }
             },
             "className" : "Desc_LiquidOil_C_Pure_Build_FrackingExtractor_C",
-            "displayName" : "Crude Oil (pure, Resource Well Extractor)",
+            "displayName" : "Crude Oil",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -1170,7 +1201,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_LiquidOil_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -1187,7 +1219,7 @@
               }
             },
             "className" : "Desc_LiquidOil_C_Impure_Build_OilPump_C",
-            "displayName" : "Crude Oil (impure, Oil Extractor)",
+            "displayName" : "Crude Oil",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -1202,7 +1234,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_LiquidOil_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -1211,7 +1244,7 @@
               }
             },
             "className" : "Desc_LiquidOil_C_Normal_Build_OilPump_C",
-            "displayName" : "Crude Oil (normal, Oil Extractor)",
+            "displayName" : "Crude Oil",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -1226,7 +1259,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_LiquidOil_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -1235,7 +1269,7 @@
               }
             },
             "className" : "Desc_LiquidOil_C_Pure_Build_OilPump_C",
-            "displayName" : "Crude Oil (pure, Oil Extractor)",
+            "displayName" : "Crude Oil",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -1250,7 +1284,8 @@
                 "amount" : 4.0,
                 "item" : "Desc_LiquidOil_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -1267,7 +1302,7 @@
               }
             },
             "className" : "Desc_Gift_C_Build_TreeGiftProducer_C",
-            "displayName" : "FICSMAS Gift (FICSMAS Gift Tree)",
+            "displayName" : "FICSMAS Gift",
             "duration" : 4000,
             "ingredients" : [
             ],
@@ -1299,7 +1334,7 @@
               }
             },
             "className" : "Desc_OreIron_C_Impure_Build_MinerMk1_C",
-            "displayName" : "Iron Ore (impure, Miner Mk.1)",
+            "displayName" : "Iron Ore",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -1314,7 +1349,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_OreIron_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -1323,7 +1359,7 @@
               }
             },
             "className" : "Desc_OreIron_C_Normal_Build_MinerMk1_C",
-            "displayName" : "Iron Ore (normal, Miner Mk.1)",
+            "displayName" : "Iron Ore",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -1338,7 +1374,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_OreIron_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -1347,7 +1384,7 @@
               }
             },
             "className" : "Desc_OreIron_C_Pure_Build_MinerMk1_C",
-            "displayName" : "Iron Ore (pure, Miner Mk.1)",
+            "displayName" : "Iron Ore",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -1362,7 +1399,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_OreIron_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -1379,7 +1417,7 @@
               }
             },
             "className" : "Desc_OreIron_C_Impure_Build_MinerMk2_C",
-            "displayName" : "Iron Ore (impure, Miner Mk.2)",
+            "displayName" : "Iron Ore",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -1394,7 +1432,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_OreIron_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -1403,7 +1442,7 @@
               }
             },
             "className" : "Desc_OreIron_C_Normal_Build_MinerMk2_C",
-            "displayName" : "Iron Ore (normal, Miner Mk.2)",
+            "displayName" : "Iron Ore",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -1418,7 +1457,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_OreIron_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -1427,7 +1467,7 @@
               }
             },
             "className" : "Desc_OreIron_C_Pure_Build_MinerMk2_C",
-            "displayName" : "Iron Ore (pure, Miner Mk.2)",
+            "displayName" : "Iron Ore",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -1442,7 +1482,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_OreIron_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -1459,7 +1500,7 @@
               }
             },
             "className" : "Desc_OreIron_C_Impure_Build_MinerMk3_C",
-            "displayName" : "Iron Ore (impure, Miner Mk.3)",
+            "displayName" : "Iron Ore",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -1474,7 +1515,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_OreIron_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -1483,7 +1525,7 @@
               }
             },
             "className" : "Desc_OreIron_C_Normal_Build_MinerMk3_C",
-            "displayName" : "Iron Ore (normal, Miner Mk.3)",
+            "displayName" : "Iron Ore",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -1498,7 +1540,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_OreIron_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -1507,7 +1550,7 @@
               }
             },
             "className" : "Desc_OreIron_C_Pure_Build_MinerMk3_C",
-            "displayName" : "Iron Ore (pure, Miner Mk.3)",
+            "displayName" : "Iron Ore",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -1522,7 +1565,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_OreIron_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -1539,7 +1583,7 @@
               }
             },
             "className" : "Desc_Stone_C_Impure_Build_MinerMk1_C",
-            "displayName" : "Limestone (impure, Miner Mk.1)",
+            "displayName" : "Limestone",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -1554,7 +1598,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_Stone_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -1563,7 +1608,7 @@
               }
             },
             "className" : "Desc_Stone_C_Normal_Build_MinerMk1_C",
-            "displayName" : "Limestone (normal, Miner Mk.1)",
+            "displayName" : "Limestone",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -1578,7 +1623,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_Stone_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -1587,7 +1633,7 @@
               }
             },
             "className" : "Desc_Stone_C_Pure_Build_MinerMk1_C",
-            "displayName" : "Limestone (pure, Miner Mk.1)",
+            "displayName" : "Limestone",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -1602,7 +1648,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_Stone_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -1619,7 +1666,7 @@
               }
             },
             "className" : "Desc_Stone_C_Impure_Build_MinerMk2_C",
-            "displayName" : "Limestone (impure, Miner Mk.2)",
+            "displayName" : "Limestone",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -1634,7 +1681,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_Stone_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -1643,7 +1691,7 @@
               }
             },
             "className" : "Desc_Stone_C_Normal_Build_MinerMk2_C",
-            "displayName" : "Limestone (normal, Miner Mk.2)",
+            "displayName" : "Limestone",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -1658,7 +1706,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_Stone_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -1667,7 +1716,7 @@
               }
             },
             "className" : "Desc_Stone_C_Pure_Build_MinerMk2_C",
-            "displayName" : "Limestone (pure, Miner Mk.2)",
+            "displayName" : "Limestone",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -1682,7 +1731,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_Stone_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -1699,7 +1749,7 @@
               }
             },
             "className" : "Desc_Stone_C_Impure_Build_MinerMk3_C",
-            "displayName" : "Limestone (impure, Miner Mk.3)",
+            "displayName" : "Limestone",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -1714,7 +1764,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_Stone_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -1723,7 +1774,7 @@
               }
             },
             "className" : "Desc_Stone_C_Normal_Build_MinerMk3_C",
-            "displayName" : "Limestone (normal, Miner Mk.3)",
+            "displayName" : "Limestone",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -1738,7 +1789,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_Stone_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -1747,7 +1799,7 @@
               }
             },
             "className" : "Desc_Stone_C_Pure_Build_MinerMk3_C",
-            "displayName" : "Limestone (pure, Miner Mk.3)",
+            "displayName" : "Limestone",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -1762,7 +1814,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_Stone_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -1779,7 +1832,7 @@
               }
             },
             "className" : "Desc_NitrogenGas_C_Impure_Build_FrackingExtractor_C",
-            "displayName" : "Nitrogen Gas (impure, Resource Well Extractor)",
+            "displayName" : "Nitrogen Gas",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -1794,7 +1847,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_NitrogenGas_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -1803,7 +1857,7 @@
               }
             },
             "className" : "Desc_NitrogenGas_C_Normal_Build_FrackingExtractor_C",
-            "displayName" : "Nitrogen Gas (normal, Resource Well Extractor)",
+            "displayName" : "Nitrogen Gas",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -1818,7 +1872,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_NitrogenGas_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -1827,7 +1882,7 @@
               }
             },
             "className" : "Desc_NitrogenGas_C_Pure_Build_FrackingExtractor_C",
-            "displayName" : "Nitrogen Gas (pure, Resource Well Extractor)",
+            "displayName" : "Nitrogen Gas",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -1842,7 +1897,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_NitrogenGas_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -1859,7 +1915,7 @@
               }
             },
             "className" : "Desc_RawQuartz_C_Impure_Build_MinerMk1_C",
-            "displayName" : "Raw Quartz (impure, Miner Mk.1)",
+            "displayName" : "Raw Quartz",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -1874,7 +1930,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_RawQuartz_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -1883,7 +1940,7 @@
               }
             },
             "className" : "Desc_RawQuartz_C_Normal_Build_MinerMk1_C",
-            "displayName" : "Raw Quartz (normal, Miner Mk.1)",
+            "displayName" : "Raw Quartz",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -1898,7 +1955,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_RawQuartz_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -1907,7 +1965,7 @@
               }
             },
             "className" : "Desc_RawQuartz_C_Pure_Build_MinerMk1_C",
-            "displayName" : "Raw Quartz (pure, Miner Mk.1)",
+            "displayName" : "Raw Quartz",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -1922,7 +1980,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_RawQuartz_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -1939,7 +1998,7 @@
               }
             },
             "className" : "Desc_RawQuartz_C_Impure_Build_MinerMk2_C",
-            "displayName" : "Raw Quartz (impure, Miner Mk.2)",
+            "displayName" : "Raw Quartz",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -1954,7 +2013,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_RawQuartz_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -1963,7 +2023,7 @@
               }
             },
             "className" : "Desc_RawQuartz_C_Normal_Build_MinerMk2_C",
-            "displayName" : "Raw Quartz (normal, Miner Mk.2)",
+            "displayName" : "Raw Quartz",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -1978,7 +2038,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_RawQuartz_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -1987,7 +2048,7 @@
               }
             },
             "className" : "Desc_RawQuartz_C_Pure_Build_MinerMk2_C",
-            "displayName" : "Raw Quartz (pure, Miner Mk.2)",
+            "displayName" : "Raw Quartz",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -2002,7 +2063,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_RawQuartz_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -2019,7 +2081,7 @@
               }
             },
             "className" : "Desc_RawQuartz_C_Impure_Build_MinerMk3_C",
-            "displayName" : "Raw Quartz (impure, Miner Mk.3)",
+            "displayName" : "Raw Quartz",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -2034,7 +2096,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_RawQuartz_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -2043,7 +2106,7 @@
               }
             },
             "className" : "Desc_RawQuartz_C_Normal_Build_MinerMk3_C",
-            "displayName" : "Raw Quartz (normal, Miner Mk.3)",
+            "displayName" : "Raw Quartz",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -2058,7 +2121,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_RawQuartz_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -2067,7 +2131,7 @@
               }
             },
             "className" : "Desc_RawQuartz_C_Pure_Build_MinerMk3_C",
-            "displayName" : "Raw Quartz (pure, Miner Mk.3)",
+            "displayName" : "Raw Quartz",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -2082,7 +2146,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_RawQuartz_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -2099,7 +2164,7 @@
               }
             },
             "className" : "Desc_SAM_C_Impure_Build_MinerMk1_C",
-            "displayName" : "SAM (impure, Miner Mk.1)",
+            "displayName" : "SAM",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -2114,7 +2179,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_SAM_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -2123,7 +2189,7 @@
               }
             },
             "className" : "Desc_SAM_C_Normal_Build_MinerMk1_C",
-            "displayName" : "SAM (normal, Miner Mk.1)",
+            "displayName" : "SAM",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -2138,7 +2204,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_SAM_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -2147,7 +2214,7 @@
               }
             },
             "className" : "Desc_SAM_C_Pure_Build_MinerMk1_C",
-            "displayName" : "SAM (pure, Miner Mk.1)",
+            "displayName" : "SAM",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -2162,7 +2229,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_SAM_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -2179,7 +2247,7 @@
               }
             },
             "className" : "Desc_SAM_C_Impure_Build_MinerMk2_C",
-            "displayName" : "SAM (impure, Miner Mk.2)",
+            "displayName" : "SAM",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -2194,7 +2262,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_SAM_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -2203,7 +2272,7 @@
               }
             },
             "className" : "Desc_SAM_C_Normal_Build_MinerMk2_C",
-            "displayName" : "SAM (normal, Miner Mk.2)",
+            "displayName" : "SAM",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -2218,7 +2287,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_SAM_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -2227,7 +2297,7 @@
               }
             },
             "className" : "Desc_SAM_C_Pure_Build_MinerMk2_C",
-            "displayName" : "SAM (pure, Miner Mk.2)",
+            "displayName" : "SAM",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -2242,7 +2312,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_SAM_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -2259,7 +2330,7 @@
               }
             },
             "className" : "Desc_SAM_C_Impure_Build_MinerMk3_C",
-            "displayName" : "SAM (impure, Miner Mk.3)",
+            "displayName" : "SAM",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -2274,7 +2345,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_SAM_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -2283,7 +2355,7 @@
               }
             },
             "className" : "Desc_SAM_C_Normal_Build_MinerMk3_C",
-            "displayName" : "SAM (normal, Miner Mk.3)",
+            "displayName" : "SAM",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -2298,7 +2370,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_SAM_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -2307,7 +2380,7 @@
               }
             },
             "className" : "Desc_SAM_C_Pure_Build_MinerMk3_C",
-            "displayName" : "SAM (pure, Miner Mk.3)",
+            "displayName" : "SAM",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -2322,7 +2395,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_SAM_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -2339,7 +2413,7 @@
               }
             },
             "className" : "Desc_Sulfur_C_Impure_Build_MinerMk1_C",
-            "displayName" : "Sulfur (impure, Miner Mk.1)",
+            "displayName" : "Sulfur",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -2354,7 +2428,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_Sulfur_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -2363,7 +2438,7 @@
               }
             },
             "className" : "Desc_Sulfur_C_Normal_Build_MinerMk1_C",
-            "displayName" : "Sulfur (normal, Miner Mk.1)",
+            "displayName" : "Sulfur",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -2378,7 +2453,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_Sulfur_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -2387,7 +2463,7 @@
               }
             },
             "className" : "Desc_Sulfur_C_Pure_Build_MinerMk1_C",
-            "displayName" : "Sulfur (pure, Miner Mk.1)",
+            "displayName" : "Sulfur",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -2402,7 +2478,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_Sulfur_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -2419,7 +2496,7 @@
               }
             },
             "className" : "Desc_Sulfur_C_Impure_Build_MinerMk2_C",
-            "displayName" : "Sulfur (impure, Miner Mk.2)",
+            "displayName" : "Sulfur",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -2434,7 +2511,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_Sulfur_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -2443,7 +2521,7 @@
               }
             },
             "className" : "Desc_Sulfur_C_Normal_Build_MinerMk2_C",
-            "displayName" : "Sulfur (normal, Miner Mk.2)",
+            "displayName" : "Sulfur",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -2458,7 +2536,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_Sulfur_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -2467,7 +2546,7 @@
               }
             },
             "className" : "Desc_Sulfur_C_Pure_Build_MinerMk2_C",
-            "displayName" : "Sulfur (pure, Miner Mk.2)",
+            "displayName" : "Sulfur",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -2482,7 +2561,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_Sulfur_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -2499,7 +2579,7 @@
               }
             },
             "className" : "Desc_Sulfur_C_Impure_Build_MinerMk3_C",
-            "displayName" : "Sulfur (impure, Miner Mk.3)",
+            "displayName" : "Sulfur",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -2514,7 +2594,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_Sulfur_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -2523,7 +2604,7 @@
               }
             },
             "className" : "Desc_Sulfur_C_Normal_Build_MinerMk3_C",
-            "displayName" : "Sulfur (normal, Miner Mk.3)",
+            "displayName" : "Sulfur",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -2538,7 +2619,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_Sulfur_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -2547,7 +2629,7 @@
               }
             },
             "className" : "Desc_Sulfur_C_Pure_Build_MinerMk3_C",
-            "displayName" : "Sulfur (pure, Miner Mk.3)",
+            "displayName" : "Sulfur",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -2562,7 +2644,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_Sulfur_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -2579,7 +2662,7 @@
               }
             },
             "className" : "Desc_OreUranium_C_Impure_Build_MinerMk1_C",
-            "displayName" : "Uranium (impure, Miner Mk.1)",
+            "displayName" : "Uranium",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -2594,7 +2677,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_OreUranium_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -2603,7 +2687,7 @@
               }
             },
             "className" : "Desc_OreUranium_C_Normal_Build_MinerMk1_C",
-            "displayName" : "Uranium (normal, Miner Mk.1)",
+            "displayName" : "Uranium",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -2618,7 +2702,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_OreUranium_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -2627,7 +2712,7 @@
               }
             },
             "className" : "Desc_OreUranium_C_Pure_Build_MinerMk1_C",
-            "displayName" : "Uranium (pure, Miner Mk.1)",
+            "displayName" : "Uranium",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -2642,7 +2727,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_OreUranium_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -2659,7 +2745,7 @@
               }
             },
             "className" : "Desc_OreUranium_C_Impure_Build_MinerMk2_C",
-            "displayName" : "Uranium (impure, Miner Mk.2)",
+            "displayName" : "Uranium",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -2674,7 +2760,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_OreUranium_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -2683,7 +2770,7 @@
               }
             },
             "className" : "Desc_OreUranium_C_Normal_Build_MinerMk2_C",
-            "displayName" : "Uranium (normal, Miner Mk.2)",
+            "displayName" : "Uranium",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -2698,7 +2785,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_OreUranium_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -2707,7 +2795,7 @@
               }
             },
             "className" : "Desc_OreUranium_C_Pure_Build_MinerMk2_C",
-            "displayName" : "Uranium (pure, Miner Mk.2)",
+            "displayName" : "Uranium",
             "duration" : 500,
             "ingredients" : [
             ],
@@ -2722,7 +2810,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_OreUranium_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -2739,7 +2828,7 @@
               }
             },
             "className" : "Desc_OreUranium_C_Impure_Build_MinerMk3_C",
-            "displayName" : "Uranium (impure, Miner Mk.3)",
+            "displayName" : "Uranium",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -2754,7 +2843,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_OreUranium_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -2763,7 +2853,7 @@
               }
             },
             "className" : "Desc_OreUranium_C_Normal_Build_MinerMk3_C",
-            "displayName" : "Uranium (normal, Miner Mk.3)",
+            "displayName" : "Uranium",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -2778,7 +2868,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_OreUranium_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -2787,7 +2878,7 @@
               }
             },
             "className" : "Desc_OreUranium_C_Pure_Build_MinerMk3_C",
-            "displayName" : "Uranium (pure, Miner Mk.3)",
+            "displayName" : "Uranium",
             "duration" : 250,
             "ingredients" : [
             ],
@@ -2802,7 +2893,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_OreUranium_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -2819,7 +2911,7 @@
               }
             },
             "className" : "Desc_Water_C_Impure_Build_FrackingExtractor_C",
-            "displayName" : "Water (impure, Resource Well Extractor)",
+            "displayName" : "Water",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -2834,7 +2926,8 @@
                 "amount" : 0.5,
                 "item" : "Desc_Water_C"
               }
-            ]
+            ],
+            "purity" : "impure"
           },
           {
             "category" : {
@@ -2843,7 +2936,7 @@
               }
             },
             "className" : "Desc_Water_C_Normal_Build_FrackingExtractor_C",
-            "displayName" : "Water (normal, Resource Well Extractor)",
+            "displayName" : "Water",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -2858,7 +2951,8 @@
                 "amount" : 1.0,
                 "item" : "Desc_Water_C"
               }
-            ]
+            ],
+            "purity" : "normal"
           },
           {
             "category" : {
@@ -2867,7 +2961,7 @@
               }
             },
             "className" : "Desc_Water_C_Pure_Build_FrackingExtractor_C",
-            "displayName" : "Water (pure, Resource Well Extractor)",
+            "displayName" : "Water",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -2882,7 +2976,8 @@
                 "amount" : 2.0,
                 "item" : "Desc_Water_C"
               }
-            ]
+            ],
+            "purity" : "pure"
           }
         ]
       }
@@ -2898,32 +2993,8 @@
                 "tier" : 3
               }
             },
-            "className" : "Desc_Water_C_Impure_Build_WaterPump_C",
-            "displayName" : "Water (impure, Water Extractor)",
-            "duration" : 1000,
-            "ingredients" : [
-            ],
-            "power" : {
-              "Fixed" : {
-                "value" : 20.0
-              }
-            },
-            "producedIn" : "Build_WaterPump_C",
-            "products" : [
-              {
-                "amount" : 1.0,
-                "item" : "Desc_Water_C"
-              }
-            ]
-          },
-          {
-            "category" : {
-              "Extraction" : {
-                "tier" : 3
-              }
-            },
             "className" : "Desc_Water_C_Normal_Build_WaterPump_C",
-            "displayName" : "Water (normal, Water Extractor)",
+            "displayName" : "Water",
             "duration" : 1000,
             "ingredients" : [
             ],
@@ -2936,30 +3007,6 @@
             "products" : [
               {
                 "amount" : 2.0,
-                "item" : "Desc_Water_C"
-              }
-            ]
-          },
-          {
-            "category" : {
-              "Extraction" : {
-                "tier" : 3
-              }
-            },
-            "className" : "Desc_Water_C_Pure_Build_WaterPump_C",
-            "displayName" : "Water (pure, Water Extractor)",
-            "duration" : 1000,
-            "ingredients" : [
-            ],
-            "power" : {
-              "Fixed" : {
-                "value" : 20.0
-              }
-            },
-            "producedIn" : "Build_WaterPump_C",
-            "products" : [
-              {
-                "amount" : 4.0,
                 "item" : "Desc_Water_C"
               }
             ]
@@ -14197,7 +14244,7 @@
         }
       },
       "className" : "Build_GeneratorCoal_C__Desc_Coal_C",
-      "displayName" : "Coal in Coal-Powered Generator",
+      "displayName" : "Coal",
       "duration" : 4000,
       "ingredients" : [
         {
@@ -14225,7 +14272,7 @@
         }
       },
       "className" : "Build_GeneratorCoal_C__Desc_CompactedCoal_C",
-      "displayName" : "Compacted Coal in Coal-Powered Generator",
+      "displayName" : "Compacted Coal",
       "duration" : 8400,
       "ingredients" : [
         {
@@ -14253,7 +14300,7 @@
         }
       },
       "className" : "Build_GeneratorCoal_C__Desc_PetroleumCoke_C",
-      "displayName" : "Petroleum Coke in Coal-Powered Generator",
+      "displayName" : "Petroleum Coke",
       "duration" : 2400,
       "ingredients" : [
         {
@@ -14281,7 +14328,7 @@
         }
       },
       "className" : "Build_GeneratorFuel_C__Desc_LiquidFuel_C",
-      "displayName" : "Fuel in Fuel-Powered Generator",
+      "displayName" : "Fuel",
       "duration" : 3000,
       "ingredients" : [
         {
@@ -14305,7 +14352,7 @@
         }
       },
       "className" : "Build_GeneratorFuel_C__Desc_LiquidTurboFuel_C",
-      "displayName" : "Turbofuel in Fuel-Powered Generator",
+      "displayName" : "Turbofuel",
       "duration" : 8000,
       "ingredients" : [
         {
@@ -14329,7 +14376,7 @@
         }
       },
       "className" : "Build_GeneratorFuel_C__Desc_LiquidBiofuel_C",
-      "displayName" : "Liquid Biofuel in Fuel-Powered Generator",
+      "displayName" : "Liquid Biofuel",
       "duration" : 3000,
       "ingredients" : [
         {
@@ -14353,7 +14400,7 @@
         }
       },
       "className" : "Build_GeneratorFuel_C__Desc_RocketFuel_C",
-      "displayName" : "Rocket Fuel in Fuel-Powered Generator",
+      "displayName" : "Rocket Fuel",
       "duration" : 14400,
       "ingredients" : [
         {
@@ -14377,7 +14424,7 @@
         }
       },
       "className" : "Build_GeneratorFuel_C__Desc_IonizedFuel_C",
-      "displayName" : "Ionized Fuel in Fuel-Powered Generator",
+      "displayName" : "Ionized Fuel",
       "duration" : 20000,
       "ingredients" : [
         {
@@ -14401,7 +14448,7 @@
         }
       },
       "className" : "Build_GeneratorBiomass_Automated_C__Desc_Leaves_C",
-      "displayName" : "Leaves in Biomass Burner",
+      "displayName" : "Leaves",
       "duration" : 500,
       "ingredients" : [
         {
@@ -14425,7 +14472,7 @@
         }
       },
       "className" : "Build_GeneratorBiomass_Automated_C__Desc_Wood_C",
-      "displayName" : "Wood in Biomass Burner",
+      "displayName" : "Wood",
       "duration" : 10000,
       "ingredients" : [
         {
@@ -14449,7 +14496,7 @@
         }
       },
       "className" : "Build_GeneratorBiomass_Automated_C__Desc_Mycelia_C",
-      "displayName" : "Mycelia in Biomass Burner",
+      "displayName" : "Mycelia",
       "duration" : 2000,
       "ingredients" : [
         {
@@ -14473,7 +14520,7 @@
         }
       },
       "className" : "Build_GeneratorBiomass_Automated_C__Desc_GenericBiomass_C",
-      "displayName" : "Biomass in Biomass Burner",
+      "displayName" : "Biomass",
       "duration" : 6000,
       "ingredients" : [
         {
@@ -14497,7 +14544,7 @@
         }
       },
       "className" : "Build_GeneratorBiomass_Automated_C__Desc_Biofuel_C",
-      "displayName" : "Solid Biofuel in Biomass Burner",
+      "displayName" : "Solid Biofuel",
       "duration" : 15000,
       "ingredients" : [
         {
@@ -14521,7 +14568,7 @@
         }
       },
       "className" : "Build_GeneratorBiomass_Automated_C__Desc_PackagedBiofuel_C",
-      "displayName" : "Packaged Liquid Biofuel in Biomass Burner",
+      "displayName" : "Packaged Liquid Biofuel",
       "duration" : 25000,
       "ingredients" : [
         {
@@ -14545,7 +14592,7 @@
         }
       },
       "className" : "Build_GeneratorNuclear_C__Desc_NuclearFuelRod_C",
-      "displayName" : "Uranium Fuel Rod in Nuclear Power Plant",
+      "displayName" : "Uranium Fuel Rod",
       "duration" : 300000,
       "ingredients" : [
         {
@@ -14577,7 +14624,7 @@
         }
       },
       "className" : "Build_GeneratorNuclear_C__Desc_PlutoniumFuelRod_C",
-      "displayName" : "Plutonium Fuel Rod in Nuclear Power Plant",
+      "displayName" : "Plutonium Fuel Rod",
       "duration" : 600000,
       "ingredients" : [
         {
@@ -14609,7 +14656,7 @@
         }
       },
       "className" : "Build_GeneratorNuclear_C__Desc_FicsoniumFuelRod_C",
-      "displayName" : "Ficsonium Fuel Rod in Nuclear Power Plant",
+      "displayName" : "Ficsonium Fuel Rod",
       "duration" : 60000,
       "ingredients" : [
         {

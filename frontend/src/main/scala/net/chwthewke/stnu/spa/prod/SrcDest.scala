@@ -16,13 +16,6 @@ object SrcDest:
   case object Byproduct                              extends Dest
 
   extension ( self: SrcDest )
-    def displayName: String = self match
-      case Extract( recipe ) => recipe.recipe.displayName
-      case Step( recipe )    => recipe.recipe.displayName
-      case Input             => "INPUT"
-      case Requested         => "REQUEST"
-      case Byproduct         => "BYPRODUCT"
-
     def process: Option[ClockedRecipe] = self match
       case Extract( process )            => process.some
       case Step( process )               => process.some

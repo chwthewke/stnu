@@ -4,7 +4,7 @@ package prod
 
 import cats.Semigroup
 import cats.Show
-import cats.derived.*
+import cats.derived.strict.*
 import cats.syntax.all.*
 
 import model.Footprint

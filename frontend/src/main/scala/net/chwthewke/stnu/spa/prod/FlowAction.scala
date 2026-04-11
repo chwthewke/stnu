@@ -30,24 +30,7 @@ enum SplitType:
   case MaxAll
   case Opposite( split: Countable[Double, Split[SrcDest]] )
 
-  override def toString: String =
-    this match
-      case Even              => "Even"
-      case Equal( _ )        => "Equal"
-      case EqualFixed( _ )   => "EqualFixed"
-      case MachineCount( _ ) => "MachineCount"
-      case Remainder         => "Remainder"
-      case Max               => "Max"
-      case MaxAll            => "MaxAll"
-      case Opposite( split ) => f"Opposite ${split.item.displayName} (${split.amount}%.3f)"
-
 enum MergeType:
   case Local
   case Global
   case Adjacent( split: Countable[Double, Split[SrcDest]] )
-
-  override def toString: String =
-    this match
-      case Local             => "Local"
-      case Global            => "Global"
-      case Adjacent( split ) => f"Adjacent ${split.item.displayName} (${split.amount}%.3f)"

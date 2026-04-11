@@ -40,7 +40,8 @@ sealed trait Recipe:
   private def perMinute( ct: Countable[Double, Item] ): Countable[Double, Item] =
     Countable( ct.item, ct.amount * 60000 / duration.toMillis )
 
-  def isAlternate: Boolean = displayName.toLowerCase.startsWith( "alternate" )
+  def isAlternate: Boolean     = displayName.toLowerCase.startsWith( "alternate" )
+  def displayNameNoAlt: String = displayName.stripPrefix( "Alternate: " )
 
   // NOTE iffy, but that's what we have
   def isMatterConversion: Boolean =
@@ -56,6 +57,11 @@ object Recipe:
     def category: RecipeCategory.Manufacturing | RecipeCategory.PowerGeneration
     override def className: ClassName[Recipe.NonExtraction]
 
+  object NonExtraction:
+    given Show[Recipe.NonExtraction]     = Show.show( showRecipe )
+    given Order[Recipe.NonExtraction]    = Order.by( _.displayNameNoAlt )
+    given Ordering[Recipe.NonExtraction] = Order.catsKernelOrderingForOrder
+
   case class Extraction(
       className: ClassName[Recipe.Extraction],
       displayName: String,
@@ -64,13 +70,18 @@ object Recipe:
       products: Countable[Double, Item],
       duration: FiniteDuration,
       producedIn: Machine,
+      purity: Option[ResourcePurity],
       power: Power
   ) extends Recipe:
     type P[a] = a
 
   object Extraction:
-    given Show[Recipe.Extraction]  = Show.show( showRecipe )
-    given Order[Recipe.Extraction] = Order.by( _.displayName )
+    private[Recipe] def orderKey( r: Extraction ): ( String, String, String ) =
+      ( r.displayNameNoAlt, r.producedIn.displayName, r.purity.foldMap( _.show ) )
+
+    given Show[Recipe.Extraction]     = Show.show( showRecipe )
+    given Order[Recipe.Extraction]    = Order.by( orderKey )
+    given Ordering[Recipe.Extraction] = Order.catsKernelOrderingForOrder
 
   case class Manufacturing(
       className: ClassName[Recipe.Manufacturing],
@@ -86,8 +97,9 @@ object Recipe:
     type P[a] = NonEmptyList[a]
 
   object Manufacturing:
-    given Show[Recipe.Manufacturing]  = Show.show( showRecipe )
-    given Order[Recipe.Manufacturing] = Order.by( _.displayName )
+    given Show[Recipe.Manufacturing]     = Show.show( showRecipe )
+    given Order[Recipe.Manufacturing]    = Order.by( _.displayNameNoAlt )
+    given Ordering[Recipe.Manufacturing] = Order.catsKernelOrderingForOrder
 
   case class PowerGeneration(
       className: ClassName[Recipe.PowerGeneration],
@@ -103,8 +115,9 @@ object Recipe:
     type P[a] = List[a]
 
   object PowerGeneration:
-    given Show[Recipe.PowerGeneration]  = Show.show( showRecipe )
-    given Order[Recipe.PowerGeneration] = Order.by( _.displayName )
+    given Show[Recipe.PowerGeneration]     = Show.show( showRecipe )
+    given Order[Recipe.PowerGeneration]    = Order.by( _.displayNameNoAlt )
+    given Ordering[Recipe.PowerGeneration] = Order.catsKernelOrderingForOrder
 
   private def showRecipe( recipe: Recipe ): String =
     import recipe._
@@ -118,5 +131,11 @@ object Recipe:
           |  Produced in: ${producedIn.displayName}
           |""".stripMargin
 
-  given Show[Recipe]  = Show.show( showRecipe )
-  given Order[Recipe] = Order.by( _.displayName )
+  private def orderKey( recipe: Recipe ): ( String, String, String ) =
+    recipe match
+      case e: Extraction => Extraction.orderKey( e )
+      case _             => ( recipe.displayName, "", "" )
+
+  given Show[Recipe]     = Show.show( showRecipe )
+  given Order[Recipe]    = Order.by( orderKey )
+  given Ordering[Recipe] = Order.catsKernelOrderingForOrder

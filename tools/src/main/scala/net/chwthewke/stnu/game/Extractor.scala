@@ -18,12 +18,13 @@ final case class Extractor(
     powerConsumption: Double,
     powerConsumptionExponent: Double,
     cycleTime: FiniteDuration,
-    itemsPerCycle: Int
+    itemsPerCycle: Int,
+    usesPurity: Boolean
 )
 
 object Extractor:
 
-  private def of(
+  private def of( up: Boolean )(
       cn: ClassName[Extractor],
       dn: String,
       etn: String,
@@ -35,9 +36,9 @@ object Extractor:
       ct: Double,
       ic: Int
   ): Extractor =
-    Extractor( cn, dn, etn, arf, NonEmptyList.fromList( rf ).flatMap( fr.option( _ ) ), pc, pe, ct.seconds, ic )
+    Extractor( cn, dn, etn, arf, NonEmptyList.fromList( rf ).flatMap( fr.option( _ ) ), pc, pe, ct.seconds, ic, up )
 
-  given Decoder[Extractor] =
+  def decoder( usesPurity: Boolean ): Decoder[Extractor] =
     import Parsers.*
 
     given Decoder[Boolean]                        = Decoders.booleanStringDecoder
@@ -60,7 +61,7 @@ object Extractor:
       "mPowerConsumptionExponent",
       "mExtractCycleTime",
       "mItemsPerCycle"
-    )( Extractor.of )
+    )( Extractor.of( usesPurity ) )
 
   given Show[Extractor] = Show: extractor =>
     show"""${extractor.displayName} # ${extractor.className}

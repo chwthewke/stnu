@@ -27,8 +27,9 @@ case class ShownFlows( self: Flows ):
         f"${process.fractionalAmount}%.3f ${process.recipe.className}%s"
       case SrcDest.Step( process ) =>
         f"${process.fractionalAmount}%.3f ${process.recipe.className}%s"
-      case other =>
-        other.displayName
+      case SrcDest.Input     => "INPUT"
+      case SrcDest.Requested => "REQUESTED"
+      case SrcDest.Byproduct => "BYPRODUCT"
 
   private def showSplitSrcDest( split: Split[SrcDest] ): String =
     val splitNumber = if ( split.max > 1 ) s" ${split.split}/${split.max}" else ""

@@ -58,10 +58,6 @@ object ModelInit:
           .traverse: ex =>
             extractorMachine( config, classification.extractors, ex ).tupleLeft( ex )
           .andThen( getExtractionRecipes( data, modelItems, _ ) )
-          .andThen:
-            _.traverse:
-              case ( item, machine, byPurity ) =>
-                ExtractionRecipes.ByPurity( byPurity ).map( ( ( item, machine ), _ ) )
 
       val simpleProducersExtraction: ValidatedNel[String, Vector[( ( Item, Machine ), ExtractionRecipes )]] =
         data.simpleProducers.traverseFilter( simpleProducerExtraction( config, modelItems, _ ) )
@@ -200,23 +196,30 @@ object ModelInit:
       data: GameData,
       modelItems: ModelItems,
       machines: Map[ClassName[Extractor], ( Extractor, Machine )]
-  ): ValidatedNel[String, Vector[( Item, Machine, Vector[( ResourcePurity, Recipe.Extraction )] )]] =
+  ): ValidatedNel[String, Vector[( ( Item, Machine ), ExtractionRecipes )]] =
     val ( miners, otherExtractors ) =
       machines.values.toVector.partition( _._2.machineType.is( ExtractorType.Miner ) )
 
     (
       getMinerProducts( data, modelItems, miners ),
       getOtherExtractionProducts( data, modelItems, otherExtractors )
-    )
-      .mapN: ( miner, other ) =>
-        ( miner ++ other ).map:
-          case ( gameItem, item, extractor, machine ) =>
-            (
-              item,
-              machine,
-              ResourcePurity.cases
-                .map( purity => ( purity, extractionRecipe( gameItem, item, extractor, purity, machine ) ) )
-            )
+    ).tupled
+      .andThen:
+        case ( miner, other ) =>
+          ( miner ++ other ).traverse:
+            case ( gameItem, item, extractor, machine ) =>
+              def extractionRecipes: ValidatedNel[String, ExtractionRecipes] =
+                if ( extractor.usesPurity )
+                  ExtractionRecipes.ByPurity(
+                    ResourcePurity.cases.fproduct: purity =>
+                      extractionRecipe( gameItem, item, extractor, purity.some, machine )
+                  )
+                else
+                  ExtractionRecipes
+                    .Fixed( extractionRecipe( gameItem, item, extractor, none, machine ) )
+                    .validNel
+
+              extractionRecipes.tupleLeft( ( item, machine ) )
 
   def getMinerProducts(
       data: GameData,
@@ -312,12 +315,13 @@ object ModelInit:
               ExtractionRecipes.Fixed(
                 Recipe.Extraction(
                   ClassName( show"${itemClass}_$machineClass" ),
-                  show"${item.displayName} (${simpleProducer.displayName})",
+                  item.displayName,
                   RecipeCategory.Extraction( Tier( 0 ) ),
                   Nil,
                   Countable( item, 1 ),
                   simpleProducer.timeToProduceItem,
                   machine,
+                  none,
                   Power.Fixed( 0d )
                 )
               )
@@ -327,17 +331,24 @@ object ModelInit:
       gameItem: GameItem,
       item: Item,
       extractor: Extractor,
-      purity: ResourcePurity,
+      purity: Option[ResourcePurity],
       machine: Machine
   ): Recipe.Extraction =
     Recipe.Extraction(
-      ClassName( show"${item.className}_${purity.entryName.capitalize}_${extractor.className}" ),
-      show"${item.displayName} ($purity, ${extractor.displayName})",
+      ClassName(
+        // NOTE legacy support in the class name without a purity
+        show"${item.className}_${purity.getOrElse( ResourcePurity.Normal ).entryName.capitalize}_${extractor.className}"
+      ),
+      item.displayName,
       RecipeCategory.Extraction( machine.tier ),
       Nil,
-      Countable( item, extractor.itemsPerCycle.toDouble / gameItem.form.simpleAmountFactor * purity.multiplier ),
+      Countable(
+        item,
+        extractor.itemsPerCycle.toDouble / gameItem.form.simpleAmountFactor * purity.fold( 1d )( _.multiplier )
+      ),
       extractor.cycleTime,
       machine,
+      purity,
       Power.Fixed( extractor.powerConsumption )
     )
 
@@ -444,7 +455,7 @@ object ModelInit:
           val generatorClass: ClassName[Machine] = generator.className.translate
           Recipe.PowerGeneration(
             ClassName( s"${generator.className.name}__${f.className.name}" ),
-            show"${f.displayName} in ${generator.displayName}",
+            f.displayName,
             RecipeCategory.PowerGeneration( t ),
             Countable( f, fAm.toDouble ) :: so.map( Countable( _, sAm ) ).toList,
             bp.map( _.mapAmount( fAm.toDouble * _ ) ).toList,

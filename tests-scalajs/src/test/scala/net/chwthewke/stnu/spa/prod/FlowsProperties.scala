@@ -21,8 +21,8 @@ trait FlowsProperties:
 
   given approxItemIO: Approx[ItemIO[SrcDest]] = new Gathering with Approx:
     override def approx( x: ItemIO[SrcDest], y: ItemIO[SrcDest] ): Boolean =
-      x.sources.map( _.map( _.displayName ) ) =~ y.sources.map( _.map( _.displayName ) )
-        && x.destinations.map( _.map( _.displayName ) ) =~ y.destinations.map( _.map( _.displayName ) )
+      x.sources.map( _.map( showSrcDest ) ) =~ y.sources.map( _.map( showSrcDest ) )
+        && x.destinations.map( _.map( showSrcDest ) ) =~ y.destinations.map( _.map( showSrcDest ) )
 
   given [A <: SrcDest] => Approx[Split[A]]:
     override def approx( x: Split[A], y: Split[A] ): Boolean =

@@ -140,8 +140,10 @@ object GameData:
         decodeMap( Manufacturer.manufacturerDecoder( isCollider = false ) )( _.className ).map( GameData.manufacturers )
       case NativeClass.colliderClass =>
         decodeMap( Manufacturer.manufacturerDecoder( isCollider = true ) )( _.className ).map( GameData.manufacturers )
-      case NativeClass.resourceExtractorClass | NativeClass.waterPumpClass | NativeClass.frackingExtractorClass =>
-        decodeMap( Decoder[Extractor] )( _.className ).map( GameData.extractors )
+      case NativeClass.waterPumpClass =>
+        decodeMap( Extractor.decoder( usesPurity = false ) )( _.className ).map( GameData.extractors )
+      case NativeClass.resourceExtractorClass | NativeClass.frackingExtractorClass =>
+        decodeMap( Extractor.decoder( usesPurity = true ) )( _.className ).map( GameData.extractors )
       case NativeClass.recipeClass =>
         Decoder[Vector[GameRecipe]].map( GameData.recipes )
       case NativeClass.nuclearGeneratorClass | NativeClass.generatorClass =>

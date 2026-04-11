@@ -4,7 +4,7 @@ package prod
 
 import cats.Order
 import cats.Show
-import cats.derived.*
+import cats.derived.strict.*
 import cats.syntax.all.*
 import io.circe.derivation.ConfiguredCodec
 import scala.annotation.tailrec

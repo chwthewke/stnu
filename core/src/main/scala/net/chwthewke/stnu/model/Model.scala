@@ -122,10 +122,9 @@ object Model:
       products: List[Countable[Double, ClassName[Item]]],
       duration: FiniteDuration,
       producedIn: ClassName[Machine],
+      purity: Option[ResourcePurity],
       power: Power
-  ) derives Show,
-        ConfiguredDecoder,
-        ConfiguredEncoder:
+  ) derives Show:
     def manufacturing: ReaderT[ValidatedNel[String, *], Types.Index, Recipe.Manufacturing] = ReaderT: index =>
       (
         validateRecipeCategory( _.manufacturing )( category ).tag( show"Category $category" ),
@@ -149,7 +148,7 @@ object Model:
           case _              => show"Extraction recipe with 0 or 2+ products $className".invalidNel,
         index.machine( producedIn )
       ).mapN(
-        Recipe.Extraction( className.narrow[Recipe.Extraction], displayName, _, _, _, duration, _, power )
+        Recipe.Extraction( className.narrow[Recipe.Extraction], displayName, _, _, _, duration, _, purity, power )
       ).tag( s"Extraction $displayName ($className)" )
 
     def powerGeneration: ReaderT[ValidatedNel[String, *], Types.Index, Recipe.PowerGeneration] =
@@ -182,8 +181,14 @@ object Model:
         recipe.products.map( _.map( _.className ) ).toList,
         recipe.duration,
         recipe.producedIn.className,
+        recipe match
+          case e: Recipe.Extraction => e.purity
+          case _                    => none,
         recipe.power
       )
+
+    given Decoder[CompactRecipe] = ConfiguredDecoder.derive[CompactRecipe]()
+    given Encoder[CompactRecipe] = ConfiguredEncoder.derive[CompactRecipe]().mapJson( _.dropNullValues )
 
   private case class CompactExtractionRecipes( recipes: Vector[CompactRecipe] )
       derives Show,

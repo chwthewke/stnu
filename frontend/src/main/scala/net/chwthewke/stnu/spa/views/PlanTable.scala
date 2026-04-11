@@ -193,6 +193,19 @@ object PlanTable:
   private val noBorderCSS: Style           = CSS.borderBottom( "0" )
   private val noBorderStyle: Attr[Nothing] = Html.style( noBorderCSS )
 
+  private def recipeName(
+      env: Env,
+      process: ClockedRecipe,
+      row: ProdModel.Row,
+      cellAttr: Attr[Nothing]
+  ): Html[Nothing] =
+    Html.td(
+      cellAttr
+    )(
+      RecipeFrag.recipeName( env )( process.recipe ),
+      Option.when( row.splitCount > 1 )( Html.span( b.ml1 )( s"#${row.splitNumber}/${row.splitCount}" ) )
+    )
+
   private def mainComputedRow(
       production: ProdModel,
       rows: Vector[ProdModel.Row],
@@ -233,13 +246,7 @@ object PlanTable:
         ) ::
         initCells
         ++ List(
-          Html.td(
-            Html.title := process.recipe.describe,
-            cellAttr
-          )(
-            process.recipe.displayName +
-              Option.when( row.splitCount > 1 )( s" #${row.splitNumber}/${row.splitCount}" ).orEmpty
-          ),
+          recipeName( production.env, process, row, cellAttr ),
           Html.td( b.isFamilyMonospace + b.hasTextRight, cellAttr )(
             process.machineCount.toString
           ),
@@ -583,7 +590,7 @@ object PlanTable:
             Html.tr(
               Html.td( b.isFamilyMonospace )( Numbers.showDouble3( ci.amount ) ),
               Html.td( FlowElements.groupButton( groups, ci.item.group, newGroup = false, action = none ) ),
-              Html.td( ci.item.displayName )
+              Html.td( RecipeFrag.splitName( flows.prod.env )( ci.item ) )
             )
         )
       )

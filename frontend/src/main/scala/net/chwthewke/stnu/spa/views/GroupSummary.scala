@@ -176,7 +176,7 @@ object GroupSummary:
     Html.tr(
       Html.td(
         localEnd.item match
-          case LocalGroupEnd.Process( splitId ) => Html.text( flows.getSplit( splitId ).displayName )
+          case LocalGroupEnd.Process( splitId ) => RecipeFrag.splitName( flows.prod.env )( flows.getSplit( splitId ) )
           case LocalGroupEnd.Child( group )     => FlowElements.groupButton( groups, group, newGroup = false, none )
       ),
       Html.td( b.hasTextRight )( Numbers.showDouble3( localEnd.amount ) )

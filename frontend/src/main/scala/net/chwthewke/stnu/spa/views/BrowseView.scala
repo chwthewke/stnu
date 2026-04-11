@@ -190,13 +190,10 @@ object BrowseView:
     ): List[Html[BrowseMsg]] =
       List(
         Html.td( Html.styles( CSS.verticalAlign( "middle" ) ) )(
-          Html.text( recipe.displayName ),
+          RecipeFrag.recipeName( env )( recipe ),
           Html.span( b.mx1 + b.tag + b.isPrimary )( show"Tier ${recipe.category.tier}" ),
-          Option.when( recipe.isAlternate )(
-            Html.span( b.mx1 + b.tag + b.isInfo )( "Alt" )
-          ),
           Option.when( recipe.isMatterConversion )(
-            Html.span( b.mx1 + b.tag + b.isLink )( "MC" )
+            Html.span( b.mx1 + b.tag + b.isLink )( "Mat. Conv." )
           ),
           Option.when( recipe.category.powerGeneration.nonEmpty )(
             Html.span( b.mx1 + b.tag + b.isSuccess )( "Power" )

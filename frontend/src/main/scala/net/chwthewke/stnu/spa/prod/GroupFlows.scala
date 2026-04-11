@@ -5,7 +5,7 @@ package prod
 import alleycats.std.iterable.*
 import cats.Monoid
 import cats.data.NonEmptyVector
-import cats.derived.*
+import cats.derived.strict.*
 import cats.syntax.all.*
 import scala.collection.immutable.SortedMap
 import scala.collection.immutable.SortedSet

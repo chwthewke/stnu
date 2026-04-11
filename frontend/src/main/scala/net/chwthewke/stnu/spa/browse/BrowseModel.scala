@@ -29,7 +29,7 @@ case class BrowseModel(
   def sortRecipes( env: Env ): List[Recipe.NonExtraction] =
     val realEnv = if ( hideFicsmas ) env.withoutFicsmas else env
     sort match
-      case Sort.Name => realEnv.nonExtractionRecipes.sortBy( _.displayName ).toList
+      case Sort.Name => realEnv.nonExtractionRecipes.sorted.toList
       case Sort.Topo => realEnv.sortedRecipes.toList
 
 object BrowseModel:
