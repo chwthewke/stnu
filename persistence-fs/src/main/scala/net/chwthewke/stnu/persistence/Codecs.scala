@@ -12,6 +12,7 @@ import scodec.Codec
 import scodec.Err
 import scodec.codecs
 
+import data.Countable
 import model.ClockSpeedPreset
 import model.ExtractorType
 import model.Item
@@ -36,6 +37,8 @@ import protocol.persistence.ProductionUi
 import protocol.persistence.RecipeOptions
 import protocol.persistence.RequestSelection
 import protocol.persistence.ResourceOptions
+import protocol.solver.SolverRequest
+import protocol.solver.SolverResponse
 
 trait Codecs:
   type P // Plan
@@ -107,27 +110,95 @@ object Codecs:
         v2.productionUi
       ).imapN( P.apply )( Tuple.fromProductTyped )
 
+    private[Codecs] val recipeOptions: Codec[RecipeOptions]         = v2.recipeOptions
+    private[Codecs] val resourceOptions: Codec[ResourceOptions]     = v2.resourceOptions
+    private[Codecs] val extractionOptions: Codec[ExtractionOptions] = v2.extractionOptions
+    private[Codecs] val logisticsOptions: Codec[LogisticsOptions]   = v2.logisticsOptions
+    private[Codecs] val powerOptions: Codec[PowerOptions]           = v2.powerOptions
+    private[Codecs] val requestSelection: Codec[RequestSelection]   = v2.requestSelection
+    private[Codecs] val productionUi: Codec[ProductionUi]           = v2.productionUi
+    private[Codecs] val endId: Codec[EndId]                         = v2.endId
+    private[Codecs] val processSplitId: Codec[ProcessSplitId]       = v2.processSplitId
+    private[Codecs] val flowEnd: Codec[FlowEnd]                     = v2.flowEnd
+    private[Codecs] val group: Codec[Group]                         = v2.group
+    private[Codecs] def className[A]: Codec[ClassName[A]]           = v2.className[A]
+
     val flows: Codec[Flows] =
       val endSplits: Codec[Vector[( EndId, Vector[( ProcessSplitId, Double, Group )] )]] =
         codecs.vectorOfN(
           codecs.uint16,
-          v2.endId :: codecs.vectorOfN( codecs.int32, v2.processSplitId :: codecs.double :: v2.group )
+          endId :: codecs.vectorOfN( codecs.int32, processSplitId :: codecs.double :: group )
         )
       val itemFlows: Codec[Map[ClassName[Item], Vector[Vector[( FlowEnd, ProcessSplitId )]]]] =
         codecs
           .vectorOfN(
             codecs.int32,
-            v2.className[Item] ::
-              codecs.vectorOfN( codecs.int32, codecs.vectorOfN( codecs.int32, v2.flowEnd :: v2.processSplitId ) )
+            className[Item] ::
+              codecs.vectorOfN( codecs.int32, codecs.vectorOfN( codecs.int32, flowEnd :: processSplitId ) )
           )
           .xmap( _.toMap, _.toVector )
-      ( codecs.int32, v2.processSplitId, endSplits, itemFlows ).imapN( Flows.apply )( Tuple.fromProductTyped )
+      ( codecs.int32, processSplitId, endSplits, itemFlows ).imapN( Flows.apply )( Tuple.fromProductTyped )
 
   object v2 extends Codecs:
+    case class P(
+        name: PlanName,
+        recipeOptions: RecipeOptions,
+        resourceOptions: ResourceOptions,
+        extractionOptions: ExtractionOptions,
+        logisticsOptions: LogisticsOptions,
+        powerOptions: PowerOptions,
+        requestSelection: RequestSelection,
+        flows: Flows,
+        productionUi: ProductionUi
+    )
+    type S = PlanSummary
+
+    override def version: SchemaVersion = SchemaVersion( 2 )
+
+    override def planName: Codec[PlanName] = v3.planName
+
+    override def planSummary: Codec[PlanSummary] = v3.planSummary
+
+    override def plan: Codec[P] = (
+      planName,
+      recipeOptions,
+      resourceOptions,
+      extractionOptions,
+      logisticsOptions,
+      powerOptions,
+      requestSelection,
+      flows,
+      productionUi
+    ).imapN( P.apply )( Tuple.fromProductTyped )
+
+    override def getPlanName( plan: P ): PlanName = plan.name
+
+    override def getSummaryUpdated( summary: PlanSummary ): Instant = v3.getSummaryUpdated( summary )
+
+    override def toPlanSummary( planId: PlanId, plan: P, updated: Instant ): PlanSummary =
+      PlanSummary( planId, plan.name, updated, plan.requestSelection.requestedAmounts.toVector )
+
+    private[Codecs] val recipeOptions: Codec[RecipeOptions]         = v3.recipeOptions
+    private[Codecs] val resourceOptions: Codec[ResourceOptions]     = v3.resourceOptions
+    private[Codecs] val extractionOptions: Codec[ExtractionOptions] = v3.extractionOptions
+    private[Codecs] val logisticsOptions: Codec[LogisticsOptions]   = v3.logisticsOptions
+    private[Codecs] val powerOptions: Codec[PowerOptions]           = v3.powerOptions
+    private[Codecs] val requestSelection: Codec[RequestSelection]   = v3.requestSelection
+    private[Codecs] val flows: Codec[Flows]                         = v3.flows
+    private[Codecs] val productionUi: Codec[ProductionUi]           = v3.productionUi
+    private[Codecs] val endId: Codec[EndId]                         = v3.endId
+    private[Codecs] val processSplitId: Codec[ProcessSplitId]       = v3.processSplitId
+    private[Codecs] val flowEnd: Codec[FlowEnd]                     = v3.flowEnd
+    private[Codecs] val group: Codec[Group]                         = v3.group
+    private[Codecs] def className[A]: Codec[ClassName[A]]           = v3.className[A]
+
+  object v3 extends Codecs:
     type P = Plan
     type S = PlanSummary
 
-    override val version: SchemaVersion = SchemaVersion( 2 )
+    val P: Plan.type = Plan
+
+    override val version: SchemaVersion = SchemaVersion( 3 )
 
     override def getPlanName( plan: Plan ): PlanName = plan.name
 
@@ -169,6 +240,9 @@ object Codecs:
       val requested: Codec[Vector[( ClassName[Item], Double )]] =
         codecs.vectorOfN( codecs.int16, className[Item] :: codecs.double )
       ( planId, planName, instant, requested ).imapN( PlanSummary.apply )( Tuple.fromProductTyped )
+
+    val modelVersionId: Codec[ModelVersionId] =
+      codecs.int16.xmap( ModelVersionId( _ ), _.id )
 
     val recipeOptions: Codec[RecipeOptions] =
       val allowedRecipes: Codec[Set[ClassName[Recipe.Manufacturing]]] =
@@ -218,6 +292,32 @@ object Codecs:
       codecs
         .vectorOfN( codecs.uint16, className[Item] :: codecs.double )
         .xmap( vector => RequestSelection( vector.to( SortedMap ) ), _.requestedAmounts.toVector )
+
+    def countableDouble[A]( codecA: Codec[A] ): Codec[Countable[Double, A]] =
+      ( codecA, codecs.double ).imapN( Countable.apply )( Tuple.fromProductTyped )
+
+    val requestResource: Codec[SolverRequest.Resource] =
+      (
+        codecs.optional( codecs.bool, codecs.double ),
+        codecs.double
+      ).imapN( SolverRequest.Resource( _, _ ) )( Tuple.fromProductTyped )
+
+    val solverRequest: Codec[SolverRequest] =
+      (
+        codecs.uint16.imap( ModelVersionId( _ ) )( _.id ),
+        codecs.vectorOfN( codecs.uint16, countableDouble( className[Item] ) ),
+        codecs.vectorOfN( codecs.uint16, className[Recipe.NonExtraction] ).imap( _.toSet )( _.toVector ),
+        codecs.vectorOfN( codecs.uint8, className[Item] :: requestResource ).imap( _.toMap )( _.toVector )
+      ).imapN( SolverRequest.apply )( Tuple.fromProductTyped )
+
+    val solverResponse: Codec[SolverResponse.Solution] =
+      (
+        codecs.vectorOfN( codecs.uint16, countableDouble( className[Item] ) ),
+        codecs.vectorOfN( codecs.int16, countableDouble( className[Recipe.NonExtraction] ) )
+      ).imapN( SolverResponse.Solution.apply )( Tuple.fromProductTyped )
+
+    val solution: Codec[Option[( SolverRequest, SolverResponse.Solution )]] =
+      codecs.optional( codecs.bool, ( solverRequest, solverResponse ).tupled )
 
     val processSplitId: Codec[ProcessSplitId] =
       codecs.int32.xmap( ProcessSplitId( _ ), _.id )
@@ -269,12 +369,14 @@ object Codecs:
     override val plan: Codec[Plan] =
       (
         planName,
+        modelVersionId,
         recipeOptions,
         resourceOptions,
         extractionOptions,
         logisticsOptions,
         powerOptions,
         requestSelection,
+        solution,
         flows,
         productionUi
       ).imapN( Plan.apply )( Tuple.fromProductTyped )
@@ -318,7 +420,7 @@ object Codecs:
       }
 
   private def upgradePlanToV2( plan: v1.P ): v2.P =
-    Plan(
+    v2.P(
       plan.name,
       plan.recipeOptions,
       plan.resourceOptions,
@@ -337,7 +439,23 @@ object Codecs:
       plan.productionUi
     )
 
+  private def upgradePlanToV3( plan: v2.P ): v3.P =
+    v3.P(
+      plan.name,
+      ModelVersionId( 7 ),
+      plan.recipeOptions,
+      plan.resourceOptions,
+      plan.extractionOptions,
+      plan.logisticsOptions,
+      plan.powerOptions,
+      plan.requestSelection,
+      none,
+      plan.flows,
+      plan.productionUi
+    )
+
   val migrations: Vector[Migration] =
     Vector(
-      Migration( v1, v2 )( upgradePlanToV2 )
+      Migration( v1, v2 )( upgradePlanToV2 ),
+      Migration( v2, v3 )( upgradePlanToV3 )
     )

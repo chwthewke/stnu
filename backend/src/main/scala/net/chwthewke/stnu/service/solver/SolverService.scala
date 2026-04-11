@@ -44,7 +44,7 @@ class SolverService[F[_]: Async](
       .leftMap( SolverResponse.InvalidClasses( _ ) )
       .toEither
 
-  def solveEither( request: SolverRequest ): EitherT[F, SolverResponse.Error, SolverResponse.Ok] =
+  def solveEither( request: SolverRequest ): EitherT[F, SolverResponse.Error, SolverResponse.Solution] =
     for
       model <-
         EitherT.fromEither[F]:

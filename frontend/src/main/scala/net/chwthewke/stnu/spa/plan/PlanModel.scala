@@ -205,12 +205,14 @@ class PlanModel(
   val save: pp.Plan =
     pp.Plan(
       name.name,
+      env.game.version.version,
       recipeOptions,
       resourceOptions,
       extractionOptions,
       logisticsOptions,
       powerOptions,
       requests,
+      solution.flatMap( sm => sm.response.solution.tupleLeft( sm.requested ) ),
       flows.fold( identity, flows => flows ),
       productionUi
     )
@@ -236,7 +238,7 @@ object PlanModel:
       logisticsOptions.pipelines( env )
     )
 
-  def apply(
+  private def apply(
       env: Env,
       ui: PlanModel.Ui,
       name: PlanNameModel,
@@ -296,11 +298,11 @@ object PlanModel:
         logisticsOptions = LogisticsOptions.from( env, saved.logisticsOptions ),
         powerOptions = PowerOptions.from( saved.powerOptions ),
         requests = RequestsModel.from( env, saved.requestSelection ).restore,
-        solution = none,
+        solution = saved.solution.map { case ( req, res ) => SolutionModel( req, res ) },
         productionUi = ProdModel.Ui.from( saved.flows.prodHash, saved.productionUi ),
         flows = _ => Left( saved.flows )
       )
-    model -> ( if ( model.canCompute ) Cmd.Emit( PlanMsg.SendSolverRequest ) else Cmd.None )
+    model -> ( if ( model.solution.isEmpty && model.canCompute ) Cmd.Emit( PlanMsg.SendSolverRequest ) else Cmd.None )
 
   case class Ui(
       hasOptions: SidePanel & SidePanel.OptionsTab,

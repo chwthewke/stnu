@@ -105,7 +105,7 @@ trait SolutionGenerators:
 
   def solverRequestAndResponse( model: Model )(
       requestGen: Gen[SolverRequest] = solverRequest( model )()
-  ): Gen[( SolverRequest, SolverResponse.Ok )] =
+  ): Gen[( SolverRequest, SolverResponse.Solution )] =
     requestGen.flatMap: request =>
       val requested = request.requested.mapFilter( _.traverse( model.items.get ) )
       val recipes   =

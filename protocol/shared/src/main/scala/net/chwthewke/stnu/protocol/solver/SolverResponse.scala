@@ -5,8 +5,8 @@ package solver
 import cats.Show
 import cats.data.NonEmptyList
 import cats.derived.strict.*
-import io.circe.Decoder
-import io.circe.Encoder
+import io.circe.Codec
+import io.circe.derivation.ConfiguredCodec
 import io.circe.derivation.ConfiguredDecoder
 import io.circe.derivation.ConfiguredEncoder
 
@@ -14,24 +14,23 @@ import data.Countable
 import model.Item
 import model.Recipe
 
-enum SolverResponse derives Show, ConfiguredDecoder, ConfiguredEncoder:
-  case Solution(
-      inputs: Vector[Countable[Double, ClassName[Item]]],
-      recipes: Vector[Countable[Double, ClassName[Recipe.NonExtraction]]]
-  )                                                            extends SolverResponse with SolverResponse.Ok_
-  case InvalidModelVersion                                     extends SolverResponse with SolverResponse.Error_
-  case InvalidClasses( classes: NonEmptyList[ClassName[Any]] ) extends SolverResponse with SolverResponse.Error_
-  case SolverError( message: String )                          extends SolverResponse with SolverResponse.Error_
+sealed trait SolverResponse derives Show, ConfiguredDecoder, ConfiguredEncoder
 
 object SolverResponse:
-  sealed trait Ok_
-  sealed trait Error_
+  case class Solution(
+      inputs: Vector[Countable[Double, ClassName[Item]]],
+      recipes: Vector[Countable[Double, ClassName[Recipe.NonExtraction]]]
+  ) extends SolverResponse
+  case object InvalidModelVersion                                    extends SolverResponse with SolverResponse.Error
+  case class InvalidClasses( classes: NonEmptyList[ClassName[Any]] ) extends SolverResponse with SolverResponse.Error
+  case class SolverError( message: String )                          extends SolverResponse with SolverResponse.Error
 
-  type Ok    = SolverResponse & SolverResponse.Ok_
-  type Error = SolverResponse & SolverResponse.Error_
+  sealed trait Error extends SolverResponse
+
+  given Codec[Solution] = ConfiguredCodec.derived
 
   extension ( response: SolverResponse )
-    def ok: Option[SolverResponse.Ok] =
+    def solution: Option[SolverResponse.Solution] =
       response match
         case s: SolverResponse.Solution => Some( s )
         case _                          => None

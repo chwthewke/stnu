@@ -57,8 +57,13 @@
 - ~~serve index.html for prod~~
 - ~~fix: solver's item weight should be inversely proportional to cap~~
 - ~~durable storage of plans~~
-- persistence: store model version of plans!
-- persistence: filesystem storage module?
+- ~~persistence: store model version of plans!~~
+- ~~persistence: store (optional) plan solution~~
+- ~~persistence: filesystem storage module?~~
+- persistence: replace Int ids with UUIDs (for concurrent mod)
+  - NOTE update doMigration/migratePlan to allow file name changes
+    - do the write to a temp dir, remove the original and move the new
+    - have PPA.writePlanFiles return the file names
 
 ## frontend
 - ~~"deep" internal navigation~~

@@ -149,12 +149,11 @@ object FsPlans:
       sourcePlans <- forVersion[F, P0, S0]( dataDir, migration.fromCodecs )
       planIds     <- sourcePlans.readPlanIds
       destPlans   <- forVersion[F, P1, S1]( dataDir, migration.toCodecs )
-      _ <- planIds.traverseVoid( id => migratePlan( dataDir, PlanId( id ), sourcePlans, destPlans, migration ) )
-      _ <- new SchemaOps[F]( dataDir ).writeSchemaVersion( migration.toCodecs.version )
+      _           <- planIds.traverseVoid( id => migratePlan( PlanId( id ), sourcePlans, destPlans, migration ) )
+      _           <- new SchemaOps[F]( dataDir ).writeSchemaVersion( migration.toCodecs.version )
     yield ()
 
   def migratePlan[F[_]: Monad, P0, S0, P1, S1](
-      dataDir: Path,
       planId: PlanId,
       sourcePlans: FsPlans[F, P0, S0],
       destPlans: FsPlans[F, P1, S1],
@@ -190,7 +189,7 @@ object FsPlans:
       _ <- logger.info( "Applied all migrations." )
     yield ()
 
-  def init[F[_]: Async]( dataDir: Path, codecs: Codecs.Aux[Plan, PlanSummary] = Codecs.v2 ): F[PlansPersistenceApi[F]] =
+  def init[F[_]: Async]( dataDir: Path, codecs: Codecs.Aux[Plan, PlanSummary] = Codecs.v3 ): F[PlansPersistenceApi[F]] =
     given files: Files[F] = Files.forAsync[F]
     for
       _ <- files.createDirectories( dataDir )

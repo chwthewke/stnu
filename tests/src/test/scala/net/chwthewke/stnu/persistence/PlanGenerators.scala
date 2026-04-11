@@ -150,12 +150,14 @@ object PlanGenerators:
       productionUi      <- productionUiGen( flows )
     yield Plan(
       name,
+      model.version.version,
       recipeOptions,
       resourceOptions,
       extractionOptions,
       logisticsOptions,
       powerOptions,
       requestSelection,
+      none,
       flows,
       productionUi
     )

@@ -19,7 +19,7 @@ trait ConstraintSolver:
       requested: Vector[Countable[Double, Item]],
       recipes: Vector[Recipe.NonExtraction],
       inputs: Map[ClassName[Item], SolverRequest.Resource]
-  ): Either[SolverResponse.Error, SolverResponse.Ok]
+  ): Either[SolverResponse.Error, SolverResponse.Solution]
 
 object ConstraintSolver extends ConstraintSolver:
 
@@ -31,7 +31,7 @@ object ConstraintSolver extends ConstraintSolver:
       requested: Vector[Countable[Double, Item]],
       recipes: Vector[Recipe.NonExtraction],
       inputs: Map[ClassName[Item], SolverRequest.Resource]
-  ): Either[SolverResponse.Error, SolverResponse.Ok] =
+  ): Either[SolverResponse.Error, SolverResponse.Solution] =
     val model: ExpressionsBasedModel = new ExpressionsBasedModel
 
     val recipeVars: Map[ClassName[Recipe.NonExtraction], Variable] =
