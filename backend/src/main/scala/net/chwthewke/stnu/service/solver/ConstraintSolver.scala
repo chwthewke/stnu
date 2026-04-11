@@ -46,11 +46,13 @@ object ConstraintSolver extends ConstraintSolver:
         .toMap
 
     def inputVar( item: ClassName[Item], resource: SolverRequest.Resource ): Variable =
-      model
-        .addVariable( itemVarName( item ) )
-        .lower( 0d )
-        .upper( resource.cap )
-        .weight( resource.weight )
+      resource.cap.foldLeft(
+        model
+          .addVariable( itemVarName( item ) )
+          .lower( 0d )
+          .weight( resource.weight )
+      ): ( v, cap ) =>
+        v.upper( cap )
 
     val inputVars: Map[ClassName[Item], Variable] = inputs.map:
       case ( item, resource ) => ( item, inputVar( item, resource ) )

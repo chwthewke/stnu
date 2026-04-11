@@ -35,6 +35,6 @@ object ExtractionRecipes:
         .traverseVoid: purity =>
           if ( map.contains( purity ) ) ().validNel
           else purity.invalidNel
-        .as( ExtractionRecipes.Variable( new Impl( map ) ) )
+        .as( ExtractionRecipes.Variable( Impl( map ) ) )
         .leftMap( missing => show"Missing resource purities ${missing.mkString_( ", " )}" )
         .toValidatedNel

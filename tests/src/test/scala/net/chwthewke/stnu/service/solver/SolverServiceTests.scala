@@ -37,7 +37,7 @@ class SolverServiceTests extends CatsEffectSuite:
       val resources       =
         model.extractedItems
           .map: item =>
-            ( item.className, SolverRequest.Resource( 1e9d, 1d ) )
+            ( item.className, SolverRequest.Resource( none, 1d ) )
           .toMap
 
       val request = SolverRequest( model.version.version, requested, recipeSelection.toSet, resources )

@@ -4,8 +4,6 @@ package model
 import alleycats.std.iterable.*
 import cats.Show
 import cats.Traverse
-import cats.data.Ior
-import cats.data.NonEmptyList
 import cats.data.NonEmptyVector
 import cats.data.ReaderT
 import cats.data.ValidatedNel
@@ -45,27 +43,34 @@ case class Model(
       clockSpeed: ClockSpeedPreset,
       extractors: Set[ExtractorType],
       resourceNodes: Map[ExtractorType, Map[ClassName[Item], ResourceDistrib]]
-  ): Map[ClassName[Item], Double] =
-    def getExtractionRecipes( machineFilter: Machine => Boolean ): Map[ClassName[Item], ExtractionRecipes] =
-      extractionRecipes
-        .flatMap:
-          case ( ( item, machine ), recipes ) =>
-            Option.when( machineFilter( machine ) )( ( item.className, recipes ) )
+  ): SortedMap[ClassName[Item], Option[Double]] =
+    def areExtractionRecipesAllowed( recipes: ExtractionRecipes ): Boolean =
+      recipes.recipes.headOption.exists: recipe =>
+        recipe.producedIn.machineType.extractor.exists:
+          case ExtractorType.Miner => recipe.producedIn.className == minerClass
+          case other               => extractors.contains( other )
 
-    resourceNodes.toVector.foldMap:
-      case ( extractor, distribs ) =>
-        val extractorRecipes: Map[ClassName[Item], ExtractionRecipes] = extractor match
-          case ExtractorType.Miner =>
-            getExtractionRecipes( _.className == minerClass )
-          case other =>
-            getExtractionRecipes( _.machineType.extractor.contains( other ) && extractors.contains( other ) )
+    val extractionRecipesByItem: SortedMap[ClassName[Item], Vector[( Machine, ExtractionRecipes )]] =
+      extractionRecipes.toVector
+        .filter { case ( _, recipes ) => areExtractionRecipesAllowed( recipes ) }
+        .foldMap:
+          case ( ( item, machine ), recipes ) => SortedMap( item.className -> Vector( ( machine, recipes ) ) )
 
-        extractorRecipes.alignWith( distribs ) {
-          case Ior.Both( ExtractionRecipes.Variable( byPurity ), distrib ) =>
-            clockSpeed.value.fraction *
-              distrib.foldMap( ( purity, count ) => count * byPurity.get( purity ).productsPerMinute.amount )
-          case _ => 0d
-        }
+    extractionRecipesByItem.map:
+      case ( item, machineRecipes ) =>
+        item ->
+          machineRecipes
+            .foldMapM:
+              case ( _, ExtractionRecipes.Fixed( _ ) )                 => none
+              case ( machine, ExtractionRecipes.Variable( byPurity ) ) =>
+                machine.machineType.extractor
+                  .flatMap( resourceNodes.get )
+                  .flatMap( _.get( item ) )
+                  .foldMap: distrib =>
+                    (
+                      clockSpeed.value.fraction *
+                        distrib.foldMap( ( purity, count ) => count * byPurity.get( purity ).productsPerMinute.amount )
+                    ).some
 
 object Model:
 

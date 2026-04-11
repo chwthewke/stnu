@@ -3,6 +3,7 @@ package spa
 package plan
 
 import cats.syntax.all.*
+import scala.collection.immutable.SortedMap
 
 import model.ClockSpeedPreset
 import model.ExtractorType
@@ -35,17 +36,12 @@ case class ExtractionOptions(
     val wasEnabled: Boolean = previousValue.toBooleanOption.getOrElse( false )
     if ( wasEnabled ) set - key else set + key
 
-  private def resourceCaps(
-      env: Env,
-      resources: Map[ExtractorType, Map[ClassName[Item], ResourceDistrib]]
-  ): Map[ClassName[Item], Double] =
-    env.game.resourceCaps( minerClass, clockSpeed, extractors, resources )
-
   def resources(
       env: Env,
       resources: Map[ExtractorType, Map[ClassName[Item], ResourceDistrib]]
   ): Map[ClassName[Item], SolverRequest.Resource] =
-    val caps: Map[ClassName[Item], Double]  = resourceCaps( env, resources )
+    val caps: SortedMap[ClassName[Item], Option[Double]] =
+      env.game.resourceCaps( minerClass, clockSpeed, extractors, resources )
     val costs: Map[ClassName[Item], Double] = ResourceWeights( resourceWeightSliders ).costs( caps )
     caps.map:
       case ( item, cap ) =>

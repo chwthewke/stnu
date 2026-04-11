@@ -4,8 +4,6 @@ package solver
 
 import cats.Show
 import cats.derived.strict.*
-import io.circe.Decoder
-import io.circe.Encoder
 import io.circe.derivation.ConfiguredDecoder
 import io.circe.derivation.ConfiguredEncoder
 
@@ -23,4 +21,4 @@ case class SolverRequest(
       ConfiguredEncoder
 
 object SolverRequest:
-  case class Resource( cap: Double, weight: Double ) derives Show, ConfiguredDecoder, ConfiguredEncoder
+  case class Resource( cap: Option[Double], weight: Double ) derives Show, ConfiguredDecoder, ConfiguredEncoder

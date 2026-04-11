@@ -97,7 +97,7 @@
 - ~~Requests panel looks like ass~~
 - ~~"Add request" button no worky in organize view~~
   - ~~disable it in that view~~
-- Something is wrong with resource caps? (water, FICSMAS gift)
+- Something is wrong with resource caps? (water, ~~FICSMAS gift~~)
 - Something is also wrong with "hide FICSMAS" in plan
 - ~~new request panel: restore the \<input>s~~
 - ~~revert is weird on local reload~~ OK now?
