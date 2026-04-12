@@ -363,7 +363,8 @@ object PlanOptionsView:
                       Html.`type` := "range",
                       Html.min    := "0",
                       Html.max    := ( 2 * ResourceWeights.range ).toString,
-                      Html.value  := ResourceWeights.range.toString,
+                      Html.value  :=
+                        model.resourceWeightSliders.getOrElse( item.className, ResourceWeights.range ).toString,
                       Html.onChange( ExtractionOption.SetResourceWeight( item.className, _ ) )
                     )
                   )
