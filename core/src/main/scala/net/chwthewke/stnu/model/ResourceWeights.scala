@@ -17,9 +17,9 @@ object ResourceWeights:
   val default: ResourceWeights = Map.empty
 
   private val total: Double                      = 1e6
-  val range: Int                                 = 4 // weight between -range (use less) and range (use more) inclusive
+  val range: Int                                 = 8 // weight between 0 (use less) and 2*range (use more) inclusive
   private def weightFactor( input: Int ): Double =
-    math.pow( 2d, ( range - input ).toDouble ) // between 1 and 256
+    math.pow( 2d, ( range - input ).toDouble / 4 )
 
   extension ( resourceWeights: ResourceWeights )
     def weights: Map[ClassName[Item], Int] = resourceWeights
@@ -29,15 +29,14 @@ object ResourceWeights:
 
       val raw: SortedMap[ClassName[Item], Double] =
         resourceCaps
-          .map:
-            case ( item, co ) =>
-              (
-                item,
-                // if cap is none, set weight somewhat lower than other resources
-                // if cap is 0, set weight very high
-                co.fold( 1d )( c => capSum / c.max( 1e-3d ) )
-                  * weightFactor( resourceWeights.getOrElse( item, 0 ) )
-              )
+          .flatMap:
+            case ( item, capOpt ) =>
+              val cost =
+                capOpt match
+                  case Some( 0d )  => none
+                  case Some( cap ) => ( capSum / cap * weightFactor( resourceWeights.getOrElse( item, range ) ) ).some
+                  case None        => 1d.some
+              cost.tupleLeft( item )
 
       val sum: Double = raw.combineAll
 

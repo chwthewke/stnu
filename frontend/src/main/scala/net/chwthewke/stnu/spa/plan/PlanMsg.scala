@@ -69,6 +69,7 @@ enum LogisticsOption:
 
 enum RecipeOption:
   case Reset
+  case SetCurrent
   case SetRecipe( recipe: ClassName[Recipe.Manufacturing], enable: Boolean )
   case SetMaxTier( tier: Tier, withAlts: Boolean )
   case ToggleAlts( enable: Boolean )

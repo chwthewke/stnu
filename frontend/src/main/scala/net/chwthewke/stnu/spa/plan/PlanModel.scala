@@ -103,7 +103,7 @@ class PlanModel(
     case PlanMsg.SetLogisticsOption( logisticsOption ) =>
       copy( logisticsOptions = logisticsOptions.setOption( env, logisticsOption ) ) -> Cmd.None
     case PlanMsg.SetRecipeOption( recipeOption ) =>
-      copy( recipeOptions = recipeOptions.setOption( env, recipeOption ) ) -> Cmd.None
+      copy( recipeOptions = recipeOptions.setOption( env, recipeOption, solution ) ) -> Cmd.None
     case PlanMsg.SetPowerOption( powerOption ) =>
       copy( powerOptions = powerOptions.setOption( env, powerOption ) ) -> Cmd.None
     case PlanMsg.Requests( action ) =>

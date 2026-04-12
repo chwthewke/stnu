@@ -12,9 +12,10 @@ case class RecipeOptionsInputModel(
     allowedRecipes: Set[ClassName[Recipe.Manufacturing]],
     search: SearchQuery
 ):
-  def setOption( env: Env, option: RecipeOption ): RecipeOptionsInputModel =
+  def setOption( env: Env, option: RecipeOption, solution: Option[SolutionModel] ): RecipeOptionsInputModel =
     option match
-      case RecipeOption.Reset => copy( allowedRecipes = RecipeOptionsInputModel.defaultRecipes( env ) )
+      case RecipeOption.Reset      => copy( allowedRecipes = RecipeOptionsInputModel.defaultRecipes( env ) )
+      case RecipeOption.SetCurrent => setCurrent( env, solution )
       case RecipeOption.SetMaxTier( tier, withAlts ) =>
         copy( allowedRecipes = RecipeOptionsInputModel.allRecipesUpToTier( env, tier, withAlts ) )
       case RecipeOption.ToggleAlts( enable ) =>
@@ -32,6 +33,17 @@ case class RecipeOptionsInputModel(
       case RecipeOption.SearchInput( value )        => copy( search = search.onInput( value ) )
       case RecipeOption.SearchReset                 => copy( search = search.clear )
       case RecipeOption.ToggleHideFicsmas( enable ) => copy( hideFicsmas = enable )
+
+  private def setCurrent( env: Env, solutionOpt: Option[SolutionModel] ): RecipeOptionsInputModel =
+    solutionOpt
+      .flatMap( _.response.solution )
+      .fold( this ): solution =>
+        val recipes =
+          solution.recipes.mapFilter: cr =>
+            env.getRecipe( cr.item ) match
+              case Some( r: Recipe.Manufacturing ) => r.className.some
+              case _                               => none
+        copy( allowedRecipes = recipes.toSet )
 
   def restore: RecipeOptionsInputModel =
     copy( search = search.restore )
