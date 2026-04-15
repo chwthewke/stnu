@@ -17,10 +17,11 @@ object PlanView:
   def apply( env: Env, model: PlanModel ): Html[PlanMsg] =
     val realEnv: Env = if ( model.recipeOptions.hideFicsmas ) env.withoutFicsmas else env
     def contents( buttons: Html[PlanMsg]* ): List[Html[PlanMsg]] =
-      if ( model.ui.isOrganizer )
-        FlowsView( model, buttons* )
-      else
-        mainPlanContent( realEnv, model, buttons* )
+      Elements.goToTop ::
+        ( if ( model.ui.isOrganizer )
+            FlowsView( model, buttons* )
+          else
+            mainPlanContent( realEnv, model, buttons* ) )
 
     if ( model.ui.isRequests )
       Html.div( b.columns + b.mx3 )(

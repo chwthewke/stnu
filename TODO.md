@@ -100,6 +100,7 @@
 - hover with more precision for (some) doubles
 - favorite recipes (set in browse?)
 - Flows: show the amounts on each side when unbalanced
+- Flows: invalidate Transport splits only when they become invalid after move/merge
 
 #### fixes
 - ~~Requests panel looks like ass~~

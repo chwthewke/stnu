@@ -106,13 +106,6 @@ object FlowsView:
 
     def itemTags: Html[PlanMsg] = Html.div( b.block )( itemLinks( model.env, model.productionUi, itemFlows ) )
 
-    def goToTop: Html[PlanMsg] =
-      Html.button(
-        b.isLight + b.button,
-        Html.styles( CSS.position( "fixed" ), CSS.bottom( "0.5rem" ), CSS.right( "0.5rem" ), CSS.zIndex( "2" ) ),
-        Html.onClick( PlanMsg.MoveTo( none ) )
-      )( Html.i( p.regular.arrowLineUp )() )
-
     def itemFlowBlocks: List[Html[PlanMsg]] =
       flows
         .map: f =>
@@ -132,7 +125,6 @@ object FlowsView:
         flows.flatMap( modal ) ++:
           planHeader ++:
           itemTags +:
-          goToTop +:
           itemFlowBlocks ++: Nil
       )
     )

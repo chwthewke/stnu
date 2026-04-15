@@ -11,9 +11,12 @@ import tyrian.Html
 import model.ClockSpeedPreset
 import spa.css.Bulma
 import spa.css.Classes
+import spa.css.Phosphor
+import spa.plan.PlanMsg
 
 object Elements:
-  val b: Bulma = Bulma
+  val b: Bulma    = Bulma
+  val p: Phosphor = Phosphor
 
   def miniButtonWithMod[M]( classes: Classes, title: String, icon: ButtonContent, attrs: Attr[M]* )(
       msg: KeyModifier => M
@@ -109,3 +112,10 @@ object Elements:
         )
       )()
     )
+
+  def goToTop: Html[PlanMsg] =
+    Html.button(
+      b.isLight + b.button,
+      Html.styles( CSS.position( "fixed" ), CSS.bottom( "0.5rem" ), CSS.right( "0.5rem" ), CSS.zIndex( "2" ) ),
+      Html.onClick( PlanMsg.MoveTo( none ) )
+    )( Html.i( p.regular.arrowLineUp )() )
