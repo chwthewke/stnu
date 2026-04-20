@@ -12,23 +12,10 @@ case class Split[+A <: SrcDest](
     id: ProcessSplitId,
     end: EndId,
     original: A,
-    split: Int,
+    number: Int,
     max: Int,
     fraction: Double,
     group: Group
 ):
-  import Split.*
-
-  val value: A                            = original.times( fraction )
+  val value: A                            = original.mapProcess( _.times( fraction ) )
   def times( fraction: Double ): Split[A] = copy( fraction = this.fraction * fraction )
-
-object Split:
-  extension [A <: SrcDest]( self: A )
-    def times( fraction: Double ): A =
-      ( self match
-        case SrcDest.Extract( process ) => SrcDest.Extract( process.times( fraction ) )
-        case SrcDest.Step( process )    => SrcDest.Step( process.times( fraction ) )
-        case SrcDest.Input              => SrcDest.Input
-        case SrcDest.Requested          => SrcDest.Requested
-        case SrcDest.Byproduct          => SrcDest.Byproduct
-      ).asInstanceOf[A]

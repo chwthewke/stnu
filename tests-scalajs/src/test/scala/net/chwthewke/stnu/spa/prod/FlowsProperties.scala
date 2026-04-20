@@ -19,16 +19,16 @@ import protocol.persistence.ProcessSplitId
 trait FlowsProperties:
   self: ScalaCheckSuite =>
 
-  given approxItemIO: Approx[ItemIO[SrcDest]] = new Gathering with Approx:
+  given approxItemIO: Approx[ItemIO[SrcDest]] = new Gathering with Approx[ItemIO[SrcDest]]:
     override def approx( x: ItemIO[SrcDest], y: ItemIO[SrcDest] ): Boolean =
-      x.sources.map( _.map( showSrcDest ) ) =~ y.sources.map( _.map( showSrcDest ) )
-        && x.destinations.map( _.map( showSrcDest ) ) =~ y.destinations.map( _.map( showSrcDest ) )
+      x.sources.map( _.map( Shown.showSrcDest ) ) =~ y.sources.map( _.map( Shown.showSrcDest ) )
+        && x.destinations.map( _.map( Shown.showSrcDest ) ) =~ y.destinations.map( _.map( Shown.showSrcDest ) )
 
   given [A <: SrcDest] => Approx[Split[A]]:
     override def approx( x: Split[A], y: Split[A] ): Boolean =
       x.fraction =~ y.fraction
         && x.original == y.original
-        && x.split == y.split
+        && x.number == y.number
         && x.max == y.max
         && x.group == y.group
 
@@ -97,8 +97,8 @@ trait FlowsProperties:
     val endIdAndNumbers: Set[( EndId, Int )] =
       flows.itemTransports.unorderedFoldMap:
         _.foldMap: it =>
-          ( it.sources.map( cs => ( cs.item.end, cs.item.split ) ) ++
-            it.destinations.map( cs => ( cs.item.end, cs.item.split ) ) ).toSet
+          ( it.sources.mapFilter( cs => cs.item.split.map( s => ( s.end, s.number ) ) ) ++
+            it.destinations.mapFilter( cs => cs.item.split.map( s => ( s.end, s.number ) ) ) ).toSet
 
     endIdAndNumbers.foreach:
       case ( endId, splitNumber ) =>
@@ -162,8 +162,8 @@ trait FlowsProperties:
   def itemFlowsCoverOriginalItemIOs( flows: Flows ): Unit =
     def reduce1ToItemIO( itemTransport: ItemTransport ): ItemIO[SrcDest] =
       ItemIO(
-        itemTransport.sources.map( _.map( _.original ) ),
-        itemTransport.destinations.map( _.map( _.original ) )
+        itemTransport.sources.mapFilter( _.traverse( _.split.map( _.original ) ) ),
+        itemTransport.destinations.mapFilter( _.traverse( _.split.map( _.original ) ) )
       )
 
     def reduceToItemIO( itemTransports: NonEmptyVector[ItemTransport] ): ItemIO[SrcDest] =
@@ -187,7 +187,7 @@ trait FlowsProperties:
       case ( item, transports ) =>
         transports.toVector.foreach: transport =>
           transport.sources
-            .map( _.map( _.value ) )
+            .mapFilter( _.traverse( _.split.map( _.value ) ) )
             .collect:
               case Countable( SrcDest.Step( process ), amount )    => ( process, amount )
               case Countable( SrcDest.Extract( process ), amount ) => ( process, amount )
@@ -204,7 +204,7 @@ trait FlowsProperties:
       case ( item, transports ) =>
         transports.toVector.foreach: transport =>
           transport.destinations
-            .map( _.map( _.value ) )
+            .mapFilter( _.traverse( _.split.map( _.value ) ) )
             .collect:
               case Countable( SrcDest.Step( process ), amount ) => ( process, amount )
             .foreach:
@@ -236,9 +236,9 @@ trait FlowsProperties:
       ( for
         ( itemClass, itemTransports ) <- flows.itemTransports.iterator
         itemTransport                 <- itemTransports.iterator
-        source                        <- itemTransport.getMachineFlows( flowEnd ).iterator
+        source                        <- itemTransport.getSplitPeers( flowEnd ).iterator
         process                       <- source.item.original.process.iterator
-      yield ( itemClass, process.recipe.className, source.item.split, source.amount ) ).toVector
+      yield ( itemClass, process.recipe.className, source.item.number, source.amount ) ).toVector
 
     assert( clue( splitsProducers.sorted ) =~ clue( itemFlowsEnds.sorted ) )
 
@@ -254,7 +254,7 @@ trait FlowsProperties:
       item                          <- flows.prod.env.getItem( itemClass ).iterator
       ( itemTransport, index )      <- itemTransports.iterator.zipWithIndex
       flowEnd                       <- FlowEnd.cases.iterator
-      subIndex                      <- itemTransport.getMachineFlows( flowEnd ).indices.iterator
+      subIndex                      <- itemTransport.getSplitPeers( flowEnd ).indices.iterator
     yield SrcDestPos( item, flowEnd, index, subIndex ) ).toVector
 
   def splitTypes( flows: Flows, pos: SrcDestPos ): Vector[SplitType] =

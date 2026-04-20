@@ -17,7 +17,7 @@ object ActionModal:
       pos: SrcDestPos,
       srcDest: Countable[Double, Split[SrcDest]],
       local: ItemTransport,
-      oppositePeers: List[Countable[Double, Split[SrcDest]]],
+      oppositePeers: List[Countable[Double, ItemTransport.Peer[SrcDest]]],
       equalSplitCount: Option[Int],
       machineCount: Option[( Int, Int )] // curr, max
   ) extends ActionModal:
@@ -42,7 +42,7 @@ object ActionModal:
         pos: SrcDestPos,
         srcDest: Countable[Double, Split[SrcDest]],
         local: ItemTransport,
-        oppositePeers: List[Countable[Double, Split[SrcDest]]]
+        oppositePeers: List[Countable[Double, ItemTransport.Peer[SrcDest]]]
     ): SplitAction =
       val amount: Double    = srcDest.amount
       val unit: Int         = local.transport.perMinute
@@ -68,7 +68,7 @@ object ActionModal:
       adjacentPeers.flatten
         .filter: peer =>
           peer.item.original == srcDest.item.original &&
-            peer.item.split != srcDest.item.split
+            peer.item.number != srcDest.item.number
         .map( MergeType.Adjacent( _ ) )
 
   case class SplitTransportAction(

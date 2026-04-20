@@ -204,7 +204,7 @@ object PlanTable:
     val complete: Boolean             = ui.completed( row.splitId )
     val moreRows: List[Html[Nothing]] =
       if ( expanded )
-        expandedProcessRows( flows, row.splitId, row.process )
+        expandedProcessRows( flows, row.splitId, row.process.times( row.fraction ) )
       else Nil
     mainComputedRow( flows.prod, rows, rowIndex, groups, row, expanded, complete ) :: moreRows
 
@@ -606,10 +606,10 @@ object PlanTable:
         direction: FlowEnd
     ): Map[FlowEnd, Map[Item, ( Double, Vector[Countable[Double, Split[SrcDest]]] )]] =
       transport
-        .getMachineFlows( direction.opposite )
+        .getSplitPeers( direction.opposite )
         .find( _.item.id == splitId )
         .foldMap: ci =>
-          Map( direction -> Map( item -> ( ci.amount, transport.getMachineFlows( direction ) ) ) )
+          Map( direction -> Map( item -> ( ci.amount, transport.getSplitPeers( direction ) ) ) )
 
     // Source -> ingredients
     // Destination -> products

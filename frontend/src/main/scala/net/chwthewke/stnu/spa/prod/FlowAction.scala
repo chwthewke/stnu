@@ -17,7 +17,7 @@ enum FlowAction:
   case MergeSrcDest( pos: SrcDestPos, mergeType: MergeType )
   case StartSplitTransport( modal: ActionModal.SplitTransportAction )
   case SplitTransport( item: ClassName[Item], index: Int, flowEnd: FlowEnd, target: Int, amount: Double )
-  case DeleteTransportSplit( item: ClassName[Item], transportIndex: Int, flowEnd: FlowEnd, splitIndex: Int )
+  case DeleteTransportSplit( item: ClassName[Item], transportIndex: Int, flowEnd: FlowEnd, peerIndex: Int )
   case AbortModalFlowOp
 
 enum SplitType:
@@ -28,7 +28,7 @@ enum SplitType:
   case Remainder
   case Max
   case MaxAll
-  case Opposite( split: Countable[Double, Split[SrcDest]] )
+  case Opposite( split: Countable[Double, ItemTransport.Peer[SrcDest]] )
 
 enum MergeType:
   case Local

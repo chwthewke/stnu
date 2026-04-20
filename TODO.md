@@ -99,8 +99,11 @@
 - Change logic of extraction recipes when overclocking (use all, then overclock)
 - hover with more precision for (some) doubles
 - favorite recipes (set in browse?)
+- ~~Flows: better transport splits~~
+  - ~~materialize transport splits in `ItemTransport` besides `Split[SrcDest]`~~
+  - ~~Flows: invalidate Transport splits only when they become invalid after move/merge~~
+  - ~~Allow transport splits as opposite/remainder split targets~~
 - Flows: show the amounts on each side when unbalanced
-- Flows: invalidate Transport splits only when they become invalid after move/merge
 
 #### fixes
 - ~~Requests panel looks like ass~~
@@ -118,6 +121,7 @@
 - maybe using Tag.withKey could improve vdom patching perf (target all the groupGrid 1st)
 - ~~need to update REQUESTED in flows when recipes do not change :/~~
 - Library: deleting a plan should reload the library or apply the deletion to the model
+- Groups: trying to move a row beyond the end of a group borks the order for good
 
 #### the quest for flows
 

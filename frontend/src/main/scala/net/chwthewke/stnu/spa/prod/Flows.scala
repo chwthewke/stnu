@@ -2,7 +2,6 @@ package net.chwthewke.stnu
 package spa
 package prod
 
-import cats.Id
 import cats.data.NonEmptyList
 import cats.data.NonEmptyVector
 import cats.syntax.all.*
@@ -10,6 +9,7 @@ import monocle.syntax.all.*
 import mouse.option.*
 import scala.annotation.tailrec
 import scala.collection.immutable.SortedMap
+import scala.collection.immutable.SortedSet
 
 import data.Countable
 import model.Item
@@ -89,19 +89,50 @@ case class Flows(
         prod.env
           .getItem( itemClass )
           .map: item =>
-            itemFlows.transports.zipWithIndex
-              .map:
-                case ( transportRef, index ) =>
-                  transportRef.toItemTransport(
-                    prod,
-                    item,
-                    index,
-                    endsBySplitId,
-                    endSplits,
-                    splitsById,
-                    itemFlows.transportSplits
-                  )
+            makeItemTransports( item, itemFlows.transports.zipWithIndex, itemFlows.transportSplits )
           .tupleLeft( itemClass )
+
+  private def makeItemTransports(
+      item: Item,
+      refs: NonEmptyVector[( ItemTransportRef, Int )],
+      transportSplits: Vector[TransportSplit]
+  ): NonEmptyVector[ItemTransport] =
+    val transportRefsWithPeers: NonEmptyVector[
+      (
+          Vector[Countable[Double, Split[SrcDest.Src]]],
+          Vector[( Double, Int )],
+          Vector[Countable[Double, Split[SrcDest.Dest]]],
+          Vector[( Double, Int )],
+          Int,
+          Transport
+      )
+    ] =
+      refs.map:
+        case ( ref, index ) =>
+          val ( ss, st, ds, dt ) =
+            ref.peers( item, index, splitsById, transportSplits )
+          val amount: Double =
+            ( ss.foldMap( _.amount ) + st.foldMap( _._1 ) ).max( ds.foldMap( _.amount ) + dt.foldMap( _._1 ) )
+          val transport = prod.selectTransport( item, amount ).item
+          ( ss, st, ds, dt, index, transport )
+
+    val transports: Map[Int, Transport] =
+      transportRefsWithPeers.iterator.map( t => ( t._5, t._6 ) ).toMap
+
+    transportRefsWithPeers.map:
+      case ( ss, st, ds, dt, index, transport ) =>
+        ItemTransport(
+          transport,
+          ss.map( _.map( ItemTransport.Peer.End( _ ) ) ) ++
+            st.mapFilter {
+              case ( amt, ix ) =>
+                transports.get( ix ).map( t => Countable( ItemTransport.Peer.From( t, ix ), amt ) )
+            },
+          ds.map( _.map( ItemTransport.Peer.End( _ ) ) ) ++
+            dt.mapFilter {
+              case ( amt, ix ) => transports.get( ix ).map( t => Countable( ItemTransport.Peer.To( t, ix ), amt ) )
+            }
+        )
 
   val groups: Set[Group] =
     endSplits.unorderedFoldMap( _.splits.unorderedFoldMap { case ( _, group ) => group.ancestors } )
@@ -126,9 +157,8 @@ case class Flows(
       case FlowAction.StartSplitTransport( modal )     => copy( ui = ui.setActionModal( modal.some ) )
       case FlowAction.SplitTransport( item, index, flowEnd, target, amount ) =>
         splitTransport( item, index, flowEnd, target, amount )
-      case FlowAction.DeleteTransportSplit( item, index, direction, splitIndex ) =>
-        println( s"deleteTransportSplit( $item, $index, $direction, $splitIndex )" )
-        deleteTransportSplit( item, index, direction, splitIndex )
+      case FlowAction.DeleteTransportSplit( item, index, direction, peerIndex ) =>
+        deleteTransportSplit( item, index, direction, peerIndex )
 
   /////////////////
   // ACTIONS
@@ -159,23 +189,60 @@ case class Flows(
       .focus( _.endSplits.each.splits.each._2 )
       .modify( swapAncestors( from, to ) )
 
+  // Set new NonEmptyVector[ItemTransportRef] on ItemFlows, while:
+  //   - removing empty `ItemTransportRef`s (returning the original if all empty - never used in principle)
+  //   - removing `TransportSplit`s if they involve an `ItemTransportRef` that turns out empty
+  //   - updating `ItemTransportRef` indices on the remaining `TransportSplit`s
+  private def updateItemFlows(
+      itemFlows: ItemFlows,
+      newItemTransports: NonEmptyVector[( ItemTransportRef, Option[Int] /* orig index unless new */ )]
+  ): ItemFlows =
+    val (
+      nonEmptyItemTransports: Vector[ItemTransportRef],
+      originalTransportIndices: Vector[Option[Int]],
+      invalidItemTransportIndices: SortedSet[Int]
+    ) =
+      newItemTransports.zipWithIndex.foldMap:
+        case ( ( itemTransportRef, origIndex ), index ) =>
+          val isEmpty: Boolean = itemTransportRef.ends.isEmpty
+          (
+            if ( !isEmpty ) Vector( itemTransportRef ) else Vector.empty,
+            if ( !isEmpty ) Vector( origIndex ) else Vector.empty,
+            if ( isEmpty ) SortedSet( index ) else SortedSet.empty[Int]
+          )
+
+    def updateTransportIndex( currentIndex: Int ): Option[Int] =
+      originalTransportIndices
+        .indexWhere( _.contains( currentIndex ) )
+        .some
+        .filter( _ >= 0 )
+
+    def updatedTransportSplits: Vector[TransportSplit] =
+      itemFlows.transportSplits.mapFilter:
+        case TransportSplit( amount, from, to ) =>
+          ( updateTransportIndex( from ), updateTransportIndex( to ) ).mapN( TransportSplit( amount, _, _ ) )
+
+    nonEmptyItemTransports.toNev.cata( ItemFlows( _, updatedTransportSplits ), itemFlows )
+
   // Move
 
   def move( pos: SrcDestPos, amount: Int, bump: Boolean ): Flows =
     pos
       .getSplitId( itemFlows )
       .fold( this ): splitId =>
-        def newItemTransport = ItemTransportRef( Map( pos.direction -> NonEmptyVector.one( splitId ) ) )
+        def newItemTransport: ( ItemTransportRef, Option[Int] ) =
+          ( ItemTransportRef( Map( pos.direction -> NonEmptyVector.one( splitId ) ) ), none )
 
         this
           .focus( _.itemFlows.index( pos.item.className ) )
-          .modifyA[Id]: ( itemTransports: ItemFlows ) =>
-            val removed: NonEmptyVector[ItemTransportRef] =
-              itemTransports.transports
-                .focus( _.index( pos.index ).ends.at( pos.direction ) )
-                .modifyA[Id]( nevOpt => nevOpt.flatMap( _.toVector.patch( pos.subIndex, Nil, 1 ).toNev ) )
+          .modify: ( itemTransports: ItemFlows ) =>
+            val removed: NonEmptyVector[( ItemTransportRef, Option[Int] )] =
+              itemTransports.transports.zipWithIndex
+                .map( _.map( _.some ) )
+                .focus( _.index( pos.index )._1.ends.at( pos.direction ) )
+                .modify( nevOpt => nevOpt.flatMap( _.toVector.patch( pos.subIndex, Nil, 1 ).toNev ) )
 
-            val updated: NonEmptyVector[ItemTransportRef] =
+            val updated: NonEmptyVector[( ItemTransportRef, Option[Int] )] =
               if ( pos.index == 0 && amount == -1 ) newItemTransport +: removed
               else if ( pos.index == removed.length - 1 && amount == 1 ) removed :+ newItemTransport
               else if ( bump )
@@ -183,14 +250,11 @@ case class Flows(
                 NonEmptyVector.fromVectorUnsafe( removed.toVector.patch( patchIx, Seq( newItemTransport ), 0 ) )
               else
                 removed
-                  .focus( _.index( pos.index + amount ).ends.at( pos.direction ) )
-                  .modifyA[Id]: ( itemTransportEnd: Option[NonEmptyVector[ProcessSplitId]] ) =>
+                  .focus( _.index( pos.index + amount )._1.ends.at( pos.direction ) )
+                  .modify: ( itemTransportEnd: Option[NonEmptyVector[ProcessSplitId]] ) =>
                     itemTransportEnd.cata( _ :+ splitId, NonEmptyVector.one( splitId ) ).some
 
-            updated
-              .filter( _.ends.nonEmpty )
-              .toNev
-              .cata( ItemFlows( _, Vector.empty ), itemTransports )
+            updateItemFlows( itemTransports, updated )
 
   // Split
 
@@ -277,7 +341,7 @@ case class Flows(
             List( fraction, 1d - fraction )
       case SplitType.Remainder =>
         ( pos.getSplit( itemTransports ), pos.getLocal( itemTransports ) ).flatMapN: ( from, in ) =>
-          def amount( direction: FlowEnd ): Double = in.getMachineFlows( direction ).foldMap( _.amount )
+          def amount( direction: FlowEnd ): Double = in.getPeers( direction ).foldMap( _.amount )
           val remainder: Double = ( amount( pos.direction ) - amount( pos.direction.opposite ) ) / from.amount
           Option.when( remainder > Countable.Tolerance && remainder < 1 - Countable.Tolerance ):
             List( 1d - remainder, remainder )
@@ -332,14 +396,14 @@ case class Flows(
           this
             // 1. update endSplits (add new splits & update target split)
             .focus( _.endSplits.index( endId ).splits )
-            .modifyA[Id]: ( splits: SortedMap[ProcessSplitId, ( Double, Group )] ) =>
+            .modify: ( splits: SortedMap[ProcessSplitId, ( Double, Group )] ) =>
               val updatedSplits: List[( ProcessSplitId, ( Double, Group ) )] =
                 ( splitId, ( fractions.head, group ) ) :: addedSplits
               splits ++ updatedSplits
             // 2. update flow ends (add new splitIds where splitId is present)
             .focus( _.itemFlows.each.transports.each.ends.each )
             .filter( _.contains_( splitId ) )
-            .modifyA[Id]: ( flowEnds: NonEmptyVector[ProcessSplitId] ) =>
+            .modify: ( flowEnds: NonEmptyVector[ProcessSplitId] ) =>
               flowEnds ++ addedSplits._1F.toVector
             // 3. housekeeping: update nextId
             .focus( _.nextId )
@@ -419,21 +483,19 @@ case class Flows(
           this
             // 1. update endSplits (remove merge targets & update target split)
             .focus( _.endSplits.index( split.item.end ).splits )
-            .modifyA[Id]: ( splits: SortedMap[ProcessSplitId, ( Double, Group )] ) =>
+            .modify: ( splits: SortedMap[ProcessSplitId, ( Double, Group )] ) =>
               val fraction: Double = mergeTargets.foldMap( id => splits.get( id ).foldMap( _._1 ) )
               splits.removedAll( toRemove ).updatedWith( splitId )( to => to.map( t => ( fraction, t._2 ) ) )
             // 2. update flow ends (remove splitIds for merge targets)
             .focus( _.itemFlows.each )
-            .modifyA[Id]: ( itemFlows: ItemFlows ) =>
-              itemFlows.transports
-                .focus( _.each.ends )
-                .modifyA[Id]: ( ends: Map[FlowEnd, NonEmptyVector[ProcessSplitId]] ) =>
-                  ends.mapFilter: splits =>
-                    splits.filterNot( toRemove ).toNev
-                // 3. remove any emptied ItemTransport
-                .filter( _.ends.nonEmpty )
-                .toNev
-                .cata( ItemFlows( _, Vector.empty ), itemFlows )
+            .modify: ( itemFlows: ItemFlows ) =>
+              val newItemTransports: NonEmptyVector[ItemTransportRef] =
+                itemFlows.transports
+                  .focus( _.each.ends )
+                  .modify: ( ends: Map[FlowEnd, NonEmptyVector[ProcessSplitId]] ) =>
+                    ends.mapFilter: splits =>
+                      splits.filterNot( toRemove ).toNev
+              updateItemFlows( itemFlows, newItemTransports.zipWithIndex.map( _.map( _.some ) ) )
 
   private def transportExcessAt( transport: ItemTransport, flowEnd: FlowEnd ): Option[Double] =
     val excess: Double =
@@ -464,7 +526,7 @@ case class Flows(
               case ( transport, ix ) =>
                 Option.when(
                   transportExcessAt( transport, flowEnd.opposite ).isDefined &&
-                    transport.getTransportSplits( flowEnd ).forall( _.item != index )
+                    transport.getTransportPeers( flowEnd ).forall( _.index != index )
                 )( ix )
             .toList
             .toNel
@@ -478,19 +540,15 @@ case class Flows(
       .modify( _ :+ split )
       .copy( ui = ui.closeActionModal )
 
-  def deleteTransportSplit( item: ClassName[Item], transportIndex: Int, flowEnd: FlowEnd, splitIndex: Int ): Flows =
+  def deleteTransportSplit( item: ClassName[Item], transportIndex: Int, flowEnd: FlowEnd, peerIndex: Int ): Flows =
     this
       .focus( _.itemFlows.index( item ).transportSplits )
       .modify: ( transportSplits: Vector[TransportSplit] ) =>
-        transportSplits.zipWithIndex
-          .filter:
-            case ( split, _ ) =>
-              flowEnd match
-                case FlowEnd.Destination => split.from == transportIndex
-                case FlowEnd.Source      => split.to == transportIndex
-          .lift( splitIndex )
-          ._2F
-          .cata( ix => transportSplits.patch( ix, Nil, 1 ), transportSplits )
+        transportSplits
+          .filterNot: split =>
+            flowEnd match
+              case FlowEnd.Destination => split.from == transportIndex && split.to == peerIndex
+              case FlowEnd.Source      => split.to == transportIndex && split.from == peerIndex
 
 object Flows:
   case class Ui( actionModal: Option[ActionModal] ):

@@ -3,26 +3,26 @@ package spa.prod
 
 import cats.syntax.all.*
 
-sealed trait SrcDest
+sealed trait SrcDest:
+  def process: Option[ClockedRecipe] =
+    import SrcDest.*
+    this match
+      case Extract( process )            => process.some
+      case Step( process )               => process.some
+      case Input | Requested | Byproduct => none
 
 object SrcDest:
   sealed trait Src  extends SrcDest
   sealed trait Dest extends SrcDest
 
-  final case class Extract( process: ClockedRecipe ) extends Src
-  final case class Step( process: ClockedRecipe )    extends Src with Dest
-  case object Input                                  extends Src
-  case object Requested                              extends Dest
-  case object Byproduct                              extends Dest
-
-  extension ( self: SrcDest )
-    def process: Option[ClockedRecipe] = self match
-      case Extract( process )            => process.some
-      case Step( process )               => process.some
-      case Input | Requested | Byproduct => none
+  final case class Extract( ofProcess: ClockedRecipe ) extends Src
+  final case class Step( ofProcess: ClockedRecipe )    extends Src with Dest
+  case object Input                                    extends Src
+  case object Requested                                extends Dest
+  case object Byproduct                                extends Dest
 
   extension [A <: SrcDest]( self: A )
-    def modifyProcess( f: ClockedRecipe => ClockedRecipe ): A =
+    def mapProcess( f: ClockedRecipe => ClockedRecipe ): A =
       ( self match
         case Extract( process )            => Extract( f( process ) )
         case Step( process )               => Step( f( process ) )

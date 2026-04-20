@@ -20,7 +20,6 @@ import spa.css.Phosphor
 import spa.plan.PlanModel
 import spa.plan.PlanMsg
 import spa.prod.ActionModal
-import spa.prod.ClockedRecipe
 import spa.prod.FlowAction
 import spa.prod.Flows
 import spa.prod.Groups
@@ -161,16 +160,14 @@ object FlowsView:
             )
           .toList
 
-  private def renderSrcDestMachines( env: Env, srcDest: Split[SrcDest] ): List[Elem[Nothing]] =
-    def renderMachines( recipe: ClockedRecipe ) =
-      List(
-        Html.strong( recipe.machineCount.toString ),
-        icon.verticalAlign().withClasses( b.ml2 ).machine( env, recipe.recipe.producedIn )
-      )
-    srcDest.value match
-      case SrcDest.Step( recipe )    => renderMachines( recipe )
-      case SrcDest.Extract( recipe ) => renderMachines( recipe )
-      case _                         => Nil
+  private def renderSrcDestMachines( env: Env, peer: ItemTransport.Peer[SrcDest] ): List[Elem[Nothing]] =
+    peer.split
+      .flatMap( _.value.process )
+      .foldMap: recipe =>
+        List(
+          Html.strong( recipe.machineCount.toString ),
+          icon.verticalAlign().withClasses( b.ml2 ).machine( env, recipe.recipe.producedIn )
+        )
 
   /**
    * flow actions:
@@ -236,6 +233,24 @@ object FlowsView:
         Html.i( Html.style( CSS.paddingRight( "16px" ) ) )()
     )
 
+  private def peerActionButtons(
+      flows: Flows,
+      item: Item,
+      direction: FlowEnd,
+      transport: Transport,
+      index: Int,
+      subIndex: Int,
+      peer: Countable[Double, ItemTransport.Peer[SrcDest]]
+  ): Html[FlowAction] =
+    peer.item.transportPeer match
+      case Some( transportPeer ) =>
+        Elements.miniButton( b.isDanger + b.isOutlined, "Delete split", p.regular.`trash` )(
+          FlowAction.DeleteTransportSplit( item.className, index, direction, transportPeer.index ).some
+        )
+      case None =>
+        Html
+          .span( b.buttons + b.hasAddons )( flowActionButtons( flows, item, direction, transport, index, subIndex ) )
+
   private def flowRow(
       flows: Flows,
       groups: Groups,
@@ -244,53 +259,25 @@ object FlowsView:
       transport: Transport,
       index: Int,
       subIndex: Int,
-      srcDest: Countable[Double, Split[SrcDest]]
+      peer: Countable[Double, ItemTransport.Peer[SrcDest]]
   ): Html[PlanMsg] =
     val env = flows.prod.env
     Html
       .tr(
-        overflowWarningCell( srcDest.amount > transport.perMinute * ( 1d + Countable.Tolerance ) ),
-        Html.td(
-          Html
-            .span( b.buttons + b.hasAddons )( flowActionButtons( flows, item, direction, transport, index, subIndex ) )
-        ),
-        Html.td( b.hasTextRight )( Html.strong( Numbers.showDouble3( srcDest.amount ) ) ),
+        overflowWarningCell( peer.amount > transport.perMinute * ( 1d + Countable.Tolerance ) ), // OK
+        Html.td( peerActionButtons( flows, item, direction, transport, index, subIndex, peer ) ),
+        Html.td( b.hasTextRight )( Html.strong( Numbers.showDouble3( peer.amount ) ) ),
         Html.td( b.hasTextCentered )(
-          if ( srcDest.item.max == 1 ) "*" else s"#${srcDest.item.split}/${srcDest.item.max}"
+          peer.item.splitNumber.map:
+            case ( number, max ) =>
+              Html.text( if ( max == 1 ) "*" else s"#$number/$max" )
         ),
-        Html.td( RecipeFrag.srcDestName( env )( srcDest.item.value ) ),
-        Html.td( b.hasTextCentered )( renderSrcDestMachines( env, srcDest.item ) ),
-        Html.td( b.hasTextRight )( FlowElements.groupButton( groups, srcDest.item.group, newGroup = false, none ) )
-      )
-      .map( PlanMsg.Flow( _ ) )
-
-  private def transportSplitRow(
-      item: ClassName[Item],
-      amount: Double,
-      transport: Transport,
-      index: Int,
-      direction: FlowEnd,
-      peer: Transport,
-      peerIndex: Int,
-      splitIndex: Int
-  ): Html[PlanMsg] =
-    val directionText: String = direction match
-      case FlowEnd.Source      => "from"
-      case FlowEnd.Destination => "to"
-
-    Html
-      .tr(
-        overflowWarningCell( amount > transport.perMinute * ( 1d + Countable.Tolerance ) ),
-        Html.td(
-          Elements.miniButton( b.isDanger + b.isOutlined, "Delete split", p.regular.`trash` )(
-            FlowAction.DeleteTransportSplit( item, index, direction, splitIndex ).some
-          )
-        ),
-        Html.td( b.hasTextRight )( Html.strong( Numbers.showDouble3( amount ) ) ),
-        Html.td(),
-        Html.td( Html.em( s"$directionText ${peer.displayName} #${peerIndex + 1}" ) ),
-        Html.td(),
-        Html.td()
+        Html.td( RecipeFrag.itemTransportPeerName( env )( peer.item ) ),
+        Html.td( b.hasTextCentered )( renderSrcDestMachines( env, peer.item ) ),
+        Html.td( b.hasTextRight )(
+          peer.item.group.map: group =>
+            FlowElements.groupButton( groups, group, newGroup = false, none )
+        )
       )
       .map( PlanMsg.Flow( _ ) )
 
@@ -302,42 +289,19 @@ object FlowsView:
       itemTransport: ItemTransport,
       index: Int
   ): Html[PlanMsg] = {
-    val machineRows: List[Html[PlanMsg]] =
-      itemTransport
-        .getMachineFlows( direction )
-        .toList
-        .zipWithIndex
+    val rows: List[Html[PlanMsg]] =
+      val peers: Vector[Countable[Double, ItemTransport.Peer[SrcDest]]] =
+        direction match
+          case FlowEnd.Source      => itemTransport.sources
+          case FlowEnd.Destination => itemTransport.destinations
+      peers.zipWithIndex.iterator
         .map:
-          case ( srcDest, ix ) =>
-            flowRow( flows, groups, item, direction, itemTransport.transport, index, ix, srcDest )
-
-    val transportSplitRows: List[Html[PlanMsg]] =
-      itemTransport.transportSplits
-        .get( direction )
-        .orEmpty
+          case ( peer, ix ) =>
+            flowRow( flows, groups, item, direction, itemTransport.transport, index, ix, peer )
         .toList
-        .zipWithIndex
-        .mapFilter:
-          case ( Countable( target, amount ), splitIndex ) =>
-            flows.itemTransports
-              .get( item.className )
-              .flatMap( _.get( target ) )
-              .map: peer =>
-                transportSplitRow(
-                  item.className,
-                  amount,
-                  itemTransport.transport,
-                  index,
-                  direction,
-                  peer.transport,
-                  target,
-                  splitIndex
-                )
 
     Html.table( b.table + b.isFullwidth )(
-      Html.tbody(
-        machineRows ++ transportSplitRows
-      )
+      Html.tbody( rows )
     )
   }
 
@@ -655,7 +619,7 @@ object FlowsView:
                     s"split ${Numbers.showDouble3( splitType.split.amount )} for"
                   ),
                   nbsp,
-                  RecipeFrag.splitName( env )( splitType.split.item )
+                  RecipeFrag.itemTransportPeerName( env )( splitType.split.item )
                 ),
                 b.isLink,
                 none

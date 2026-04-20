@@ -31,6 +31,7 @@ object GroupEnd:
 
   given Ordering[GroupEnd] = Order.catsKernelOrderingForOrder
 
+// TODO Local/RemoteGroupEnd should include other transports via transport splits (not to be displayed in flat mode)
 enum LocalGroupEnd:
   case Child( group: Group )
   case Process( splitId: ProcessSplitId )

@@ -20,6 +20,8 @@ import spa.Env
 import spa.css.Bulma
 import spa.css.Classes
 import spa.css.Phosphor
+import spa.prod.ItemTransport
+import spa.prod.ItemTransport.Peer
 import spa.prod.Split
 import spa.prod.SrcDest
 import spa.views.Icons.Icon
@@ -194,11 +196,17 @@ object RecipeFrag:
 
   def splitName( env: Env )( split: Split[SrcDest] ): Html[Nothing] =
     Html.span(
-      srcDestName( env )( split.original ) ::
+      srcDestName( env )( split.value ) ::
         Option
-          .when( split.max > 1 )( split.split )
+          .when( split.max > 1 )( split.number )
           .foldMap( num => List( nbsp, Html.text( s"#$num" ) ) )
     )
+
+  def itemTransportPeerName( env: Env )( peer: ItemTransport.Peer[SrcDest] ): Html[Nothing] =
+    peer match
+      case Peer.End( split )             => splitName( env )( split )
+      case Peer.From( transport, index ) => Html.em( s"From ${transport.displayName} #${index + 1}" )
+      case Peer.To( transport, index )   => Html.em( s"To ${transport.displayName} #${index + 1}" )
 
   def productionBoost( env: Env )( shardsUsed: Int ): Option[Html[Nothing]] =
     Option.when( shardsUsed > 0 )(

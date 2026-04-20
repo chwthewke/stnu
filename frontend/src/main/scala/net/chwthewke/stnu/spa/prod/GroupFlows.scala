@@ -158,7 +158,7 @@ object GroupFlows:
 
       val directionFlowsByGroup: SortedMap[GroupEnd, Double] =
         transport
-          .getMachineFlows( direction )
+          .getSplitPeers( direction )
           .foldMap: cs =>
             val groupEnd: GroupEnd = groupEndOf( flows, group, cs.item )
             SortedMap( groupEnd -> cs.amount )
@@ -173,7 +173,7 @@ object GroupFlows:
 
       val eligibleRemoteEndFlows: SortedMap[RemoteGroupEnd, Double] =
         transport
-          .getMachineFlows( direction.opposite )
+          .getSplitPeers( direction.opposite )
           .foldMap: cs =>
             val groupEnd: GroupEnd                  = groupEndOf( flows, group, cs.item )
             val destination: Option[RemoteGroupEnd] =

@@ -14,7 +14,7 @@ case class ShownItemIO( self: ItemIO[SrcDest] ):
        |""".stripMargin
 
   def showIO( direction: String, cs: Countable[Double, SrcDest] ): String =
-    s"${cs.amount} $direction ${showSrcDest( cs.item )}"
+    s"${cs.amount} $direction ${Shown.showSrcDest( cs.item )}"
 
 object ShownItemIO:
   given Show[ShownItemIO] = Show.fromToString

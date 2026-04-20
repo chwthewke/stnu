@@ -4,28 +4,29 @@ package prod
 
 import cats.data.NonEmptyVector
 import cats.syntax.all.*
-import mouse.option.*
 
 import data.Countable
 import model.Item
 import model.prod.FlowEnd
-import model.prod.Group
 import protocol.persistence.ProcessSplitId
 
 case class ItemTransportRef( ends: Map[FlowEnd, NonEmptyVector[ProcessSplitId]] ):
-  def toItemTransport(
-      prod: ProdModel,
+
+  def peers(
       item: Item,
       index: Int,
-      endsBySplitId: Map[ProcessSplitId, ( Double, Group, EndId )],
-      endSplits: Map[EndId, ProcessSplits],
       splitsById: Map[ProcessSplitId, Split[SrcDest]],
       transportSplitRefs: Vector[TransportSplit]
-  ): ItemTransport =
-
+  ): (
+      Vector[Countable[Double, Split[SrcDest.Src]]],  // source splits
+      Vector[( Double, Int )],                        // source transport splits
+      Vector[Countable[Double, Split[SrcDest.Dest]]], // destination splits
+      Vector[( Double, Int )]                         // destination transport splits
+  ) =
     def srcOf( srcDest: SrcDest, endId: EndId ): Option[( Double, SrcDest.Src )] =
       def srcAmount( process: ClockedRecipe ): Double =
         process.productsPerMinute.find( _.item.className == item.className ).foldMap( _.amount )
+
       srcDest match
         case s @ SrcDest.Extract( process ) => ( srcAmount( process ), s ).some
         case s @ SrcDest.Step( process )    => ( srcAmount( process ), s ).some
@@ -38,6 +39,7 @@ case class ItemTransportRef( ends: Map[FlowEnd, NonEmptyVector[ProcessSplitId]] 
     def destOf( srcDest: SrcDest, endId: EndId ): Option[( Double, SrcDest.Dest )] =
       def destAmount( process: ClockedRecipe ): Double =
         process.ingredientsPerMinute.find( _.item.className == item.className ).foldMap( _.amount )
+
       srcDest match
         case s @ SrcDest.Step( process )           => ( destAmount( process ), s ).some
         case SrcDest.Requested | SrcDest.Byproduct =>
@@ -52,7 +54,7 @@ case class ItemTransportRef( ends: Map[FlowEnd, NonEmptyVector[ProcessSplitId]] 
     )( toSrcDest: ( SrcDest, EndId ) => Option[( Double, A )] ): Vector[Countable[Double, Split[A]]] =
       ends
         .get( end )
-        .cata( _.toVector, Vector.empty )
+        .foldMap( _.toVector )
         .mapFilter: splitId =>
           for
             split               <- splitsById.get( splitId )
@@ -65,12 +67,13 @@ case class ItemTransportRef( ends: Map[FlowEnd, NonEmptyVector[ProcessSplitId]] 
     val destinationFlows: Vector[Countable[Double, Split[SrcDest.Dest]]] =
       endFlows( FlowEnd.Destination )( destOf )
 
-    val transportSplits: Map[FlowEnd, Vector[Countable[Double, Int]]] =
+    val ( transportSplitSources, transportSplitDestinations ) =
       transportSplitRefs
         .foldMap:
           case TransportSplit( amount, from, to ) =>
-            Option.when( from == index )( Map( FlowEnd.destination -> Vector( Countable( to, amount ) ) ) )
-              |+| Option.when( to == index )( Map( FlowEnd.source -> Vector( Countable( from, amount ) ) ) )
-        .orEmpty
+            (
+              Option.when( to == index )( ( amount, from ) ).toVector,
+              Option.when( from == index )( ( amount, to ) ).toVector
+            )
 
-    ItemTransport( prod, item, sourceFlows, destinationFlows, transportSplits )
+    ( sourceFlows, transportSplitSources, destinationFlows, transportSplitDestinations )
