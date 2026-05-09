@@ -4,6 +4,7 @@ import cats.effect.ExitCode
 import cats.effect.IO
 import cats.effect.IOApp
 import cats.syntax.all.*
+import scala.collection.immutable.SortedSet
 
 import game.GameData
 import ingest.Loader
@@ -11,6 +12,9 @@ import ingest.Loader
 object ExploreGameData extends IOApp:
   def gameData( version: DataVersionStorage = DataVersionStorage.Release1_1 ): IO[GameData] =
     Loader[IO]( version ).use( _.gameData )
+
+  def showItemStackSizes( gameData: GameData ): String =
+    gameData.items.values.map( _.stackSize ).to( SortedSet ).mkString( ", " )
 
   def showManufacturerProductionBoost( gameData: GameData ): String =
     gameData.manufacturers.values.toVector
@@ -24,6 +28,6 @@ object ExploreGameData extends IOApp:
 
   override def run( args: List[String] ): IO[ExitCode] =
     gameData()
-      .map( showManufacturerProductionBoost )
+      .map( showItemStackSizes )
       .flatMap( IO.println )
       .as( ExitCode.Success )

@@ -7,7 +7,6 @@ import org.scalacheck.Gen
 import org.scalacheck.cats.implicits.*
 
 import data.Countable
-import model.ClockSpeed
 import model.ClockSpeedPreset
 import model.ExtractorType
 import model.Feasible
@@ -18,8 +17,8 @@ import model.Recipe
 import model.ResourceWeights
 import model.Tier
 import model.Transport
+import service.solver.BoostableRecipe
 import service.solver.ConstraintSolver
-import service.solver.SolverService
 
 trait SolutionGenerators:
   type Recipes   = Set[ClassName[Recipe.NonExtraction]]
@@ -154,13 +153,13 @@ trait SolutionGenerators:
         model.conveyorBelts.find( _.className == request.bestConveyorBelt ).getOrElse( model.conveyorBelts.last )
       val bestPipeline: Transport =
         model.pipelines.find( _.className == request.bestPipeline ).getOrElse( model.pipelines.last )
-      val recipesWithClockSpeed: Vector[( Recipe.NonExtraction, ClockSpeed )] =
-        recipes.fproduct( SolverService.maxClockSpeed( bestConveyorBelt, bestPipeline ) )
+      val boostableRecipes: Vector[BoostableRecipe] =
+        recipes.map( BoostableRecipe( _, bestConveyorBelt, bestPipeline ) )
 
       ConstraintSolver
         .solve(
           requested,
-          recipesWithClockSpeed,
+          boostableRecipes,
           inputs,
           request.maxProductionBoost,
           request.manufacturingClockSpeed

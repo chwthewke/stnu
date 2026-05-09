@@ -110,19 +110,29 @@ object GameData:
     Decoder.decodeVector( dec ).map( _.fproductLeft( f ).to( Map ) )
 
   private def itemDecoder( nativeClass: NativeClass ): Decoder[GameItem] =
-    Decoder.forProduct6(
+    Decoder.forProduct7(
       "ClassName",
       "mDisplayName",
       "mForm",
+      "mStackSize",
       "mEnergyValue",
       "mResourceSinkPoints",
       "mSmallIcon"
-    )( ( cn: ClassName[GameItem], dn: String, fm: GameForm, ev: Double, pts: Option[Int], ico: IconData ) =>
-      GameItem( cn, dn, fm, ev, pts.getOrElse( 0 ), ico, nativeClass )
+    )(
+      (
+          cn: ClassName[GameItem],
+          dn: String,
+          fm: GameForm,
+          ss: GameStackSize,
+          ev: Double,
+          pts: Option[Int],
+          ico: IconData
+      ) => GameItem( cn, dn, fm, ss, ev, pts.getOrElse( 0 ), ico, nativeClass )
     )(
       Decoder[ClassName[GameItem]],
       Decoder[String],
       Decoder[GameForm],
+      Decoder[GameStackSize],
       Decoders.doubleStringDecoder,
       Decoder.decodeOption( Decoders.intStringDecoder ),
       Parsers.texture2d.decoder

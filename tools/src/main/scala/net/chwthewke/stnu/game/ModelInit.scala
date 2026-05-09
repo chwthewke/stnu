@@ -169,6 +169,7 @@ object ModelInit:
         item.className.translate,
         item.displayName,
         form,
+        item.stackSize.simpleAmount,
         item.fuelValue,
         item.sinkPoints,
         tier

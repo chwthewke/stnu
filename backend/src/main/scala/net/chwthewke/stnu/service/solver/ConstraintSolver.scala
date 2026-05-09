@@ -20,7 +20,7 @@ import protocol.solver.SolverResponse
 trait ConstraintSolver:
   def solve(
       requested: Vector[Countable[Double, Item]],
-      recipes: Vector[( Recipe.NonExtraction, ClockSpeed )],
+      recipes: Vector[BoostableRecipe],
       inputs: Map[ClassName[Item], SolverRequest.Resource],
       maxProductionBoost: Int,
       manufacturingClockSpeed: ClockSpeedPreset
@@ -42,32 +42,30 @@ object ConstraintSolver extends ConstraintSolver:
 
   def solve(
       requested: Vector[Countable[Double, Item]],
-      recipes: Vector[( Recipe.NonExtraction, ClockSpeed )],
+      recipes: Vector[BoostableRecipe],
       inputs: Map[ClassName[Item], SolverRequest.Resource],
       maxProductionBoost: Int,
       manufacturingClockSpeed: ClockSpeedPreset
   ): Either[SolverResponse.Error, SolverResponse.Solution] =
     val model: ExpressionsBasedModel = new ExpressionsBasedModel
 
-    def boostedRecipe(
-        recipe: Recipe.NonExtraction,
-        maxClockSpeedUnbounded: ClockSpeed
-    ): Option[BoostedRecipe[Recipe.NonExtraction]] =
-      recipe match
+    def boostedRecipe( boostableRecipe: BoostableRecipe ): Option[BoostedRecipe[Recipe.NonExtraction]] =
+      boostableRecipe.recipe match
         case r: Recipe.Manufacturing =>
           r.productionBoost.flatMap: boost =>
-            Option.when( boost.slots <= maxProductionBoost ):
+            Option.when( 0 < boostableRecipe.maxBoost && boostableRecipe.maxBoost <= maxProductionBoost ):
               val maxBoostedClockSpeedUnbounded: ClockSpeed =
-                ClockSpeed.ofFraction( maxClockSpeedUnbounded.fraction / ( 1d + boost.slots * boost.effect ) )
+                ClockSpeed.ofFraction(
+                  boostableRecipe.maxClockSpeed.fraction / ( 1d + boostableRecipe.maxBoost * boost.effect )
+                )
               val clockSpeed: ClockSpeed = maxBoostedClockSpeedUnbounded.min( manufacturingClockSpeed.value )
               BoostedRecipe( r, boost.slots, clockSpeed )
         case _: Recipe.PowerGeneration => None
 
     val recipeKeys: Vector[BoostedRecipe[Recipe.NonExtraction]] =
-      recipes.foldMap:
-        case ( recipe, maxClockSpeedUnbounded ) =>
-          Vector( BoostedRecipe( recipe, ClockSpeedPreset.`100%` ) ) // regular
-            ++ boostedRecipe( recipe, maxClockSpeedUnbounded )       // boosted
+      recipes.foldMap: boostableRecipe =>
+        Vector( BoostedRecipe( boostableRecipe.recipe, ClockSpeedPreset.`100%` ) ) // regular
+          ++ boostedRecipe( boostableRecipe )                                      // boosted
 
     // println( s"RECIPES w/ boost\n  ${recipeKeys.map( _.map( _.className ) ).mkString( "\n  " )}" )
 

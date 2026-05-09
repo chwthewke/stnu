@@ -10,8 +10,6 @@ import org.http4s.Method.POST
 import org.http4s.circe.CirceEntityCodec.*
 
 import data.Countable
-import model.ClockSpeed
-import model.Form
 import model.Item
 import model.Model
 import model.Recipe
@@ -37,7 +35,7 @@ class SolverService[F[_]: Async](
     SolverResponse.Error,
     (
         Vector[Countable[Double, Item]],
-        Vector[( Recipe.NonExtraction, ClockSpeed )],
+        Vector[BoostableRecipe],
         Map[ClassName[Item], SolverRequest.Resource]
     )
   ] =
@@ -52,9 +50,7 @@ class SolverService[F[_]: Async](
       model.conveyorBelts.find( _.className == bestConveyorBelt ).toValidNel( bestConveyorBelt: ClassName[Any] ),
       model.pipelines.find( _.className == bestPipeline ).toValidNel( bestPipeline: ClassName[Any] )
     )
-      .mapN( ( req, recSel, rsrcs, bcb, bp ) =>
-        ( req, recSel.fproduct( SolverService.maxClockSpeed( bcb, bp ) ), rsrcs.toMap )
-      )
+      .mapN( ( req, recSel, rsrcs, bcb, bp ) => ( req, recSel.map( BoostableRecipe( _, bcb, bp ) ), rsrcs.toMap ) )
       .leftMap( SolverResponse.InvalidClasses( _ ) )
       .toEither
 
@@ -96,19 +92,3 @@ class SolverService[F[_]: Async](
 object SolverService:
   def apply[F[_]: Async]( models: Vector[Model] ): SolverService[F] =
     new SolverService[F]( models.fproductLeft( _.version.version ).toMap, ConstraintSolver )
-
-  def maxClockSpeed(
-      bestConveyorBelt: Transport,
-      bestPipeline: Transport
-  )(
-      recipe: Recipe.NonExtraction
-  ): ClockSpeed =
-    recipe.itemsPerMinuteMap
-      .map:
-        case ( item, amount ) =>
-          val maxAmount: Double =
-            ( if ( item.form == Form.Solid ) bestConveyorBelt else bestPipeline ).perMinute.toDouble
-          val frac = maxAmount / amount.abs
-          ClockSpeed.ofFraction( frac )
-      .toVector
-      .min // unsafe but no recipe has neither ingredient nor product

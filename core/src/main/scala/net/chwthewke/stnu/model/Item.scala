@@ -11,6 +11,7 @@ case class Item(
     className: ClassName[Item],
     displayName: String,
     form: Form,
+    stackSize: Int,
     fuelValue: Double,
     sinkPoints: Int,
     tier: Tier

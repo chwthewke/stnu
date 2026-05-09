@@ -33,3 +33,5 @@ object Machine:
 
   given Order[Machine]    = Order.by( _.className )
   given Ordering[Machine] = Order.catsKernelOrderingForOrder
+
+  val quantumEncoder: ClassName[Machine] = ClassName( "Build_QuantumEncoder_C" )

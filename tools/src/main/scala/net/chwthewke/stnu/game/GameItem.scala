@@ -9,6 +9,7 @@ final case class GameItem(
     className: ClassName[GameItem],
     displayName: String,
     form: GameForm,
+    stackSize: GameStackSize,
     energyValue: Double,
     sinkPoints: Int,
     smallIcon: IconData,
